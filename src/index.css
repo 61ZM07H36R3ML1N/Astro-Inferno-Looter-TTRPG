@@ -1,1 +1,53 @@
 @import "tailwindcss";
+
+@theme {
+  --color-brand-red: #dc2626;
+  --color-void-black: #050505;
+
+  /* Add this for a custom glow effect */
+  --shadow-red-glow: 0 0 20px rgba(220, 38, 38, 0.6);
+}
+
+@layer base {
+  body {
+    background-color: var(--color-void-black);
+    cursor: crosshair; /* Adds a "target" feel to the app */
+  }
+}
+
+/* Add a slow breathing effect to the background */
+@keyframes pulse-bg {
+  0%, 100% { opacity: 0.1; }
+  50% { opacity: 0.3; }
+}
+
+.bg-grid-pulse {
+  animation: pulse-bg 4s ease-in-out infinite;
+}
+
+@layer utilities {
+  .scanlines {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .scanlines::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    /* This creates the thin horizontal lines */
+    background: linear-gradient(
+      rgba(18, 16, 16, 0) 50%, 
+      rgba(0, 0, 0, 0.25) 50%
+    ), 
+    linear-gradient(
+      90deg, 
+      rgba(255, 0, 0, 0.06), 
+      rgba(0, 255, 0, 0.02), 
+      rgba(0, 0, 255, 0.06)
+    );
+    background-size: 100% 4px, 3px 100%;
+    pointer-events: none;
+    z-index: 100;
+  }
+}
