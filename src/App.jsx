@@ -12,7 +12,7 @@ function App() {
 
       {/* Main Title Section */}
       <div className="relative z-10 text-center">
-        <h1 className="text-7xl md:text-9xl font-black italic tracking-tighter text-brand-red drop-shadow-[0_0_25px_rgba(220,38,38,0.6)] uppercase select-none">
+        <h1 className="text-7xl md:text-9xl font-black italic tracking-tighter text-red-600 uppercase shadow-red-glow animate-flicker">
           Astro Inferno
         </h1>
         
