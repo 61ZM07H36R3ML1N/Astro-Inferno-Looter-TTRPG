@@ -117,7 +117,7 @@ export const FORMS = [
   { 
     id: "f_genesis", 
     name: "Genesis Soul", 
-    description: "A construct of the new world. Pure machine or pure soul?",
+    description: "You are a powerful machine. Something disconnected you from the mainframe of Michigan Red, and now you are treated as a free roaming entity by your former swarm. This world is alien and strange, but somehow familiar to you. Why do you have memories of Earth, of grass and forests, of horrid experiments of family? Fracture, in general, sees genesis machines as monsters, and, as such, you are discriminated against in most parts of society. You're excluded from the most rudimentary rights regular souls have, and the Satanic Court keeps an eye on you as soon as you approach, sometimes even metting you with open hostility. Your power and role as an outcast often makes you self-conscious, contemplating your faith and what it all means. What is humanity? What is good, what is evil? What - or how, or why - is life?",
     startingCorruption: 0, 
     baseStats: { PHY: 25, SPD: 10, COG: 25, DRV: 10, CHA: 10, SPR: 10 },
     qualities: {
@@ -145,7 +145,7 @@ export const FORMS = [
   { 
     id: "f_lilith", 
     name: "Lilith", 
-    description: "Descendants of the First Rebel. Masters of blood and manipulation.",
+    description: "Through darkness, your existence screamed in horror, born into this physical world. You are not human, but you must wear one of their bodies to survive. The flesh suit corrupts in here, and to stay young and healthy you need to change it once in a while. You mingle with souls, pretending to be one of them, hiding. The Satanic Court would never understand your - in their eyes - peculiar and frightening origin. And along your way, you seek another soul to procreate with, one not too far gone into corruption, in order to create life from your own blood. Give birth to a good quality flesh suit to keep as a life insurance, so that when corruptiom goes too far, you just step into your new flesh body and start over again. And again, watching the world corrupt around you as the eons pass.",
     startingCorruption: 4,
     baseStats: { PHY: 5, SPD: 10, COG: 25, DRV: 15, CHA: 20, SPR: 15 },
     qualities: {
