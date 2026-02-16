@@ -1,0 +1,178 @@
+// DATABASE: FORMS & DESTINIES
+// Extracted from Astro Inferno Roll Tables.xlsx
+
+export const FORMS = [
+  { 
+    id: "f_undying", 
+    name: "Undying", 
+    description: "You survived the red plague and the horrors of the REGENESIS ten years ago, endured the Great Fog, and have found a new life in this world of death. You are a human in all regards, and have needs few other souls possess, such as air, food, and water. Still, your stubbornness, determination, and faith have saved your life countless times. Not living through the eternity of torment in the Damnation has also given you some perks, such as a clear, sane mind, at least compared to other souls. In this world, you are mostly viewed as an exotic entity, Or, in the worst case, as food.",
+    startingCorruption: 0,
+    baseStats: { PHY: 15, SPD: 10, COG: 15, DRV: 15, CHA: 15, SPR: 5 },
+    qualities: {
+      PHY: "Well Trained",
+      SPD: "Years of Zero G",
+      COG: "Scientist",
+      DRV: "Survivor",
+      CHA: "Well Spoken",
+      SPR: "Fear of the Dark"
+    },
+    darkMarks: [
+      { name: "The Faithful", description: "Your faith is intact and can help you both in life and death." },
+      { name: "The Survivor", description: "You have survived the frontiers and learned to stay alive." },
+      { name: "The Blacksmith", description: "You are a natural at crafting weapons and armor." }
+    ],
+    tables: {
+      master: [
+        { min: 1, max: 4, label: "Worm God" },
+        { min: 5, max: 12, label: "Fallen Deity" },
+        { min: 13, max: 16, label: "Cthonian Deity" },
+        { min: 17, max: 20, label: "Egyptian Deity" }
+      ]
+    }
+  },
+  { 
+    id: "f_darksoul", 
+    name: "Dark Soul", 
+    description: "Maybe you entered a dark pact, or your soul belongs to a dark entity. You are still human deep inside, but mysterious forces are attracted to your essence, and an aura of darkness surrounds your spirit. Most souls tend to avoid contact with Dark Souls, and see them as cursed and mysterious because of their dark auras and often wicked demeanor. Dark souls are inherently good mystics, alchemists, and witches, and Haxan actively seeks these souls, attempting to recruit them into their covens due to their affinity and connections to the dark powers beyond.",
+    startingCorruption: 2,
+    baseStats: { PHY: 5, SPD: 10, COG: 20, DRV: 10, CHA: 15, SPR: 25 },
+    qualities: {
+      PHY: "Weak and Powerless",
+      SPD: "Quick to get away",
+      COG: "Wise and Literate",
+      DRV: "No aches or lusts",
+      CHA: "Convincing",
+      SPR: "Unnatural Aura"
+    },
+    darkMarks: [
+      { name: "The Messenger", description: "You are a vessel of the Serpents, hearing their whispers brings good and bad fortune" },
+      { name: "The High Priestess", description: "Your spirit is that of the priestess, you exude divinity and wisdom." },
+      { name: "The Holy Diver", description: "You are Resilient to the Dark Lord's presence and corruption." }
+    ],
+    tables: {
+      master: [
+        { min: 1, max: 1, label: "Worm God" },
+        { min: 2, max: 4, label: "Fallen Deity" },
+        { min: 5, max: 19, label: "Ancient Deity" },
+        { min: 20, max: 20, label: "Eternal" }
+      ]
+    }
+  },
+  { 
+    id: "f_nanosuit", 
+    name: "Nano Suit", 
+    description: "Nanomachines course through the blood in your veins and have made you into something more than a mere human. They control you and you influence them. Once a human, you were resurrected by the extinction machines of the REGENESIS, their reasons hidden in shrouds. You have laid aside your human instincts for artificial senses, and may appear binary in your thoughts. Still, you corrupt like everyone else, and so do the nanomachines in your cells. You are fast in both body and mind, and possess a parallel thought process that gives you a dual stream of conciousness, making your decisions lightning fast - even if you're not always right, you can nearly always act and speak first. And like a constant signal in your ghost, inside your very blood, you can also hear the calling of the Dark Lord. Do you dream of electric goats?.",
+    startingCorruption: 2,
+    baseStats: { PHY: 15, SPD: 25, COG: 15, DRV: 10, CHA: 15, SPR: 5 },
+    qualities: {
+      PHY: "Exo Skeleton",
+      SPD: "Nano Reflexes",
+      COG: "Dual Brain",
+      DRV: "Digital Mind",
+      CHA: "Likable",
+      SPR: "Ghost in the Shell"
+    },
+    darkMarks: [
+      { name: "The Digital", description: "Your mind and reflexes work fast! Sometimes too fast for your own good." },
+      { name: "The Assassin", description: "You are a silent killer ready to move and strike from the shadows." },
+      { name: "The Navigator", description: "You are a traveler of the void and understand maps better than most souls." }
+    ],
+    tables: {
+      master: [
+        { min: 1, max: 2, label: "Fallen Entity" },
+        { min: 3, max: 18, label: "Ancient Entity" },
+        { min: 19, max: 19, label: "Machine Angel" },
+        { min: 20, max: 20, label: "Eternal" }
+      ]
+    }
+  },
+  { 
+    id: "f_satanic", 
+    name: "Satanic Entity", 
+    description: "You have corrupted into a full-fledged demonic appearance sometimes indistinguishable from true demons, all enhanced by nanotech and symbiotic harrowed tech, bound by the dark forces of the Abyss. Your presence exudes brute force and violence, causing most souls to turn the other way when they see you. Things tend to break when you are around even if your intentions are peaceful, since your muscles, reflexes, and limbs are, to a great part, demonic. Your Monstrosity has one huge benefit when it comes to interactions with True Unlight and the Satanic Court - they tend to appreciate your presence and violence. And even if you aren't the sharpest tool in the box, you have become very good at using this to your own benefit.",
+    startingCorruption: 4,
+    baseStats: { PHY: 25, SPD: 25, COG: 10, DRV: 20, CHA: 5, SPR: 10 },
+    qualities: {
+      PHY: "Violent & Aggressive",
+      SPD: "Predator",
+      COG: "One Track Mind",
+      DRV: "Animal Instincts",
+      CHA: "Rough Impressions",
+      SPR: "Non Spiritual"
+    },
+    darkMarks: [
+      { name: "The Behemoth", description: "You are a towering giant on the battlefield, feared by all foes" },
+      { name: "The Immortal", description: "Your body has the power to heal itself at an astonishing rate." },
+      { name: "The Berzerker", description: "You are a natural-born killer, set in this world for this one thing." }
+    ],
+    tables: {
+      master: [
+        { min: 1, max: 6, label: "Worm God" },
+        { min: 7, max: 15, label: "Fallen Entity" },
+        { min: 16, max: 18, label: "Ancient Entity" },
+        { min: 19, max: 20, label: "Eternal" } 
+      ]
+    }
+  },
+  { 
+    id: "f_genesis", 
+    name: "Genesis Soul", 
+    description: "A construct of the new world. Pure machine or pure soul?",
+    startingCorruption: 0, 
+    baseStats: { PHY: 25, SPD: 10, COG: 25, DRV: 10, CHA: 10, SPR: 10 },
+    qualities: {
+      PHY: "Mechanical Strength",
+      SPD: "Industrial Machine",
+      COG: "Super Computer",
+      DRV: "Zeroes and Ones",
+      CHA: "Sleep Mode",
+      SPR: "No Aura"
+    },
+    darkMarks: [
+      { name: "The Silent Giant", description: "You are a large machine living as an outsider, trying to fit in." },
+      { name: "The Sphinx", description: "You are used to dying, and can actually get stronger by it." },
+      { name: "The Dragon", description: "You are a mythic spirit, and corruption tends to favor you more than others" }
+    ],
+    tables: {
+      master: [
+        { min: 1, max: 1, label: "Fallen Entity" },
+        { min: 2, max: 16, label: "Ancient Entity" },
+        { min: 17, max: 19, label: "Machine Entity" },
+        { min: 20, max: 20, label: "Eternal" }
+      ]
+    }
+  },
+  { 
+    id: "f_lilith", 
+    name: "Lilith", 
+    description: "Descendants of the First Rebel. Masters of blood and manipulation.",
+    startingCorruption: 4,
+    baseStats: { PHY: 5, SPD: 10, COG: 25, DRV: 15, CHA: 20, SPR: 15 },
+    qualities: {
+      PHY: "Never Needed a Body",
+      SPD: "Slippery",
+      COG: "Gods to Some...",
+      DRV: "From the Depths",
+      CHA: "Seductive",
+      SPR: "Sensitive Soul"
+    },
+    darkMarks: [
+      { name: "The Blood Oracle", description: "You can sense the blood of any soul and discern its power." },
+      { name: "The Abomination", description: "Your blood defends you and attacks your enemies in grotesque cascades." },
+      { name: "The Keeper of Secrets", description: "You are connected to a vast net of contacts all over Fracture." }
+    ],
+    tables: {
+      master: [
+        { min: 1, max: 1, label: "Worm God" },
+        { min: 2, max: 3, label: "Fallen Entity" },
+        { min: 4, max: 15, label: "Ancient Entity" },
+        { min: 16, max: 20, label: "Machine Angel" }
+      ]
+    }
+  }
+];
+
+export const DESTINIES = [
+  "Jager", "Knight", "Mystic", "Necronaut", "Death Weaver", "Artisan", 
+  "Muse", "Rare Blood", "Elysian", "Doctor", "Psycho Tech", "Witch"
+];
