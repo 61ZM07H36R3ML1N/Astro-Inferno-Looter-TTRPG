@@ -193,7 +193,7 @@ export const DESTINIES = [
     bonuses: { aura: 3, sanity: 1, "divine rituals": 5 },
     skillTrees: ["Arcane Arts", "Crafts", "Literacy"],
     equipment: ["Ordinary II Weapon", "Excellent III Aether instrument", "Ordinary II Suspension cape"],
-    feature: { name: "FLOW OF THE ABYSS", description: "..." },
+    feature: { name: "FLOW OF THE ABYSS", description: "You don't have a particular destiny feature, but you start with +5 ranks in The Mystic dark mark, which means you already excel at divine rituals." },
     innerDemon: { roll: "Roll 1D20+3", stat: "Power +2" }
   },
   {
@@ -202,7 +202,7 @@ export const DESTINIES = [
     bonuses: { life: 4, "one warfare skill": 5 },
     skillTrees: ["Crafts", "Movement", "Warfare"],
     equipment: ["Excellent III Weapon", "Excellent III Armor", "Mundane I Wall cutter"],
-    feature: { name: "HISTORY OF VIOLENCE", description: "..." },
+    feature: { name: "HISTORY OF VIOLENCE", description: "You may use any Warfare skill or your PHY instead of an Affinity skill when being hostile (either actively or passively)." },
     innerDemon: { roll: "Roll 1D20 +3", stat: "Power +2" }
   },
   {
@@ -211,7 +211,7 @@ export const DESTINIES = [
     bonuses: { sanity: 2, life: 2, stealth: 5 },
     skillTrees: ["Movement", "Perception", "Shadowry"],
     equipment: ["Excellent III Weapon", "Ordinary II Armor", "Ordinary II Quantum Device"],
-    feature: { name: "ALWAYS CRAZY, NEVER IN SANE", description: "..." },
+    feature: { name: "ALWAYS CRAZY, NEVER IN SANE", description: "When straining sanity, you may modify a roll by -5 by paying your demon directly with an action that would get rid of an itch (just as if you had one), instead of the usual 1D6." },
     innerDemon: { roll: "Roll 1D20-2", stat: "Power +2" }
   },
   {
@@ -220,7 +220,7 @@ export const DESTINIES = [
     bonuses: { aura: 3, sanity: 1, "abyssal rituals": 5 },
     skillTrees: ["Arcane Arts", "Literacy", "Infernal Survival"],
     equipment: ["Masterful IV Slashing Weapon", "Ordinary II Mask of aether", "Mundane I Sphere"],
-    feature: { name: "THE SHARPEST BLADE", description: "..." },
+    feature: { name: "THE SHARPEST BLADE", description: "You can Spend 1 Aura to cut through death with a sharp weapon, stepping behind the veil of reality to obtain an immediate spontaneous audience with your master. Additionally, when dying, you only lode half the amount of Aura and the goal of your death and audience checks is increased by +5 " },
     innerDemon: { roll: "Roll 1D20", stat: "Power +3" }
   },
   {
@@ -229,7 +229,7 @@ export const DESTINIES = [
     bonuses: { life: 2, sanity: 2, conduct: 5 },
     skillTrees: ["Affinity", "Perception", "Shadowry"],
     equipment: ["Ordinary II Weapon", "Masterful IV Aether umbrella", "Ordinary II Blood pipe"],
-    feature: { name: "CONDUCTING THE BLOOD", description: "..." },
+    feature: { name: "CONDUCTING THE BLOOD", description: "You may sacrifice your blood to elevate a Conduct check - every 3 life you sacrifice gives you an extra story point. Muses also get to choose between a Ordinary II Musical instrument, or a Ordinary II Face Mask. Generate them like you would any other undefined vestige in Chapter 19 - Vestiges." },
     innerDemon: { roll: "Roll 1D20-7", stat: "Power +1" }
   },
   {
@@ -238,7 +238,7 @@ export const DESTINIES = [
     bonuses: { life: 3, sanity: 1, "one crafts skill": 5 },
     skillTrees: ["Crafts", "Infernal Survival", "Shadowry"],
     equipment: ["Excellent III Weapon", "Excellent III Carrier forge", "Mundane I Carrier workshop"],
-    feature: { name: "ARTIFACT MAKER", description: "..." },
+    feature: { name: "ARTIFACT MAKER", description: "You don't have a particular destiny feature, but you start with +5 ranks in the Blacksmith dark mark, which means you already excel at crafting. Read more about crafting in chapter 21 - Crafting." },
     innerDemon: { roll: "Roll 1D20+3", stat: "Power +2" }
   },
   {
@@ -247,7 +247,7 @@ export const DESTINIES = [
     bonuses: { aura: 4, "dark connections": 5 },
     skillTrees: ["Affinity", "Literacy", "Warfare"],
     equipment: ["Excellent III Weapon", "500 Copper tokens", "Legendary V Vestige"],
-    feature: { name: "GREATER RAREBLOOD", description: "..." },
+    feature: { name: "GREATER RARE BLOOD", description: "You don't have a particular destiny feature, but you start with blood aether of 700, which means you are a greater rare blood with all the benefits that entails. You also have a natural jurisdiction to command common souls around as if they were your servants. Read more about blood aether in chapter 28 - Path of Blood." },
     innerDemon: { roll: "Roll 1D20 1-12. Peacock 13-20. Fox", stat: "Power +1" }
   },
   {
