@@ -172,7 +172,109 @@ export const FORMS = [
   }
 ];
 
+  // src/data/reference.js
+
 export const DESTINIES = [
-  "Jager", "Knight", "Mystic", "Necronaut", "Death Weaver", "Artisan", 
-  "Muse", "Rare Blood", "Elysian", "Doctor", "Psycho Tech", "Witch"
+  {
+    id: "d_jager",
+    name: "Jäger",
+    bonuses: { aura: 2, sanity: 2, maneuver: 5 },
+    skillTrees: ["Affinity", "Infernal Survival", "Movement"],
+    equipment: ["Excellent III Weapon", "Mundane I Armor", "Excellent III Dimension canvas"],
+    feature: {
+      name: "I KNOW A GUY…",
+      description: "Your connections, general experiences, and experimental nature gives you the ability to use the Dark Connections skill as any Infernal Survival skill. Name the person when used."
+    },
+    innerDemon: { roll: "Roll 1D20-5", stat: "Power +1" }
+  },
+  {
+    id: "d_mystic",
+    name: "Mystic",
+    bonuses: { aura: 3, sanity: 1, "divine rituals": 5 },
+    skillTrees: ["Arcane Arts", "Crafts", "Literacy"],
+    equipment: ["Ordinary II Weapon", "Excellent III Aether instrument", "Ordinary II Suspension cape"],
+    feature: { name: "FLOW OF THE ABYSS", description: "..." },
+    innerDemon: { roll: "Roll 1D20+3", stat: "Power +2" }
+  },
+  {
+    id: "d_knight",
+    name: "Knight",
+    bonuses: { life: 4, "one warfare skill": 5 },
+    skillTrees: ["Crafts", "Movement", "Warfare"],
+    equipment: ["Excellent III Weapon", "Excellent III Armor", "Mundane I Wall cutter"],
+    feature: { name: "HISTORY OF VIOLENCE", description: "..." },
+    innerDemon: { roll: "Roll 1D20 +3", stat: "Power +2" }
+  },
+  {
+    id: "d_necronaut",
+    name: "Necronaut",
+    bonuses: { sanity: 2, life: 2, stealth: 5 },
+    skillTrees: ["Movement", "Perception", "Shadowry"],
+    equipment: ["Excellent III Weapon", "Ordinary II Armor", "Ordinary II Quantum Device"],
+    feature: { name: "ALWAYS CRAZY, NEVER IN SANE", description: "..." },
+    innerDemon: { roll: "Roll 1D20-2", stat: "Power +2" }
+  },
+  {
+    id: "d_deathweaver",
+    name: "Death-Weaver",
+    bonuses: { aura: 3, sanity: 1, "abyssal rituals": 5 },
+    skillTrees: ["Arcane Arts", "Literacy", "Infernal Survival"],
+    equipment: ["Masterful IV Slashing Weapon", "Ordinary II Mask of aether", "Mundane I Sphere"],
+    feature: { name: "THE SHARPEST BLADE", description: "..." },
+    innerDemon: { roll: "Roll 1D20", stat: "Power +3" }
+  },
+  {
+    id: "d_muse",
+    name: "Muse",
+    bonuses: { life: 2, sanity: 2, conduct: 5 },
+    skillTrees: ["Affinity", "Perception", "Shadowry"],
+    equipment: ["Ordinary II Weapon", "Masterful IV Aether umbrella", "Ordinary II Blood pipe"],
+    feature: { name: "CONDUCTING THE BLOOD", description: "..." },
+    innerDemon: { roll: "Roll 1D20-7", stat: "Power +1" }
+  },
+  {
+    id: "d_artisan",
+    name: "Artisan",
+    bonuses: { life: 3, sanity: 1, "one crafts skill": 5 },
+    skillTrees: ["Crafts", "Infernal Survival", "Shadowry"],
+    equipment: ["Excellent III Weapon", "Excellent III Carrier forge", "Mundane I Carrier workshop"],
+    feature: { name: "ARTIFACT MAKER", description: "..." },
+    innerDemon: { roll: "Roll 1D20+3", stat: "Power +2" }
+  },
+  {
+    id: "d_rareblood",
+    name: "Rare Blood",
+    bonuses: { aura: 4, "dark connections": 5 },
+    skillTrees: ["Affinity", "Literacy", "Warfare"],
+    equipment: ["Excellent III Weapon", "500 Copper tokens", "Legendary V Vestige"],
+    feature: { name: "GREATER RAREBLOOD", description: "..." },
+    innerDemon: { roll: "Roll 1D20 1-12. Peacock 13-20. Fox", stat: "Power +1" }
+  },
+  {
+    id: "d_psychotech",
+    name: "Psycho Tech",
+    bonuses: { aura: 2, sanity: 2, "perception skills": 5 },
+    skillTrees: ["Affinity", "Perception", "Shadowry"],
+    equipment: ["Ordinary II Weapon", "Masterful IV Nanotool", "Ordinary II Sphere"],
+    feature: { name: "SPIRIT CONNECTION", description: "..." },
+    innerDemon: { roll: "Roll 1D20 1-10. Peacock 11-15. Fox 16-20. Donkey", stat: "Power +1" }
+  },
+  {
+    id: "d_doctor",
+    name: "Doctor",
+    bonuses: { sanity: 3, life: 1, medicine: 5 },
+    skillTrees: ["Literacy", "Infernal Survival", "Shadowry"],
+    equipment: ["Ordinary II Weapon", "Masterful IV Medicorder", "Ordinary II Dimension bag"],
+    feature: { name: "THE GOOD SAMARITAN", description: "..." },
+    innerDemon: { roll: "Roll 1D20", stat: "Power +2" }
+  },
+  {
+    id: "d_witch",
+    name: "Witch",
+    bonuses: { sanity: 2, aura: 2, witchcraft: 5 },
+    skillTrees: ["Arcane Arts", "Infernal Survival", "Craft"],
+    equipment: ["Ordinary II Weapon", "Masterful IV Carrier Laboratory", "Excellent III Pet Machinae"],
+    feature: { name: "UNHOLY HEX", description: "..." },
+    innerDemon: { roll: "Roll 1D20+2", stat: "Power +2" }
+  }
 ];
