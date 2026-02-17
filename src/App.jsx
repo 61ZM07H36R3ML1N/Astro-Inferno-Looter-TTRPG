@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { FORMS, DESTINIES, GEAR_STATS, WEAPON_TABLE } from './data/reference';
+import { FORMS, DESTINIES } from './data/reference';
+import { GEAR_STATS, WEAPON_TABLE } from './data/gear';
 
 function App() {
   const [step, setStep] = useState(1); 
