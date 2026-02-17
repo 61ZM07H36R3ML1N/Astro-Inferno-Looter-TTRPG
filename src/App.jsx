@@ -1,5 +1,4 @@
 import { useState } from 'react';
-// These must match your filenames in src/data/ exactly
 import { FORMS, DESTINIES } from './data/reference';
 import { GEAR_STATS, WEAPON_TABLE } from './data/gear';
 import { SKILL_CATEGORIES } from './data/skills';
@@ -79,7 +78,7 @@ function App() {
         </div>
       </div>
 
-      {/* MAIN CONTENT */}
+      {/* MAIN CONTENT AREA */}
       <div className="flex-1 overflow-y-auto pb-24 custom-scrollbar">
         
         {activeTab === 'CREATOR' ? (
@@ -103,8 +102,9 @@ function App() {
                 <h2 className="text-xl font-black text-red-600 uppercase">Select Form</h2>
                 {FORMS.map(form => (
                   <button key={form.id} onClick={() => setCharacter({...character, form: form})} className={`w-full text-left p-4 border transition-all ${character.form?.id === form.id ? 'bg-white text-black border-white' : 'border-white/10 text-gray-500'}`}>
-                    <div className="font-bold uppercase text-sm">{form.name}</div>
-                    <div className="text-[10px] mt-1 line-clamp-2">{form.description}</div>
+                    <div className="font-bold uppercase text-sm mb-2">{form.name}</div>
+                    {/* FIXED: Removed line-clamp-2, added leading-relaxed for better reading */}
+                    <div className="text-[11px] opacity-90 leading-relaxed whitespace-pre-wrap">{form.description}</div>
                   </button>
                 ))}
                 <button disabled={!character.form} onClick={() => setStep(3)} className="w-full bg-red-600 py-4 font-bold uppercase mt-4">Confirm</button>
@@ -114,10 +114,16 @@ function App() {
             {step === 3 && (
               <div className="space-y-2">
                 <h2 className="text-xl font-black text-red-600 uppercase mb-4">Select Destiny</h2>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 gap-2"> {/* Changed to 1 column for better readability */}
                   {DESTINIES.map(destiny => (
-                    <button key={destiny.id} onClick={() => setCharacter({...character, destiny: destiny})} className={`text-left p-3 border h-20 flex flex-col justify-center ${character.destiny?.id === destiny.id ? 'bg-red-600 text-white border-red-600' : 'border-white/10 text-gray-500'}`}>
-                      <span className="font-bold uppercase text-[12px]">{destiny.name}</span>
+                    <button key={destiny.id} onClick={() => setCharacter({...character, destiny: destiny})} className={`text-left p-4 border flex flex-col justify-center ${character.destiny?.id === destiny.id ? 'bg-red-600 text-white border-red-600' : 'border-white/10 text-gray-500'}`}>
+                      <span className="font-bold uppercase text-sm">{destiny.name}</span>
+                      {/* Added Bonus Preview so you know what you're picking */}
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {destiny.bonuses && Object.entries(destiny.bonuses).map(([key, val]) => (
+                            <span key={key} className="text-[9px] bg-black/20 px-1 rounded uppercase">{key}+{val}</span>
+                        ))}
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -138,6 +144,18 @@ function App() {
                 >
                   {character.master ? character.master : "Roll Master Connection"}
                 </button>
+                
+                {/* DARK MARK SELECTOR FIXED FOR MOBILE */}
+                <div className="space-y-2">
+                    <div className="text-xs font-bold text-gray-500 uppercase">Select Dark Mark</div>
+                    {character.form?.darkMarks.map((mark, i) => (
+                        <button key={i} onClick={() => setCharacter({...character, darkMark: mark})} className={`w-full text-left p-3 border ${character.darkMark?.name === mark.name ? 'border-blue-500 bg-blue-900/20' : 'border-white/10'}`}>
+                            <div className="text-[10px] font-bold text-blue-400 uppercase">{mark.name}</div>
+                            <div className="text-[10px] text-gray-400">{mark.description}</div>
+                        </button>
+                    ))}
+                </div>
+
                 <button onClick={resetApp} className="w-full bg-green-600 py-4 font-bold uppercase mt-8 text-black">Complete & Save</button>
               </div>
             )}
@@ -146,11 +164,14 @@ function App() {
           /* CHARACTER SHEET TAB */
           <div className="p-4 space-y-6 animate-in slide-in-from-bottom-5">
             <div className="border-2 border-white/10 p-4 bg-white/5 relative overflow-hidden">
+                
+                {/* ID CARD */}
                 <div className="flex justify-between items-end mb-4 border-b border-white/10 pb-2">
                     <span className="text-2xl font-black italic uppercase">{character.name}</span>
                     <span className="text-[10px] text-red-600 font-mono tracking-tighter">894-XJ</span>
                 </div>
                 
+                {/* VITALS */}
                 <div className="grid grid-cols-3 gap-2 mb-4">
                     {['life', 'sanity', 'aura'].map(v => (
                         <div key={v} className="bg-white/5 p-2 text-center border border-white/5">
@@ -160,6 +181,7 @@ function App() {
                     ))}
                 </div>
 
+                {/* STATS */}
                 <div className="grid grid-cols-3 gap-1 mb-6">
                    {['PHY', 'SPD', 'COG', 'DRV', 'CHA', 'SPR'].map(s => (
                      <div key={s} className="bg-black border border-white/10 p-2 text-center">
@@ -168,6 +190,18 @@ function App() {
                      </div>
                    ))}
                 </div>
+
+                {/* DESTINY FEATURE (ADDED THIS SECTION) */}
+                {character.destiny && (
+                    <div className="bg-blue-900/10 border border-blue-500/30 p-3 mb-4">
+                        <div className="text-[9px] text-blue-400 font-bold uppercase mb-1">
+                            {character.destiny.feature.name}
+                        </div>
+                        <div className="text-[10px] text-gray-300 leading-relaxed">
+                            {character.destiny.feature.description}
+                        </div>
+                    </div>
+                )}
 
                 {/* SKILLS */}
                 <div className="space-y-4">
