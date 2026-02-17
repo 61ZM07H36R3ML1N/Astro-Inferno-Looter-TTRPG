@@ -4,14 +4,27 @@ import { FORMS, DESTINIES, GEAR_STATS, WEAPON_TABLE } from './data/reference';
 function App() {
   const [step, setStep] = useState(1); 
   
-  const [character, setCharacter] = useState({
+  // INITIAL STATE OBJECT
+  const initialCharacter = {
     name: "UNIT_UNNAMED",
     form: null,      
     destiny: null,   
     master: null,    
     darkMark: null,  
     innerDemon: null 
-  });
+  };
+
+  const [character, setCharacter] = useState(initialCharacter);
+
+  // ACTION: RESET APP (The Loop)
+  const resetApp = () => {
+    // Optional: Add actual saving logic here (e.g. localStorage or API)
+    console.log("Saving Character:", character);
+    
+    // Reset UI
+    setStep(1);
+    setCharacter(initialCharacter);
+  };
 
   // HELPER: Calculate Vitals
   const getStat = (statName) => {
@@ -32,13 +45,11 @@ function App() {
     return total;
   };
 
-  // HELPER: Roman Numeral Converter
   const toRoman = (num) => {
     const roman = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI', 7: 'VII' };
     return roman[Math.max(1, Math.min(7, num))] || num; 
   };
 
-  // HELPER: Smart Gear Parser
   const getGearStats = (itemString) => {
     const tierKey = Object.keys(GEAR_STATS.weapons).find(t => itemString.includes(t));
     if (!tierKey) return null; 
@@ -47,7 +58,6 @@ function App() {
     const baseStats = isArmor ? GEAR_STATS.armor[tierKey] : GEAR_STATS.weapons[tierKey];
 
     const cleanName = itemString.replace(tierKey, "").replace("Weapon", "").trim();
-    // Improved matching logic for things like "Titan Spear" inside "Titan Spear of Tiamat"
     const archetype = !isArmor ? WEAPON_TABLE.find(w => cleanName.includes(w.name) || w.name.includes(cleanName)) : null;
 
     const finalStats = { ...baseStats };
@@ -70,11 +80,11 @@ function App() {
   return (
     <div className="flex h-screen w-full bg-black text-white font-mono overflow-hidden scanlines">
       
-      {/* ================= LEFT PANEL: THE CONTROLS ================= */}
+      {/* ================= LEFT PANEL ================= */}
       <div className="w-1/2 flex flex-col border-r border-red-900/50 relative z-20 bg-black">
         <div className="h-16 border-b border-red-900/50 flex items-center px-6 justify-between bg-red-950/10 shrink-0">
           <h1 className="text-xl font-black italic tracking-tighter text-red-600 uppercase">
-            Astro Inferno <span className="text-xs text-gray-500 not-italic">v1.3</span>
+            Astro Inferno <span className="text-xs text-gray-500 not-italic">v1.4</span>
           </h1>
           <div className="flex gap-2">
              {[1,2,3,4].map(s => <div key={s} className={`h-2 w-2 rounded-full ${step >= s ? 'bg-red-600' : 'bg-gray-800'}`} />)}
@@ -87,7 +97,13 @@ function App() {
           {step === 1 && (
             <div className="animate-in fade-in slide-in-from-left-4">
               <h2 className="text-4xl font-black uppercase mb-8">Initialize Unit</h2>
-              <input type="text" placeholder="ENTER_NAME" className="w-full bg-transparent border-b-2 border-white/20 py-2 text-2xl font-bold uppercase focus:border-red-600 focus:outline-none" onChange={(e) => setCharacter({...character, name: e.target.value.toUpperCase()})} />
+              <input 
+                type="text" 
+                value={character.name === "UNIT_UNNAMED" ? "" : character.name}
+                placeholder="ENTER_NAME" 
+                className="w-full bg-transparent border-b-2 border-white/20 py-2 text-2xl font-bold uppercase focus:border-red-600 focus:outline-none" 
+                onChange={(e) => setCharacter({...character, name: e.target.value.toUpperCase()})} 
+              />
               <button onClick={() => setStep(2)} className="mt-12 text-red-500 uppercase font-bold text-sm">Proceed →</button>
             </div>
           )}
@@ -129,7 +145,7 @@ function App() {
              </div>
           )}
 
-          {/* STEP 4: FINALIZATION (LORE & FLUFF) */}
+          {/* STEP 4: FINALIZATION */}
           {step === 4 && (
              <div className="animate-in fade-in slide-in-from-left-4">
                <h2 className="text-2xl font-black uppercase text-red-600 mb-6">Final Sequencing</h2>
@@ -147,7 +163,7 @@ function App() {
                      }}
                      className="text-[10px] text-red-500 border border-red-500 px-2 py-1 hover:bg-red-500 hover:text-black uppercase"
                    >
-                     Reroll Connection
+                     {character.master ? "Reroll Connection" : "Initiate Bond"}
                    </button>
                  </div>
                  <div className="text-xl font-black text-white uppercase tracking-wider">
@@ -157,7 +173,21 @@ function App() {
 
                {/* 2. DARK MARK SELECTION */}
                <div className="mb-6">
-                 <span className="text-xs font-bold text-gray-400 uppercase block mb-2">Select Dark Mark</span>
+                 <div className="flex justify-between items-center mb-2">
+                    <span className="text-xs font-bold text-gray-400 uppercase">Select Dark Mark</span>
+                    <button 
+                      onClick={() => {
+                        // Randomly pick one
+                        const marks = character.form.darkMarks;
+                        const randomMark = marks[Math.floor(Math.random() * marks.length)];
+                        setCharacter({...character, darkMark: randomMark});
+                      }}
+                      className="text-[10px] text-blue-500 border border-blue-500 px-2 py-1 hover:bg-blue-500 hover:text-black uppercase"
+                    >
+                      Randomize
+                    </button>
+                 </div>
+                 
                  <div className="grid grid-cols-1 gap-2">
                    {character.form?.darkMarks.map((mark, i) => (
                      <button
@@ -187,8 +217,12 @@ function App() {
                  </div>
                )}
 
-               <button className="w-full border border-green-500 text-green-500 py-4 uppercase font-bold hover:bg-green-500 hover:text-black transition-colors mt-4">
-                 Save & Print Identity
+               {/* RESET BUTTON */}
+               <button 
+                 onClick={resetApp}
+                 className="w-full border border-green-500 text-green-500 py-4 uppercase font-bold hover:bg-green-500 hover:text-black transition-colors mt-4"
+               >
+                 Save & Restart Sequence
                </button>
              </div>
           )}
@@ -232,7 +266,7 @@ function App() {
               </div>
             )}
 
-            {/* LORE SECTION (NEWLY ADDED) */}
+            {/* LORE SECTION */}
             {(character.master || character.darkMark) && (
               <div className="mb-8 border-t border-white/10 pt-4 animate-in slide-in-from-bottom-2">
                  <div className="flex justify-between mb-4">
