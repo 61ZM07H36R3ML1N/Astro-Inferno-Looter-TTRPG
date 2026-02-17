@@ -1,128 +1,218 @@
 import { useState } from 'react';
+import { FORMS, DESTINIES, GEAR_STATS, WEAPON_TABLE } from './data/reference';
 
 function App() {
-  const [view, setView] = useState('welcome');
-  const [selectedChar, setSelectedChar] = useState(null);
+  const [step, setStep] = useState(1); 
+  
+  const [character, setCharacter] = useState({
+    name: "UNIT_UNNAMED",
+    form: null,      
+    destiny: null,   
+    master: null,    
+    darkMark: null,  
+    innerDemon: null 
+  });
 
- 
+  // HELPER: Calculate Vitals
+  const getStat = (statName) => {
+    if (!character.form) return 10;
+    return character.form.baseStats[statName] || 10;
+  };
+
+  const getVital = (type) => {
+    const statMap = { life: 'PHY', sanity: 'DRV', aura: 'SPR' };
+    const baseStat = getStat(statMap[type]);
+    let total = 9 + Math.floor(baseStat / 5);
+    
+    if (character.destiny && character.destiny.bonuses) {
+      if (character.destiny.bonuses[type]) {
+        total += character.destiny.bonuses[type];
+      }
+    }
+    return total;
+  };
+
+  // HELPER: Roman Numeral Converter
+  const toRoman = (num) => {
+    const roman = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI', 7: 'VII' };
+    return roman[Math.max(1, Math.min(7, num))] || num; // Clamp between 1-7
+  };
+
+  // HELPER: Smart Gear Parser
+  const getGearStats = (itemString) => {
+    // 1. Identify Tier
+    const tierKey = Object.keys(GEAR_STATS.weapons).find(t => itemString.includes(t));
+    if (!tierKey) return null; // Not a tiered item
+
+    // 2. Identify Type (Weapon vs Armor)
+    const isArmor = itemString.toLowerCase().includes("armor");
+    const baseStats = isArmor ? GEAR_STATS.armor[tierKey] : GEAR_STATS.weapons[tierKey];
+
+    // 3. Check for Specific Weapon Archetype (e.g. "Titan Spear")
+    // We remove the Tier string from the item name to find the "Core Name"
+    const cleanName = itemString.replace(tierKey, "").replace("Weapon", "").trim();
+    const archetype = !isArmor ? WEAPON_TABLE.find(w => cleanName.includes(w.name) || (w.name.includes(cleanName) && cleanName.length > 3)) : null;
+
+    // 4. Combine Stats
+    const finalStats = { ...baseStats };
+    if (archetype) {
+        // Add modifiers
+        finalStats.att += archetype.stats.att;
+        finalStats.agm += archetype.stats.agm;
+        finalStats.dmg += archetype.stats.dmg;
+        finalStats.tgt += archetype.stats.tgt;
+    }
+
+    return { 
+        tier: tierKey, 
+        isArmor, 
+        stats: finalStats, 
+        name: archetype ? archetype.name : (cleanName || "Standard Issue"),
+        category: archetype ? archetype.category : "Standard"
+    };
+  };
+
   return (
-    <div className="scanlines flex min-h-screen flex-col items-center justify-center bg-black font-mono text-white relative overflow-hidden">
-      
-      {/* ---------------- WELCOME VIEW ---------------- */}
-      {view === 'welcome' && (
-        <>
-          <div className="absolute top-6 right-6 z-50">
-            <button 
-              onClick={() => console.log("Init_Auth")}
-              className="group flex items-center gap-3 border border-white/10 bg-white/5 px-4 py-2 hover:border-red-600 transition-all cursor-pointer"
-            >
-              <div className="flex flex-col items-end">
-                <span className="text-[8px] text-gray-500 uppercase leading-none">Access_Level</span>
-                <span className="text-[10px] text-white font-bold uppercase tracking-widest">Guest_User</span>
-              </div>
-              <div className="h-8 w-8 rounded-sm border border-red-600/50 flex items-center justify-center group-hover:bg-red-600/20 transition-colors">
-                <div className="h-1.5 w-1.5 rounded-full bg-red-600 animate-pulse"></div>
-              </div>
-            </button>
-          </div>
-
-          <div className="text-center z-10 animate-in fade-in duration-1000">
-            <div className="relative inline-block group mb-12">
-              <div className="absolute -top-4 -left-8 h-8 w-8 border-t-2 border-l-2 border-red-600/50 hidden md:block"></div>
-              <div className="absolute -bottom-4 -right-8 h-8 w-8 border-b-2 border-r-2 border-red-600/50 hidden md:block"></div>
-              
-              <h1 className="text-5xl md:text-9xl font-black italic tracking-tighter text-red-600 uppercase shadow-red-glow animate-flicker leading-none select-none">
-                Astro Inferno
-              </h1>
-            </div>
-            
-            <div className="flex flex-col items-center gap-6 w-full max-w-[280px] md:max-w-sm mx-auto">
-              <span className="text-[9px] text-red-500 tracking-[0.4em] animate-pulse">
-                ! WARNING: UNSANCTIONED_UPLINK !
-              </span>
-
-              <button 
-                onClick={() => setView('select')} 
-                className="w-full border-2 border-red-600 bg-red-600/5 py-5 text-red-600 font-bold uppercase hover:bg-red-600 hover:text-white transition-all active:scale-95 cursor-pointer"
-              >
-                Initialize Unit
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* ---------------- SELECTION GRID VIEW ---------------- */}
-      {view === 'select' && (
-        <div className="w-full max-w-4xl px-6 animate-in fade-in slide-in-from-bottom-4 duration-500 z-10">
-          <div className="flex justify-between items-end border-b border-red-600/30 pb-2 mb-8">
-            <h2 className="text-2xl font-black uppercase italic text-red-600 tracking-tighter">
-              Active_Units
-            </h2>
-            <button 
-              onClick={() => setView('welcome')}
-              className="text-[10px] text-gray-500 hover:text-white uppercase tracking-widest cursor-pointer"
-            >
-              [ Terminate_Link ]
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {characters.map((char) => (
-              <div 
-                key={char.id}
-                onClick={() => { setSelectedChar(char); setView('deploy'); }}
-                className={`group relative border p-4 bg-white/5 transition-all cursor-pointer overflow-hidden ${
-                  char.type === 'Undying' ? 'border-blue-500/30 hover:border-blue-500' : 'border-red-600/30 hover:border-red-600'
-                }`}
-              >
-                <span className="absolute -right-2 -bottom-2 text-4xl font-black text-white/5 italic select-none pointer-events-none">
-                  {char.id}
-                </span>
-
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className={`text-[9px] font-bold tracking-widest leading-none mb-1 uppercase ${
-                       char.type === 'Undying' ? 'text-blue-400' : 'text-red-500'
-                    }`}>
-                      // TYPE: {char.type}
-                    </p>
-                    <h3 className="text-3xl font-black text-white tracking-tighter italic uppercase">
-                      {char.name}
-                    </h3>
-                  </div>
-                  <div className="text-right border-l border-white/10 pl-4">
-                    <p className="text-[9px] text-gray-500 uppercase">Verse</p>
-                    <p className="text-lg font-bold text-white">{char.verse}</p>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex justify-between items-center border-t border-white/5 pt-4">
-                  <span className="text-[10px] text-gray-500 uppercase tracking-widest">
-                    Status: <span className="text-white">{char.status}</span>
-                  </span>
-                  <button className={`text-[10px] font-bold px-3 py-1 uppercase transition-colors ${
-                    char.type === 'Undying' 
-                      ? 'bg-blue-600 text-white hover:bg-white hover:text-blue-900' 
-                      : 'bg-red-600 text-white hover:bg-white hover:text-red-900'
-                  }`}>
-                    Deploy
-                  </button>
-                </div>
-              </div>
-            ))}
+    <div className="flex h-screen w-full bg-black text-white font-mono overflow-hidden scanlines">
+      {/* LEFT PANEL */}
+      <div className="w-1/2 flex flex-col border-r border-red-900/50 relative z-20 bg-black">
+        <div className="h-16 border-b border-red-900/50 flex items-center px-6 justify-between bg-red-950/10 shrink-0">
+          <h1 className="text-xl font-black italic tracking-tighter text-red-600 uppercase">
+            Astro Inferno <span className="text-xs text-gray-500 not-italic">v1.2 Armory</span>
+          </h1>
+          <div className="flex gap-2">
+             {[1,2,3,4].map(s => <div key={s} className={`h-2 w-2 rounded-full ${step >= s ? 'bg-red-600' : 'bg-gray-800'}`} />)}
           </div>
         </div>
-      )}
 
-      {/* ---------------- DEPLOYED / DASHBOARD VIEW (Placeholder) ---------------- */}
-      {view === 'deploy' && selectedChar && (
-        <div className="w-full max-w-5xl px-4 py-8 text-center">
-            <h2 className="text-4xl text-red-600 font-black italic uppercase mb-4">Uplink Established: {selectedChar.name}</h2>
-            <p className="text-gray-500 mb-8">System Ready. Loading Sheet Data...</p>
-            <button onClick={() => setView('select')} className="border border-white px-6 py-2 uppercase hover:bg-white hover:text-black">Return to Grid</button>
+        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+          {/* STEP 1-3 (Identical to before) */}
+          {step === 1 && (
+            <div className="animate-in fade-in slide-in-from-left-4">
+              <h2 className="text-4xl font-black uppercase mb-8">Initialize Unit</h2>
+              <input type="text" placeholder="ENTER_NAME" className="w-full bg-transparent border-b-2 border-white/20 py-2 text-2xl font-bold uppercase focus:border-red-600 focus:outline-none" onChange={(e) => setCharacter({...character, name: e.target.value.toUpperCase()})} />
+              <button onClick={() => setStep(2)} className="mt-12 text-red-500 uppercase font-bold text-sm">Proceed →</button>
+            </div>
+          )}
+          
+          {step === 2 && (
+             <div className="animate-in fade-in slide-in-from-left-4">
+               <h2 className="text-2xl font-black uppercase text-red-600 mb-6">Select Form</h2>
+               <div className="grid grid-cols-1 gap-3">
+                 {FORMS.map(form => (
+                   <button key={form.id} onClick={() => setCharacter({...character, form: form})} className={`text-left p-4 border transition-all ${character.form?.id === form.id ? 'bg-white text-black border-white' : 'border-white/10 text-gray-500'}`}>
+                     <span className="font-bold uppercase text-sm">{form.name}</span>
+                     <div className="text-xs opacity-80">{form.description}</div>
+                   </button>
+                 ))}
+               </div>
+               <div className="flex justify-between mt-8 pt-4 border-t border-white/10">
+                  <button onClick={() => setStep(1)} className="text-gray-500 text-xs">BACK</button>
+                  <button disabled={!character.form} onClick={() => setStep(3)} className="bg-red-600 text-white px-6 py-2 font-bold text-xs uppercase disabled:opacity-50">Confirm</button>
+               </div>
+             </div>
+          )}
+
+          {step === 3 && (
+             <div className="animate-in fade-in slide-in-from-left-4">
+               <h2 className="text-2xl font-black uppercase text-red-600 mb-6">Select Destiny</h2>
+               <div className="grid grid-cols-2 gap-2">
+                 {DESTINIES.map(destiny => (
+                   <button key={destiny.id} onClick={() => setCharacter({...character, destiny: destiny})} className={`text-left p-3 border transition-all ${character.destiny?.id === destiny.id ? 'bg-red-600 text-white border-red-600' : 'border-white/10 text-gray-500'}`}>
+                     <span className="font-bold uppercase text-sm">{destiny.name}</span>
+                   </button>
+                 ))}
+               </div>
+               <div className="flex justify-between mt-8 pt-4 border-t border-white/10">
+                  <button onClick={() => setStep(2)} className="text-gray-500 text-xs">BACK</button>
+                  <button disabled={!character.destiny} onClick={() => setStep(4)} className="bg-white text-black px-6 py-2 font-bold text-xs uppercase disabled:opacity-50">Confirm</button>
+               </div>
+             </div>
+          )}
+
+          {step === 4 && (
+             <div className="animate-in fade-in slide-in-from-left-4">
+               <h2 className="text-2xl font-black uppercase text-red-600 mb-4">Sequence Complete</h2>
+               <div className="p-4 bg-white/5 border border-white/10 mb-4 text-sm text-gray-300">Unit ready for deployment.</div>
+               <button className="w-full border border-green-500 text-green-500 py-4 uppercase font-bold hover:bg-green-500 hover:text-black transition-colors">Save to Database</button>
+             </div>
+          )}
         </div>
-      )}
+      </div>
+
+      {/* RIGHT PANEL: LIVE SHEET */}
+      <div className="w-1/2 bg-[#050505] relative flex flex-col h-full overflow-hidden">
+        <div className="relative z-10 h-full overflow-y-auto p-8 custom-scrollbar">
+          <div className="border-2 border-white/10 p-6 min-h-full flex flex-col bg-black/50 backdrop-blur-sm">
+            {/* IDENTITY HEADER */}
+            <div className="flex justify-between items-start border-b border-white/10 pb-4 mb-6">
+              <div>
+                 <div className="text-[10px] uppercase tracking-[0.2em] text-gray-500">Subject Name</div>
+                 <div className="text-4xl font-black uppercase italic tracking-tighter text-white">{character.name}</div>
+              </div>
+              <div className="text-right"><div className="text-[10px] uppercase tracking-[0.2em] text-gray-500">ID Key</div><div className="text-xl font-mono text-red-600">894-XJ</div></div>
+            </div>
+
+            {/* VITALS & STATS */}
+            {character.form && (
+              <div className="mb-8">
+                <div className="grid grid-cols-3 gap-4 mb-8">
+                   {['life', 'sanity', 'aura'].map(vital => (
+                     <div key={vital} className="text-center">
+                        <div className="text-[10px] uppercase tracking-widest mb-1 text-gray-400">{vital}</div>
+                        <div className={`text-3xl font-black ${vital === 'life' ? 'text-green-500' : vital === 'sanity' ? 'text-blue-500' : 'text-purple-500'}`}>{getVital(vital)}</div>
+                        <div className="h-1 w-full bg-gray-800 mt-2"><div style={{width: `${(getVital(vital)/20)*100}%`}} className={`h-full ${vital === 'life' ? 'bg-green-600' : vital === 'sanity' ? 'bg-blue-600' : 'bg-purple-600'}`}></div></div>
+                     </div>
+                   ))}
+                </div>
+                <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+                   {['PHY', 'SPD', 'COG', 'DRV', 'CHA', 'SPR'].map(stat => (
+                     <div key={stat} className="flex justify-between border-b border-white/10 pb-1">
+                        <div><span className="text-sm font-bold text-gray-500 mr-2">{stat}</span><span className="text-[9px] text-red-800 italic">{character.form.qualities[stat]}</span></div>
+                        <div className="text-xl font-bold text-white">{character.form.baseStats[stat]}</div>
+                     </div>
+                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* ARMORY SECTION */}
+            {character.destiny && (
+              <div className="mt-auto pt-4 border-t border-white/10 animate-in slide-in-from-bottom-2">
+                 <div className="text-[10px] uppercase tracking-[0.2em] text-gray-500 mb-3">Loadout</div>
+                 <div className="flex flex-col gap-2">
+                   {character.destiny.equipment.map((item, i) => {
+                     const gear = getGearStats(item);
+                     
+                     if (gear) {
+                       return (
+                         <div key={i} className="flex justify-between items-center bg-white/5 border border-white/10 p-2 hover:border-red-600 transition-colors group">
+                           <div>
+                             <div className="text-[10px] font-bold uppercase text-white group-hover:text-red-500">{gear.name}</div>
+                             <div className="text-[8px] text-gray-500 uppercase">{gear.tier} • {gear.category}</div>
+                           </div>
+                           <div className="flex gap-3 text-right">
+                             {gear.isArmor ? (
+                                <div className="text-center"><div className="text-[8px] text-gray-500">ARM</div><div className="text-sm font-bold text-blue-400">{gear.stats.arm}</div></div>
+                             ) : (
+                                <>
+                                  <div className="text-center"><div className="text-[8px] text-gray-500">ATT</div><div className={`text-sm font-bold ${gear.stats.att > 0 ? 'text-green-500' : 'text-gray-400'}`}>{gear.stats.att > 0 ? '+' : ''}{gear.stats.att}</div></div>
+                                  <div className="text-center"><div className="text-[8px] text-gray-500">DMG</div><div className="text-sm font-bold text-red-500">{toRoman(gear.stats.dmg)}</div></div>
+                                  <div className="text-center"><div className="text-[8px] text-gray-500">TGT</div><div className="text-sm font-bold text-yellow-400">{gear.stats.tgt}</div></div>
+                                </>
+                             )}
+                           </div>
+                         </div>
+                       );
+                     }
+                     return <div key={i} className="px-3 py-2 bg-white/5 border border-white/10 text-[10px] uppercase text-gray-300">{item}</div>;
+                   })}
+                 </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
