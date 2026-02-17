@@ -256,7 +256,7 @@ export const DESTINIES = [
     bonuses: { aura: 2, sanity: 2, "perception skills": 5 },
     skillTrees: ["Affinity", "Perception", "Shadowry"],
     equipment: ["Ordinary II Weapon", "Masterful IV Nanotool", "Ordinary II Sphere"],
-    feature: { name: "SPIRIT CONNECTION", description: "..." },
+    feature: { name: "SPIRIT CONNECTION", description: "You hear whispers from the divine nanites and can speak with holtzfields and ghosts just as if they were souls. This grants you a bonus of +5 in all Perception skills, as well as +1 story point when successfully interacting with nanites. Moreover, you can soothe red dust with a successful Affinity check." },
     innerDemon: { roll: "Roll 1D20 1-10. Peacock 11-15. Fox 16-20. Donkey", stat: "Power +1" }
   },
   {
@@ -265,7 +265,7 @@ export const DESTINIES = [
     bonuses: { sanity: 3, life: 1, medicine: 5 },
     skillTrees: ["Literacy", "Infernal Survival", "Shadowry"],
     equipment: ["Ordinary II Weapon", "Masterful IV Medicorder", "Ordinary II Dimension bag"],
-    feature: { name: "THE GOOD SAMARITAN", description: "..." },
+    feature: { name: "THE GOOD SAMARITAN", description: "You and your patient recover 5 sanity every time you use the Emergency Aid or Medicine skills. Also, any character gaining a corruption near you may give you 5 skill points to increase their result on the corruption table by 1 after rolling." },
     innerDemon: { roll: "Roll 1D20", stat: "Power +2" }
   },
   {
@@ -274,7 +274,7 @@ export const DESTINIES = [
     bonuses: { sanity: 2, aura: 2, witchcraft: 5 },
     skillTrees: ["Arcane Arts", "Infernal Survival", "Craft"],
     equipment: ["Ordinary II Weapon", "Masterful IV Carrier Laboratory", "Excellent III Pet Machinae"],
-    feature: { name: "UNHOLY HEX", description: "..." },
+    feature: { name: "UNHOLY HEX", description: "You dont have a particular destiny feature, but you start with +5 ranks in The Witch dark mark, which means you already excel at witchcraft rituals. Read more about the arcane in chapter 25 - Rituals." },
     innerDemon: { roll: "Roll 1D20+2", stat: "Power +2" }
   }
 ];
