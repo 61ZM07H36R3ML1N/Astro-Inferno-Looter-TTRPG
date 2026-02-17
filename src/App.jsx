@@ -35,28 +35,23 @@ function App() {
   // HELPER: Roman Numeral Converter
   const toRoman = (num) => {
     const roman = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI', 7: 'VII' };
-    return roman[Math.max(1, Math.min(7, num))] || num; // Clamp between 1-7
+    return roman[Math.max(1, Math.min(7, num))] || num; 
   };
 
   // HELPER: Smart Gear Parser
   const getGearStats = (itemString) => {
-    // 1. Identify Tier
     const tierKey = Object.keys(GEAR_STATS.weapons).find(t => itemString.includes(t));
-    if (!tierKey) return null; // Not a tiered item
+    if (!tierKey) return null; 
 
-    // 2. Identify Type (Weapon vs Armor)
     const isArmor = itemString.toLowerCase().includes("armor");
     const baseStats = isArmor ? GEAR_STATS.armor[tierKey] : GEAR_STATS.weapons[tierKey];
 
-    // 3. Check for Specific Weapon Archetype (e.g. "Titan Spear")
-    // We remove the Tier string from the item name to find the "Core Name"
     const cleanName = itemString.replace(tierKey, "").replace("Weapon", "").trim();
-    const archetype = !isArmor ? WEAPON_TABLE.find(w => cleanName.includes(w.name) || (w.name.includes(cleanName) && cleanName.length > 3)) : null;
+    // Improved matching logic for things like "Titan Spear" inside "Titan Spear of Tiamat"
+    const archetype = !isArmor ? WEAPON_TABLE.find(w => cleanName.includes(w.name) || w.name.includes(cleanName)) : null;
 
-    // 4. Combine Stats
     const finalStats = { ...baseStats };
     if (archetype) {
-        // Add modifiers
         finalStats.att += archetype.stats.att;
         finalStats.agm += archetype.stats.agm;
         finalStats.dmg += archetype.stats.dmg;
@@ -74,11 +69,12 @@ function App() {
 
   return (
     <div className="flex h-screen w-full bg-black text-white font-mono overflow-hidden scanlines">
-      {/* LEFT PANEL */}
+      
+      {/* ================= LEFT PANEL: THE CONTROLS ================= */}
       <div className="w-1/2 flex flex-col border-r border-red-900/50 relative z-20 bg-black">
         <div className="h-16 border-b border-red-900/50 flex items-center px-6 justify-between bg-red-950/10 shrink-0">
           <h1 className="text-xl font-black italic tracking-tighter text-red-600 uppercase">
-            Astro Inferno <span className="text-xs text-gray-500 not-italic">v1.2 Armory</span>
+            Astro Inferno <span className="text-xs text-gray-500 not-italic">v1.3</span>
           </h1>
           <div className="flex gap-2">
              {[1,2,3,4].map(s => <div key={s} className={`h-2 w-2 rounded-full ${step >= s ? 'bg-red-600' : 'bg-gray-800'}`} />)}
@@ -86,7 +82,8 @@ function App() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-          {/* STEP 1-3 (Identical to before) */}
+          
+          {/* STEP 1: IDENTITY */}
           {step === 1 && (
             <div className="animate-in fade-in slide-in-from-left-4">
               <h2 className="text-4xl font-black uppercase mb-8">Initialize Unit</h2>
@@ -95,12 +92,13 @@ function App() {
             </div>
           )}
           
+          {/* STEP 2: FORM */}
           {step === 2 && (
              <div className="animate-in fade-in slide-in-from-left-4">
                <h2 className="text-2xl font-black uppercase text-red-600 mb-6">Select Form</h2>
                <div className="grid grid-cols-1 gap-3">
                  {FORMS.map(form => (
-                   <button key={form.id} onClick={() => setCharacter({...character, form: form})} className={`text-left p-4 border transition-all ${character.form?.id === form.id ? 'bg-white text-black border-white' : 'border-white/10 text-gray-500'}`}>
+                   <button key={form.id} onClick={() => setCharacter({...character, form: form, darkMark: null, master: null})} className={`text-left p-4 border transition-all ${character.form?.id === form.id ? 'bg-white text-black border-white' : 'border-white/10 text-gray-500'}`}>
                      <span className="font-bold uppercase text-sm">{form.name}</span>
                      <div className="text-xs opacity-80">{form.description}</div>
                    </button>
@@ -113,6 +111,7 @@ function App() {
              </div>
           )}
 
+          {/* STEP 3: DESTINY */}
           {step === 3 && (
              <div className="animate-in fade-in slide-in-from-left-4">
                <h2 className="text-2xl font-black uppercase text-red-600 mb-6">Select Destiny</h2>
@@ -130,20 +129,77 @@ function App() {
              </div>
           )}
 
+          {/* STEP 4: FINALIZATION (LORE & FLUFF) */}
           {step === 4 && (
              <div className="animate-in fade-in slide-in-from-left-4">
-               <h2 className="text-2xl font-black uppercase text-red-600 mb-4">Sequence Complete</h2>
-               <div className="p-4 bg-white/5 border border-white/10 mb-4 text-sm text-gray-300">Unit ready for deployment.</div>
-               <button className="w-full border border-green-500 text-green-500 py-4 uppercase font-bold hover:bg-green-500 hover:text-black transition-colors">Save to Database</button>
+               <h2 className="text-2xl font-black uppercase text-red-600 mb-6">Final Sequencing</h2>
+               
+               {/* 1. MASTER ROLL */}
+               <div className="mb-6 p-4 bg-white/5 border border-white/10">
+                 <div className="flex justify-between items-center mb-2">
+                   <span className="text-xs font-bold text-gray-400 uppercase">Entity Bond (Master)</span>
+                   <button 
+                     onClick={() => {
+                       const roll = Math.floor(Math.random() * 20) + 1;
+                       const masterTable = character.form.tables.master;
+                       const result = masterTable.find(m => roll >= m.min && roll <= m.max);
+                       setCharacter({...character, master: result ? `${result.label} (Roll: ${roll})` : "Unknown Entity"});
+                     }}
+                     className="text-[10px] text-red-500 border border-red-500 px-2 py-1 hover:bg-red-500 hover:text-black uppercase"
+                   >
+                     Reroll Connection
+                   </button>
+                 </div>
+                 <div className="text-xl font-black text-white uppercase tracking-wider">
+                   {character.master || "UNSEVERED"}
+                 </div>
+               </div>
+
+               {/* 2. DARK MARK SELECTION */}
+               <div className="mb-6">
+                 <span className="text-xs font-bold text-gray-400 uppercase block mb-2">Select Dark Mark</span>
+                 <div className="grid grid-cols-1 gap-2">
+                   {character.form?.darkMarks.map((mark, i) => (
+                     <button
+                       key={i}
+                       onClick={() => setCharacter({...character, darkMark: mark})}
+                       className={`text-left p-3 border transition-all ${
+                         character.darkMark?.name === mark.name 
+                           ? 'bg-blue-900/20 border-blue-500 text-white' 
+                           : 'bg-transparent border-white/10 text-gray-500 hover:border-white'
+                       }`}
+                     >
+                       <div className="text-sm font-bold uppercase">{mark.name}</div>
+                       <div className="text-[10px] opacity-70">{mark.description}</div>
+                     </button>
+                   ))}
+                 </div>
+               </div>
+
+               {/* 3. INNER DEMON */}
+               {character.destiny?.innerDemon && (
+                 <div className="mb-6 p-4 bg-red-900/10 border border-red-500/30">
+                    <span className="text-xs font-bold text-red-400 uppercase block mb-1">Inner Demon Protocol</span>
+                    <div className="flex justify-between items-end">
+                      <span className="text-sm font-bold text-white">{character.destiny.innerDemon.roll}</span>
+                      <span className="text-[10px] bg-red-600 text-white px-2 py-1">{character.destiny.innerDemon.stat}</span>
+                    </div>
+                 </div>
+               )}
+
+               <button className="w-full border border-green-500 text-green-500 py-4 uppercase font-bold hover:bg-green-500 hover:text-black transition-colors mt-4">
+                 Save & Print Identity
+               </button>
              </div>
           )}
         </div>
       </div>
 
-      {/* RIGHT PANEL: LIVE SHEET */}
+      {/* ================= RIGHT PANEL: LIVE SHEET ================= */}
       <div className="w-1/2 bg-[#050505] relative flex flex-col h-full overflow-hidden">
         <div className="relative z-10 h-full overflow-y-auto p-8 custom-scrollbar">
           <div className="border-2 border-white/10 p-6 min-h-full flex flex-col bg-black/50 backdrop-blur-sm">
+            
             {/* IDENTITY HEADER */}
             <div className="flex justify-between items-start border-b border-white/10 pb-4 mb-6">
               <div>
@@ -173,6 +229,27 @@ function App() {
                      </div>
                    ))}
                 </div>
+              </div>
+            )}
+
+            {/* LORE SECTION (NEWLY ADDED) */}
+            {(character.master || character.darkMark) && (
+              <div className="mb-8 border-t border-white/10 pt-4 animate-in slide-in-from-bottom-2">
+                 <div className="flex justify-between mb-4">
+                   <div className="w-1/2 pr-2">
+                     <div className="text-[9px] uppercase text-gray-500">Master</div>
+                     <div className="text-sm font-bold text-purple-400 uppercase">{character.master || "PENDING..."}</div>
+                   </div>
+                   <div className="w-1/2 pl-2 text-right">
+                     <div className="text-[9px] uppercase text-gray-500">Dark Mark</div>
+                     <div className="text-sm font-bold text-blue-400 uppercase">{character.darkMark?.name || "PENDING..."}</div>
+                   </div>
+                 </div>
+                 {character.darkMark && (
+                   <div className="text-[10px] text-gray-400 italic text-center border border-white/5 p-2">
+                     "{character.darkMark.description}"
+                   </div>
+                 )}
               </div>
             )}
 
