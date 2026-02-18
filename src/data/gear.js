@@ -55,3 +55,20 @@ export const LOOT_PREFIXES = [
   { name: "Ancient", chance: 10, bonus: "Range +1" }, //86-95%
   { name: "Void-Forged", chance: 5, bonus: "ALL STATS +1" } //96-100% (Jackpot)
 ];
+
+// --- ORDNANCE: GRENADE TABLES ---
+export const GRENADE_TIERS = [
+    { name: "Mundane I", dmg: "1D2", dur: "1D2", area: "Intimate I", effect: "Stirring, slight inconvenience or reaction." },
+    { name: "Ordinary II", dmg: "1D4", dur: "1D4", area: "Room II", effect: "Shocking, significant breakage or unrest." },
+    { name: "Excellent III", dmg: "1D6", dur: "1D6", area: "Hall III", effect: "Intense, severe demolition or distress." },
+    { name: "Masterful IV", dmg: "1D8", dur: "1D8", area: "Palace IV", effect: "Devastating, extreme destruction or torment." },
+    { name: "Legendary V", dmg: "1D10", dur: "1D10", area: "City V", effect: "Cataclysmic, epic annihilation or disaster." }
+];
+
+export const GRENADE_JUICE = [
+    { type: "Organ + Lingering + Wind", desc: "Creates a storm with spine-chilling howls that lasts for hours instead of verses." },
+    { type: "Dreamy + Collateral + Fire", desc: "Burns down all living targets within their minds while keeping furniture intact." },
+    { type: "Demonic + Penetrating + Flesh", desc: "Explodes into shards that pierce armor and eat any living tissue beneath." },
+    { type: "Living + Deafening + Blood", desc: "Covers the area with bloody gore that attracts hordes of screeching bats." },
+    { type: "Glass + Silencing + Death", desc: "Shatters anything that emits a sound louder than a footstep." }
+];
