@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { FORMS, DESTINIES } from './data/reference';
-// NEW: Imported LOOT_SUFFIXES
 import { GEAR_STATS, WEAPON_TABLE, LOOT_PREFIXES, GRENADE_TIERS, GRENADE_JUICE, LOOT_SUFFIXES } from './data/gear'; 
 import { SKILL_CATEGORIES } from './data/skills';
 
@@ -33,6 +32,7 @@ function App() {
   const [grenadeResult, setGrenadeResult] = useState(null); 
   const [viewData, setViewData] = useState(false); 
   const [viewPromotion, setViewPromotion] = useState(false); 
+  const [isLogOpen, setIsLogOpen] = useState(false); // NEW: Collapsible Notes State
 
   // CREATOR STATE
   const [step, setStep] = useState(1); 
@@ -45,7 +45,8 @@ function App() {
     consumables: { grenades: 0, stims: 0 }, 
     upgrades: {},    
     loadout: [],     
-    statuses: [],    
+    statuses: [], 
+    notes: "",       // NEW: Field Notes
     form: null,      
     destiny: null,   
     master: null,    
@@ -107,7 +108,6 @@ function App() {
     return "text-gray-300"; 
   };
 
-  // UPDATED: GEAR MATH ENGINE (NOW READS SUFFIXES)
   const getGearStats = (itemString) => {
     const tierKey = Object.keys(GEAR_STATS.weapons).find(t => itemString.includes(t));
     if (!tierKey) return null; 
@@ -115,27 +115,18 @@ function App() {
     const isArmor = itemString.toLowerCase().includes("armor");
     const baseStats = isArmor ? GEAR_STATS.armor[tierKey] : GEAR_STATS.weapons[tierKey];
     
-    // Find Archetype (e.g. "Shotgun")
     const archetype = !isArmor ? WEAPON_TABLE.find(w => itemString.includes(w.name)) : null;
-    
-    // NEW: Find Suffix (e.g. "of the Titan")
     const suffix = (!isArmor && LOOT_SUFFIXES) ? LOOT_SUFFIXES.find(s => itemString.includes(s.name)) : null;
 
     const finalStats = { ...baseStats };
     if (archetype) {
-        // Combine Base + Archetype + Suffix
         finalStats.att += archetype.stats.att + (suffix?.stats?.att || 0);
         finalStats.agm += archetype.stats.agm + (suffix?.stats?.agm || 0);
         finalStats.dmg += archetype.stats.dmg + (suffix?.stats?.dmg || 0);
         finalStats.tgt += archetype.stats.tgt + (suffix?.stats?.tgt || 0);
     }
     
-    return { 
-        tier: tierKey, 
-        isArmor, 
-        stats: finalStats, 
-        name: itemString // Replaced 'archetype.name' with 'itemString' to show full glory
-    };
+    return { tier: tierKey, isArmor, stats: finalStats, name: itemString };
   };
 
   const getSkillTotal = (skillId, statName, categoryId) => {
@@ -191,6 +182,7 @@ function App() {
     if (!charData.statuses) charData.statuses = []; 
     if (charData.avatarUrl === undefined) charData.avatarUrl = ""; 
     if (!charData.consumables) charData.consumables = { grenades: 0, stims: 0 }; 
+    if (charData.notes === undefined) charData.notes = ""; // LEGACY PATCH
     setCharacter(charData);
     setActiveTab('SHEET');
   };
@@ -319,7 +311,6 @@ function App() {
     setRollResult({ roll, baseTarget, finalTarget, weaponBonus, critWindow, type, skill: skillName, weaponName: weaponName });
   };
 
-  // --- UPDATED: PROCEDURAL LOOT ENGINE ---
   const generateLoot = async () => {
     if (!character.id) { alert("COMMAND REJECTED: Unit must be synced to database."); return; }
     
@@ -334,7 +325,6 @@ function App() {
     const tiers = Object.keys(GEAR_STATS.weapons); 
     const selectedTier = tiers[Math.floor(Math.random() * 5)];
     
-    // NEW: 50% Chance to append a Suffix for extra chaos
     let suffixStr = "";
     if (LOOT_SUFFIXES && Math.random() > 0.5) {
         const randomSuffix = LOOT_SUFFIXES[Math.floor(Math.random() * LOOT_SUFFIXES.length)];
@@ -402,6 +392,16 @@ function App() {
         setCharacter(prev => ({ ...prev, loadout: newLoadout, destiny: { ...prev.destiny, equipment: newEquip } }));
         await updateDoc(charRef, { "loadout": newLoadout, "destiny.equipment": newEquip });
     } catch (e) { console.error("Loot Removal Failed:", e); }
+  };
+
+  // --- NEW: CLOUD SYNC FIELD NOTES ---
+  const syncNotes = async () => {
+      if (!character.id) return;
+      try {
+          await updateDoc(doc(db, "characters", character.id), { notes: character.notes });
+      } catch (e) {
+          console.error("Notes Sync Failed", e);
+      }
   };
 
   // --- RENDER ---
@@ -674,7 +674,7 @@ function App() {
                     ))}
                 </div>
 
-                {/* --- TACTICAL BACKPACK --- */}
+                {/* TACTICAL BACKPACK */}
                 <div className="mt-6 pt-4 border-t border-white/10">
                     <div className="text-[10px] uppercase text-gray-500 font-bold tracking-widest mb-3 border-b border-white/10 pb-1">Tactical Backpack</div>
                     
@@ -713,7 +713,6 @@ function App() {
                                 return (
                                     <div key={i} className="flex justify-between items-center bg-green-950/10 border border-green-900/30 p-2 group">
                                         <div className="flex-1">
-                                            {/* UI FIX: NOW DISPLAYS FULL NAME INSTEAD OF JUST ARCHETYPE */}
                                             <div className={`text-[9px] font-bold uppercase ${rarityColor}`}>{gear ? gear.name : item}</div>
                                             {gear && (
                                                 <div className="flex gap-2">
@@ -745,7 +744,6 @@ function App() {
                                 return (
                                     <div key={i} className="flex justify-between items-center bg-white/5 border border-white/10 p-2 group hover:bg-white/10 transition-colors">
                                         <div className="flex-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                                            {/* UI FIX: FULL NAME DISPLAY */}
                                             <div className={`text-[9px] font-bold uppercase ${rarityColor}`}>{gear ? gear.name : item}</div>
                                             {gear && (
                                                 <div className="flex gap-2">
@@ -763,10 +761,34 @@ function App() {
                             })}
                         </div>
                     </div>
-
                 </div>
+
+                {/* --- NEW: DATA LOG (FIELD NOTES) --- */}
+                <div className="mt-6 pt-4 border-t border-white/10">
+                    <button 
+                        onClick={() => setIsLogOpen(!isLogOpen)}
+                        className="w-full flex justify-between items-center mb-2 border-b border-white/10 pb-1 group"
+                    >
+                         <div className="text-[10px] uppercase text-gray-500 tracking-widest group-hover:text-white transition-colors">Data Log (Field Notes)</div>
+                         <div className="text-[10px] text-gray-500">{isLogOpen ? '▼' : '▶'}</div>
+                    </button>
+                    
+                    {isLogOpen && (
+                        <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+                            <textarea
+                                value={character.notes || ""}
+                                onChange={(e) => setCharacter({...character, notes: e.target.value})}
+                                onBlur={syncNotes}
+                                placeholder="ENTER_MISSION_LOGS_HERE..."
+                                className="w-full bg-black/50 border border-white/10 p-3 text-xs text-gray-300 font-mono h-40 focus:outline-none focus:border-cyan-500/50 transition-colors custom-scrollbar placeholder:text-gray-700"
+                            />
+                            <div className="text-right text-[8px] text-gray-600 uppercase mt-1">Data encrypts and syncs when clicking outside the box.</div>
+                        </div>
+                    )}
+                </div>
+
             </div>
-            <button onClick={() => setActiveTab('ROSTER')} className="w-full border border-white/10 text-gray-500 py-3 uppercase text-xs hover:border-white hover:text-white transition-colors relative z-10">Return to Barracks</button>
+            <button onClick={() => setActiveTab('ROSTER')} className="w-full border border-white/10 text-gray-500 py-3 uppercase text-xs hover:border-white hover:text-white transition-colors relative z-10 mt-6">Return to Barracks</button>
           </div>
         )}
       </div>
@@ -783,7 +805,7 @@ function App() {
         </button>
       </div>
 
-      {/* --- DETONATION PROTOCOL MODAL --- */}
+      {/* DETONATION PROTOCOL MODAL */}
       {grenadeResult && (
         <div className="fixed inset-0 z-[100] bg-red-950/90 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-100" onClick={() => setGrenadeResult(null)}>
            <div className="w-full max-w-sm border-4 border-red-600 bg-black p-8 text-center shadow-[0_0_80px_rgba(220,38,38,0.6)]" onClick={e => e.stopPropagation()}>
@@ -816,7 +838,7 @@ function App() {
         </div>
       )}
 
-      {/* MODALS (Roll, DataLink, Promotion) */}
+      {/* ROLL RESULT MODAL */}
       {rollResult && (
         <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-100" onClick={() => setRollResult(null)}>
            <div className={`w-full max-w-sm border-2 p-8 text-center shadow-[0_0_30px_rgba(0,0,0,0.5)] transform scale-100 transition-all ${
@@ -839,6 +861,7 @@ function App() {
         </div>
       )}
 
+      {/* DATALINK MODAL */}
       {viewData && character.form && (
         <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setViewData(false)}>
             <div className="w-full max-w-sm border border-cyan-900/50 bg-cyan-950/10 p-6 relative shadow-[0_0_50px_rgba(8,145,178,0.2)]" onClick={e => e.stopPropagation()}>
@@ -854,6 +877,7 @@ function App() {
         </div>
       )}
 
+      {/* PROMOTION MODAL */}
       {viewPromotion && (
           <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setViewPromotion(false)}>
               <div className="w-full max-w-sm border border-yellow-500 bg-yellow-900/20 p-6 relative shadow-[0_0_50px_rgba(234,179,8,0.3)]" onClick={e => e.stopPropagation()}>
