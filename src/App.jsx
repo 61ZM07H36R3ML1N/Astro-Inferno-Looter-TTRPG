@@ -12,6 +12,14 @@ import { collection, addDoc, query, where, onSnapshot, deleteDoc, updateDoc, doc
 const rollD20 = () => Math.floor(Math.random() * 20) + 1;
 const XP_THRESHOLD = 100; 
 
+const HAZARDS = [
+    { id: 'BURNING', color: 'text-orange-500', bg: 'bg-orange-900/20', border: 'border-orange-500/50' },
+    { id: 'BLEEDING', color: 'text-red-600', bg: 'bg-red-900/20', border: 'border-red-600/50' },
+    { id: 'POISONED', color: 'text-green-500', bg: 'bg-green-900/20', border: 'border-green-500/50' },
+    { id: 'STUNNED', color: 'text-yellow-500', bg: 'bg-yellow-900/20', border: 'border-yellow-500/50' },
+    { id: 'PANICKED', color: 'text-purple-500', bg: 'bg-purple-900/20', border: 'border-purple-500/50' },
+];
+
 function App() {
   // --- STATE ---
   const [user, setUser] = useState(null);
@@ -32,7 +40,8 @@ function App() {
     xp: 0,           
     wallet: { blood: 0, honey: 0 }, 
     upgrades: {},    
-    loadout: [],     // Active Equipped Gear (Max 4 WPN, 1 ARM)
+    loadout: [],     
+    statuses: [],    // NEW: Active Hazard Effects
     form: null,      
     destiny: null,   
     master: null,    
@@ -47,7 +56,6 @@ function App() {
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
-      
       if (currentUser) {
         const q = query(collection(db, "characters"), where("uid", "==", currentUser.uid));
         const unsubscribeSnapshot = onSnapshot(q, (snapshot) => {
@@ -112,7 +120,6 @@ function App() {
     return { tier: tierKey, isArmor, stats: finalStats, name: archetype ? archetype.name : cleanName };
   };
 
-  // RESTORED: SKILL MATH ENGINE
   const getSkillTotal = (skillId, statName, categoryId) => {
     if (!character.form) return 0;
     const baseVal = getStat(statName); 
@@ -163,6 +170,7 @@ function App() {
     if (!charData.upgrades) charData.upgrades = {};
     if (!charData.wallet) charData.wallet = { blood: 0, honey: 0 }; 
     if (!charData.loadout) charData.loadout = []; 
+    if (!charData.statuses) charData.statuses = []; // LEGACY PATCH
     setCharacter(charData);
     setActiveTab('SHEET');
   };
@@ -184,6 +192,21 @@ function App() {
       const updatedChar = { ...character, wallet: { ...character.wallet, [type]: newVal } };
       setCharacter(updatedChar);
       if (character.id) { try { await updateDoc(doc(db, "characters", character.id), { [`wallet.${type}`]: newVal }); } catch(e) { console.error("Wallet Sync Failed", e); } }
+  };
+
+  // --- HAZARD ENGINE ---
+  const toggleStatus = async (statusId) => {
+      if (!character.id) return;
+      let newStatuses = [...(character.statuses || [])];
+      
+      if (newStatuses.includes(statusId)) {
+          newStatuses = newStatuses.filter(s => s !== statusId); // Remove
+      } else {
+          newStatuses.push(statusId); // Add
+      }
+      
+      setCharacter(prev => ({ ...prev, statuses: newStatuses }));
+      try { await updateDoc(doc(db, "characters", character.id), { statuses: newStatuses }); } catch(e) { console.error("Status Sync Failed", e); }
   };
 
   const addXp = async (amount) => {
@@ -251,7 +274,6 @@ function App() {
 
   const toggleEquip = async (itemIndex, isCurrentlyEquipped) => {
     if (!character.id) return;
-
     let newLoadout = [...(character.loadout || [])];
     let newEquip = [...(character.destiny?.equipment || [])];
 
@@ -317,7 +339,7 @@ function App() {
     <div className="flex flex-col h-screen w-full bg-black text-white font-mono overflow-hidden relative">
       
       {/* HEADER */}
-      <div className="h-14 border-b border-red-900/50 flex items-center px-4 justify-between bg-red-950/20 shrink-0">
+      <div className="h-14 border-b border-red-900/50 flex items-center px-4 justify-between bg-red-950/20 shrink-0 z-50">
         <div className="flex items-center gap-3">
           <img src={user.photoURL} alt="User" className="h-8 w-8 rounded-full border border-red-600" />
           <div>
@@ -338,11 +360,18 @@ function App() {
       </div>
 
       {/* CONTENT */}
-      <div className="flex-1 overflow-y-auto pb-24 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto pb-24 custom-scrollbar relative">
         
+        {/* VISUAL HAZARD OVERLAYS (Only on Sheet Tab) */}
+        {activeTab === 'SHEET' && (character.statuses || []).includes('BURNING') && <div className="pointer-events-none absolute inset-0 z-0 shadow-[inset_0_0_80px_rgba(234,88,12,0.4)] animate-pulse"></div>}
+        {activeTab === 'SHEET' && (character.statuses || []).includes('POISONED') && <div className="pointer-events-none absolute inset-0 z-0 shadow-[inset_0_0_80px_rgba(34,197,94,0.2)]"></div>}
+        {activeTab === 'SHEET' && (character.statuses || []).includes('BLEEDING') && <div className="pointer-events-none absolute inset-0 z-0 border-4 border-red-900/60"></div>}
+        {activeTab === 'SHEET' && (character.statuses || []).includes('PANICKED') && <div className="pointer-events-none absolute inset-0 z-0 shadow-[inset_0_0_80px_rgba(168,85,247,0.3)] animate-pulse"></div>}
+        {activeTab === 'SHEET' && (character.statuses || []).includes('STUNNED') && <div className="pointer-events-none absolute inset-0 z-0 bg-yellow-500/5 backdrop-blur-[1px] border border-dashed border-yellow-500/30"></div>}
+
         {/* TAB 1: ROSTER */}
         {activeTab === 'ROSTER' && (
-           <div className="p-4 space-y-4 animate-in fade-in">
+           <div className="p-4 space-y-4 animate-in fade-in z-10 relative">
               <div className="text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-white/10 pb-2">Deployable Units</div>
               {roster.length === 0 ? (
                 <div className="text-center py-10 opacity-50"><div className="text-4xl mb-2">∅</div><div>No Units Found</div></div>
@@ -368,7 +397,7 @@ function App() {
 
         {/* TAB 2: CREATOR */}
         {activeTab === 'CREATOR' && (
-          <div className="p-6 animate-in fade-in duration-300">
+          <div className="p-6 animate-in fade-in duration-300 z-10 relative">
              {step === 1 && (
                <div className="space-y-6">
                  <h2 className="text-3xl font-black uppercase">Initialize</h2>
@@ -425,8 +454,8 @@ function App() {
 
         {/* TAB 3: SHEET */}
         {activeTab === 'SHEET' && (
-          <div className="p-4 space-y-6 animate-in slide-in-from-bottom-5">
-            <div className="border-2 border-white/10 p-4 bg-white/5 relative overflow-hidden">
+          <div className="p-4 space-y-6 animate-in slide-in-from-bottom-5 z-10 relative">
+            <div className="border-2 border-white/10 p-4 bg-black/80 backdrop-blur-sm relative overflow-hidden">
                 
                 {/* XP & RANK BAR */}
                 <div className="mb-4">
@@ -435,10 +464,7 @@ function App() {
                         <span>{character.xp} / {XP_THRESHOLD} XP</span>
                     </div>
                     <div className="h-1.5 w-full bg-gray-800 relative overflow-hidden mb-2">
-                        <div 
-                            style={{width: `${Math.min(100, (character.xp / XP_THRESHOLD) * 100)}%`}} 
-                            className={`h-full transition-all duration-300 ${character.xp >= XP_THRESHOLD ? 'bg-yellow-400 animate-pulse' : 'bg-yellow-600'}`}
-                        ></div>
+                        <div style={{width: `${Math.min(100, (character.xp / XP_THRESHOLD) * 100)}%`}} className={`h-full transition-all duration-300 ${character.xp >= XP_THRESHOLD ? 'bg-yellow-400 animate-pulse' : 'bg-yellow-600'}`}></div>
                     </div>
                     <div className="flex justify-between items-center">
                         <div className="flex gap-1">
@@ -475,7 +501,7 @@ function App() {
                 </div>
                 
                 {/* VITALS */}
-                <div className="space-y-2 mb-6">
+                <div className="space-y-2 mb-4">
                     {['life', 'sanity', 'aura'].map(v => {
                         const max = getMaxVital(v);
                         const current = character.currentVitals?.[v] ?? max;
@@ -494,6 +520,29 @@ function App() {
                             </div>
                         );
                     })}
+                </div>
+
+                {/* NEW: HAZARD MONITOR */}
+                <div className="mb-6 border border-white/10 p-2 bg-black/50">
+                    <div className="text-[8px] text-gray-500 font-bold uppercase tracking-widest mb-2 text-center">Hazard Monitor</div>
+                    <div className="flex flex-wrap gap-1 justify-center">
+                        {HAZARDS.map(hazard => {
+                            const isActive = (character.statuses || []).includes(hazard.id);
+                            return (
+                                <button 
+                                    key={hazard.id}
+                                    onClick={() => toggleStatus(hazard.id)}
+                                    className={`text-[8px] px-2 py-1 font-bold uppercase transition-all border ${
+                                        isActive 
+                                        ? `${hazard.bg} ${hazard.border} ${hazard.color} drop-shadow-[0_0_5px_currentColor]` 
+                                        : 'bg-transparent border-white/10 text-gray-600 hover:text-gray-400'
+                                    }`}
+                                >
+                                    {hazard.id}
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-1 mb-6">
@@ -598,7 +647,7 @@ function App() {
 
                 </div>
             </div>
-            <button onClick={() => setActiveTab('ROSTER')} className="w-full border border-white/10 text-gray-500 py-3 uppercase text-xs hover:border-white hover:text-white transition-colors">Return to Barracks</button>
+            <button onClick={() => setActiveTab('ROSTER')} className="w-full border border-white/10 text-gray-500 py-3 uppercase text-xs hover:border-white hover:text-white transition-colors relative z-10">Return to Barracks</button>
           </div>
         )}
       </div>
