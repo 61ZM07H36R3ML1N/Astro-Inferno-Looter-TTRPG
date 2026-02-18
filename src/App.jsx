@@ -36,7 +36,7 @@ function App() {
   const [step, setStep] = useState(1); 
   const initialCharacter = {
     name: "UNIT_UNNAMED",
-    avatarUrl: "",   // NEW: Custom Portrait
+    avatarUrl: "",   
     rank: 1,         
     xp: 0,           
     wallet: { blood: 0, honey: 0 }, 
@@ -172,7 +172,7 @@ function App() {
     if (!charData.wallet) charData.wallet = { blood: 0, honey: 0 }; 
     if (!charData.loadout) charData.loadout = []; 
     if (!charData.statuses) charData.statuses = []; 
-    if (charData.avatarUrl === undefined) charData.avatarUrl = ""; // LEGACY PATCH
+    if (charData.avatarUrl === undefined) charData.avatarUrl = ""; 
     setCharacter(charData);
     setActiveTab('SHEET');
   };
@@ -238,13 +238,61 @@ function App() {
       } catch(e) { console.error("Promotion Failed", e); }
   };
 
-  const performRoll = (skillName, target) => {
+  // --- PR MERGE: COMBAT ENGINE HELPERS ---
+  const getCritRange = (charData, equippedWeaponString) => {
+      let range = 1; 
+      if (equippedWeaponString) {
+          if (equippedWeaponString.includes("Ancient")) range += 2; 
+          if (equippedWeaponString.includes("Void-Forged")) range += 4; 
+      }
+      if (charData.master && charData.master.includes("The Ancients")) {
+          range += 1;
+      }
+      return range;
+  };
+
+  // --- UPDATED DICE ENGINE WITH COMBAT LOGIC ---
+  const performRoll = (skillName, baseTarget) => {
     const roll = rollD20(); 
     let type = 'FAIL';
-    if (roll === 1) type = 'CRIT'; 
+
+    // 1. Identify Primary Weapon (First non-armor item in Loadout)
+    const activeWeaponString = (character.loadout || []).find(item => {
+        const stats = getGearStats(item);
+        return stats && !stats.isArmor;
+    });
+
+    // 2. Calculate dynamic crit window
+    const critWindow = getCritRange(character, activeWeaponString);
+
+    // 3. Calculate dynamic accuracy bonus
+    let weaponBonus = 0;
+    let weaponName = 'UNARMED';
+    if (activeWeaponString) {
+        const stats = getGearStats(activeWeaponString);
+        if (stats) {
+            weaponBonus = stats.stats.att || 0;
+            weaponName = stats.name;
+        }
+    }
+
+    // 4. Resolve Roll
+    const finalTarget = baseTarget + weaponBonus;
+
+    if (roll <= critWindow) type = 'CRIT'; 
     else if (roll === 20) type = 'JAM'; 
-    else if (roll <= target) type = 'SUCCESS';
-    setRollResult({ roll, target, type, skill: skillName });
+    else if (roll <= finalTarget) type = 'SUCCESS';
+
+    setRollResult({ 
+        roll, 
+        baseTarget, 
+        finalTarget, 
+        weaponBonus, 
+        critWindow, 
+        type, 
+        skill: skillName,
+        weaponName: weaponName
+    });
   };
 
   // --- LOOT & INVENTORY ENGINE ---
@@ -377,7 +425,6 @@ function App() {
                 roster.map(char => (
                   <div key={char.id} className="w-full bg-white/5 border border-white/10 p-4 flex justify-between items-center group relative overflow-hidden">
                      <button onClick={() => loadCharacter(char)} className="flex-1 text-left z-10 flex items-center gap-3">
-                        {/* MUGSHOT */}
                         <div className="h-10 w-10 bg-gray-800 border border-white/20 overflow-hidden shrink-0">
                             {char.avatarUrl ? <img src={char.avatarUrl} alt="avatar" className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center text-[8px] text-gray-600 font-bold uppercase">NO ID</div>}
                         </div>
@@ -409,7 +456,6 @@ function App() {
                      <div className="text-[10px] text-cyan-500 font-bold uppercase tracking-widest mb-1">Unit Designation</div>
                      <input type="text" value={character.name === "UNIT_UNNAMED" ? "" : character.name} placeholder="ENTER_NAME" className="w-full bg-white/5 border-b-2 border-cyan-600 p-4 text-xl font-bold uppercase focus:outline-none mb-4" onChange={(e) => setCharacter({...character, name: e.target.value.toUpperCase()})} />
                      
-                     {/* AVATAR INPUT */}
                      <div className="text-[10px] text-cyan-500 font-bold uppercase tracking-widest mb-1">Visual ID (Image URL) [Optional]</div>
                      <input type="text" value={character.avatarUrl || ""} placeholder="https://..." className="w-full bg-white/5 border-b-2 border-cyan-600 p-3 text-sm focus:outline-none text-gray-300" onChange={(e) => setCharacter({...character, avatarUrl: e.target.value})} />
                  </div>
@@ -502,7 +548,6 @@ function App() {
                 {/* HEADER WITH AVATAR & DATALINK */}
                 <div className="flex justify-between items-end mb-6 border-b border-white/10 pb-4">
                     <div className="flex items-center gap-3">
-                        {/* THE FACE */}
                         <div className="h-12 w-12 bg-gray-900 border border-white/20 overflow-hidden shrink-0 shadow-md">
                             {character.avatarUrl ? <img src={character.avatarUrl} alt="Avatar" className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center text-[8px] text-gray-600 font-bold uppercase">NO ID</div>}
                         </div>
@@ -603,7 +648,6 @@ function App() {
                 {/* INVENTORY SYSTEM (EQUIPPED vs STASH) */}
                 <div className="mt-6 pt-4 border-t border-white/10">
                     
-                    {/* SECTION 1: ACTIVE LOADOUT */}
                     <div className="mb-6">
                         <div className="flex justify-between items-end mb-2 border-b border-green-900/50 pb-1">
                              <div className="text-[10px] uppercase text-green-500 font-bold tracking-widest">Active Loadout</div>
@@ -637,7 +681,6 @@ function App() {
                         </div>
                     </div>
 
-                    {/* SECTION 2: THE STASH */}
                     <div>
                         <div className="flex justify-between items-end mb-2 border-b border-white/10 pb-1">
                              <div className="text-[10px] uppercase text-gray-500 tracking-widest">The Stash</div>
@@ -690,34 +733,64 @@ function App() {
         </button>
       </div>
 
-      {/* MODALS */}
+      {/* MODAL: ROLL RESULT (UPDATED FOR COMBAT ENGINE) */}
       {rollResult && (
         <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-100" onClick={() => setRollResult(null)}>
            <div className={`w-full max-w-sm border-2 p-8 text-center shadow-[0_0_30px_rgba(0,0,0,0.5)] transform scale-100 transition-all ${
                rollResult.type === 'CRIT' ? 'border-yellow-500 bg-yellow-900/20' : rollResult.type === 'SUCCESS' ? 'border-green-500 bg-green-900/20' : rollResult.type === 'JAM' ? 'border-red-600 bg-red-900/20 border-dashed' : 'border-red-800 bg-red-950/40'}`}>
+              
               <div className="text-[10px] font-bold uppercase tracking-[0.3em] mb-4 text-white opacity-70">Resolution Protocol</div>
+              
               <div className="text-6xl font-black mb-2 text-white drop-shadow-md">{rollResult.roll}</div>
-              <div className={`text-2xl font-black uppercase italic tracking-tighter mb-6 ${ rollResult.type === 'CRIT' ? 'text-yellow-400' : rollResult.type === 'SUCCESS' ? 'text-green-500' : rollResult.type === 'JAM' ? 'text-red-600 animate-pulse' : 'text-red-800'}`}>{rollResult.type === 'CRIT' ? 'HOT STREAK' : rollResult.type === 'JAM' ? 'FATAL ERROR' : rollResult.type}</div>
-              <div className="flex justify-between border-t border-white/20 pt-4 text-xs font-mono text-gray-400"><div>SKILL: {rollResult.skill}</div><div>TARGET: ≤{rollResult.target}</div></div>
+              
+              <div className={`text-2xl font-black uppercase italic tracking-tighter mb-4 ${ rollResult.type === 'CRIT' ? 'text-yellow-400' : rollResult.type === 'SUCCESS' ? 'text-green-500' : rollResult.type === 'JAM' ? 'text-red-600 animate-pulse' : 'text-red-800'}`}>
+                  {rollResult.type === 'CRIT' ? 'HOT STREAK' : rollResult.type === 'JAM' ? 'FATAL ERROR' : rollResult.type}
+              </div>
+
+              {/* NEW: COMBAT TELEMETRY BREAKDOWN */}
+              <div className="border-t border-white/20 pt-4 space-y-1 text-left text-[9px] font-mono text-gray-400 uppercase tracking-widest bg-black/50 p-3">
+                  <div className="flex justify-between">
+                      <span className="text-gray-500">Skill</span>
+                      <span className="text-white font-bold">{rollResult.skill}</span>
+                  </div>
+                  <div className="flex justify-between">
+                      <span className="text-gray-500">Active Weapon</span>
+                      <span className="text-blue-400 font-bold">{rollResult.weaponName}</span>
+                  </div>
+                  <div className="flex justify-between mt-2 border-t border-white/10 pt-1">
+                      <span className="text-gray-500">Base Target</span>
+                      <span className="text-white">≤{rollResult.baseTarget}</span>
+                  </div>
+                  <div className="flex justify-between">
+                      <span className="text-gray-500">Weapon Bonus</span>
+                      <span className="text-green-400">+{rollResult.weaponBonus}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-white/10 pt-1 text-xs">
+                      <span className="text-gray-300">Final Target</span>
+                      <span className="text-white font-black">≤{rollResult.finalTarget}</span>
+                  </div>
+                  <div className="flex justify-between text-[8px] text-yellow-500/80 mt-2">
+                      <span>Crit Range</span>
+                      <span>1-{rollResult.critWindow}</span>
+                  </div>
+              </div>
+
               <div className="mt-8 text-[9px] uppercase tracking-widest text-gray-500 animate-pulse">Tap anywhere to dismiss</div>
            </div>
         </div>
       )}
 
-      {/* DATALINK MODAL WITH DOSSIER PHOTO */}
+      {/* DATALINK MODAL */}
       {viewData && character.form && (
         <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setViewData(false)}>
             <div className="w-full max-w-sm border border-cyan-900/50 bg-cyan-950/10 p-6 relative shadow-[0_0_50px_rgba(8,145,178,0.2)]" onClick={e => e.stopPropagation()}>
                 <div className="text-center mb-6 border-b border-cyan-500/20 pb-4"><h2 className="text-xl font-black italic text-cyan-400 uppercase tracking-tighter">DATA_UPLINK</h2><div className="text-[9px] text-cyan-600 font-mono">SECURE CONNECTION ESTABLISHED</div></div>
                 <div className="space-y-6 overflow-y-auto max-h-[60vh] custom-scrollbar pr-2">
-                    
-                    {/* DOSSIER PHOTO */}
                     {character.avatarUrl && (
                         <div className="border border-cyan-900/50 p-1 bg-black">
                             <img src={character.avatarUrl} alt="Dossier" className="w-full h-40 object-cover grayscale opacity-80" />
                         </div>
                     )}
-
                     <div><div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">Identity Config</div><div className="text-lg font-bold text-white uppercase">{character.form.name}</div><div className="text-[10px] text-gray-400 leading-relaxed mb-2">{character.form.description}</div><div className="text-sm font-bold text-white uppercase mt-2">{character.destiny.name}</div><div className="text-[10px] text-gray-400 leading-relaxed">{character.destiny.description}</div></div>
                     <div className="border border-red-900/30 bg-red-950/10 p-3"><div className="text-[9px] font-bold text-red-500 uppercase tracking-widest mb-1">Active Protocol (Curse)</div><div className="text-sm font-bold text-red-400 uppercase">{character.darkMark.name}</div><div className="text-[10px] text-red-300/80 leading-relaxed">{character.darkMark.description}</div></div>
                     <div><div className="text-[9px] font-bold text-purple-500 uppercase tracking-widest mb-1">Origin Source</div><div className="text-sm font-bold text-purple-400 uppercase">{character.master}</div></div>
@@ -727,6 +800,7 @@ function App() {
         </div>
       )}
 
+      {/* PROMOTION MODAL */}
       {viewPromotion && (
           <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setViewPromotion(false)}>
               <div className="w-full max-w-sm border border-yellow-500 bg-yellow-900/20 p-6 relative shadow-[0_0_50px_rgba(234,179,8,0.3)]" onClick={e => e.stopPropagation()}>
