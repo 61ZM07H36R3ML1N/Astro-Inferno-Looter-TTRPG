@@ -72,3 +72,14 @@ export const GRENADE_JUICE = [
     { type: "Living + Deafening + Blood", desc: "Covers the area with bloody gore that attracts hordes of screeching bats." },
     { type: "Glass + Silencing + Death", desc: "Shatters anything that emits a sound louder than a footstep." }
 ];
+
+// --- THE DEEP FORGE: LOOT SUFFIXES ---
+// These modify the final stats of a generated weapon.
+export const LOOT_SUFFIXES = [
+    { name: "of the Titan", stats: { dmg: +2, att: -1, agm: 0, tgt: 0 } },
+    { name: "of the Assassin", stats: { dmg: -1, att: +2, agm: 0, tgt: 0 } },
+    { name: "of the Butcher", stats: { dmg: +1, att: 0, agm: +1, tgt: 0 } },
+    { name: "of the Swarm", stats: { dmg: 0, att: +1, agm: 0, tgt: +1 } },
+    { name: "of the Void", stats: { dmg: +1, att: +1, agm: -1, tgt: 0 } },
+    { name: "of the Leech", stats: { dmg: 0, att: +1, agm: 0, tgt: 0 } } 
+];
