@@ -179,7 +179,6 @@ function App() {
     }
   };
 
-  // NEW: DROP LOOT FUNCTION
   const removeLoot = async (indexToRemove) => {
     if (!character.id) return;
     
@@ -198,12 +197,21 @@ function App() {
     }
   };
 
-  // --- UI HELPERS ---
+  // --- UI HELPERS & VISUALS ---
   const getStat = (n) => character.form ? character.form.baseStats[n] : 10;
   
   const toRoman = (num) => {
     const roman = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI', 7: 'VII' };
     return roman[Math.max(1, Math.min(7, num))] || num; 
+  };
+
+  // NEW: LOOT COLORIZER
+  const getLootColor = (itemName) => {
+    if (itemName.includes("Void-Forged")) return "text-fuchsia-400 drop-shadow-[0_0_8px_rgba(232,121,249,0.8)] animate-pulse";
+    if (itemName.includes("Satanic")) return "text-red-600 drop-shadow-[0_0_3px_rgba(220,38,38,0.5)]";
+    if (itemName.includes("Genesis")) return "text-cyan-400 drop-shadow-[0_0_3px_rgba(34,211,238,0.5)]";
+    if (itemName.includes("Ancient")) return "text-amber-400 drop-shadow-[0_0_3px_rgba(251,191,36,0.5)]";
+    return "text-gray-300"; // Standard Issue
   };
   
   const getGearStats = (itemString) => {
@@ -418,7 +426,7 @@ function App() {
                     ))}
                 </div>
 
-                {/* ARMORY & LOOT - WITH DELETE BUTTON */}
+                {/* ARMORY & LOOT - WITH COLORS AND DELETE */}
                 {character.destiny && (
                     <div className="mt-6 pt-4 border-t border-white/10">
                         <div className="flex justify-between items-end mb-3 border-b border-white/10 pb-1">
@@ -433,27 +441,32 @@ function App() {
                         <div className="space-y-2">
                             {character.destiny.equipment.map((item, i) => {
                                 const gear = getGearStats(item);
+                                // COLOR CALCULATION
+                                const rarityColor = getLootColor(item);
+
                                 if (gear) return (
-                                    <div key={i} className="flex justify-between items-center bg-white/5 border border-white/10 p-2 group">
+                                    <div key={i} className="flex justify-between items-center bg-white/5 border border-white/10 p-2 group hover:bg-white/10 transition-colors">
                                         <div className="flex-1">
-                                            <div className="text-[9px] font-bold uppercase">{gear.name}</div>
+                                            {/* APPLY COLOR HERE */}
+                                            <div className={`text-[9px] font-bold uppercase ${rarityColor}`}>{gear.name}</div>
+                                            
                                             <div className="flex gap-2">
-                                                {!gear.isArmor && <span className="text-red-500 text-[9px] font-bold">DMG {toRoman(gear.stats.dmg)}</span>}
-                                                {gear.isArmor && <span className="text-blue-400 text-[9px] font-bold">ARM {gear.stats.arm}</span>}
+                                                {!gear.isArmor && <span className="text-gray-500 text-[9px] font-bold">DMG {toRoman(gear.stats.dmg)}</span>}
+                                                {gear.isArmor && <span className="text-blue-500 text-[9px] font-bold">ARM {gear.stats.arm}</span>}
                                             </div>
                                         </div>
                                         {/* DELETE BUTTON */}
                                         <button 
                                             onClick={() => removeLoot(i)}
-                                            className="text-gray-600 hover:text-red-500 font-bold px-2 py-1 text-xs"
+                                            className="text-gray-600 hover:text-red-500 font-bold px-2 py-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
                                         >
                                             X
                                         </button>
                                     </div>
                                 );
                                 return (
-                                    <div key={i} className="flex justify-between items-center bg-white/5 border border-white/10 p-2 text-[9px] text-gray-500 uppercase">
-                                        <span>{item}</span>
+                                    <div key={i} className="flex justify-between items-center bg-white/5 border border-white/10 p-2 text-[9px] uppercase">
+                                        <span className={rarityColor}>{item}</span>
                                         <button onClick={() => removeLoot(i)} className="text-gray-600 hover:text-red-500 font-bold px-2 py-1 text-xs">X</button>
                                     </div>
                                 );
@@ -466,6 +479,18 @@ function App() {
             <button onClick={() => setActiveTab('ROSTER')} className="w-full border border-white/10 text-gray-500 py-3 uppercase text-xs hover:border-white hover:text-white transition-colors">Return to Barracks</button>
           </div>
         )}
+      </div>
+
+      {/* MOBILE NAV BAR */}
+      <div className="h-20 border-t border-red-900/50 bg-black flex items-center justify-around px-2 shrink-0 z-50">
+        <button onClick={() => setActiveTab('ROSTER')} className={`flex flex-col items-center gap-1 w-1/3 ${activeTab === 'ROSTER' ? 'text-red-600' : 'text-gray-600'}`}>
+          <span className="text-[10px] font-black uppercase tracking-tighter">Barracks</span>
+          <div className={`h-1 w-8 transition-all ${activeTab === 'ROSTER' ? 'bg-red-600 shadow-[0_0_8px_red]' : 'bg-transparent'}`}></div>
+        </button>
+        <button onClick={() => setActiveTab('SHEET')} className={`flex flex-col items-center gap-1 w-1/3 ${activeTab === 'SHEET' ? 'text-red-600' : 'text-gray-600'}`}>
+          <span className="text-[10px] font-black uppercase tracking-tighter">Active Unit</span>
+          <div className={`h-1 w-8 transition-all ${activeTab === 'SHEET' ? 'bg-red-600 shadow-[0_0_8px_red]' : 'bg-transparent'}`}></div>
+        </button>
       </div>
 
       {/* --- ROLL RESULT MODAL --- */}
