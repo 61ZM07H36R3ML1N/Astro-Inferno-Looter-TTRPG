@@ -18,8 +18,9 @@ function App() {
   const [activeTab, setActiveTab] = useState('ROSTER'); 
   const [roster, setRoster] = useState([]); 
   
-  // ROLLER STATE
+  // ROLLER & MODAL STATE
   const [rollResult, setRollResult] = useState(null);
+  const [viewData, setViewData] = useState(false); // NEW: Controls the Datalink Modal
 
   // CREATOR STATE
   const [step, setStep] = useState(1); 
@@ -197,7 +198,7 @@ function App() {
     }
   };
 
-  // --- UI HELPERS & VISUALS ---
+  // --- UI HELPERS ---
   const getStat = (n) => character.form ? character.form.baseStats[n] : 10;
   
   const toRoman = (num) => {
@@ -205,7 +206,6 @@ function App() {
     return roman[Math.max(1, Math.min(7, num))] || num; 
   };
 
-  // NEW: LOOT COLORIZER
   const getLootColor = (itemName) => {
     if (itemName.includes("Void-Forged")) return "text-fuchsia-400 drop-shadow-[0_0_8px_rgba(232,121,249,0.8)] animate-pulse";
     if (itemName.includes("Satanic")) return "text-red-600 drop-shadow-[0_0_3px_rgba(220,38,38,0.5)]";
@@ -370,9 +370,19 @@ function App() {
         {activeTab === 'SHEET' && (
           <div className="p-4 space-y-6 animate-in slide-in-from-bottom-5">
             <div className="border-2 border-white/10 p-4 bg-white/5 relative overflow-hidden">
+                
+                {/* NEW HEADER WITH DATALINK BUTTON */}
                 <div className="flex justify-between items-end mb-4 border-b border-white/10 pb-2">
-                    <span className="text-2xl font-black italic uppercase">{character.name}</span>
-                    <span className="text-[10px] text-red-600 font-mono tracking-tighter">894-XJ</span>
+                    <div>
+                        <div className="text-2xl font-black italic uppercase leading-none">{character.name}</div>
+                        <div className="text-[10px] text-gray-500 font-mono">ID: 894-XJ</div>
+                    </div>
+                    <button 
+                        onClick={() => setViewData(true)} 
+                        className="bg-white/10 hover:bg-white/20 border border-white/10 text-[9px] px-2 py-1 uppercase text-cyan-400 font-bold tracking-widest animate-pulse"
+                    >
+                        :: DATALINK
+                    </button>
                 </div>
                 
                 {/* VITALS */}
@@ -426,7 +436,7 @@ function App() {
                     ))}
                 </div>
 
-                {/* ARMORY & LOOT - WITH COLORS AND DELETE */}
+                {/* ARMORY & LOOT */}
                 {character.destiny && (
                     <div className="mt-6 pt-4 border-t border-white/10">
                         <div className="flex justify-between items-end mb-3 border-b border-white/10 pb-1">
@@ -441,21 +451,17 @@ function App() {
                         <div className="space-y-2">
                             {character.destiny.equipment.map((item, i) => {
                                 const gear = getGearStats(item);
-                                // COLOR CALCULATION
                                 const rarityColor = getLootColor(item);
 
                                 if (gear) return (
                                     <div key={i} className="flex justify-between items-center bg-white/5 border border-white/10 p-2 group hover:bg-white/10 transition-colors">
                                         <div className="flex-1">
-                                            {/* APPLY COLOR HERE */}
                                             <div className={`text-[9px] font-bold uppercase ${rarityColor}`}>{gear.name}</div>
-                                            
                                             <div className="flex gap-2">
                                                 {!gear.isArmor && <span className="text-gray-500 text-[9px] font-bold">DMG {toRoman(gear.stats.dmg)}</span>}
                                                 {gear.isArmor && <span className="text-blue-500 text-[9px] font-bold">ARM {gear.stats.arm}</span>}
                                             </div>
                                         </div>
-                                        {/* DELETE BUTTON */}
                                         <button 
                                             onClick={() => removeLoot(i)}
                                             className="text-gray-600 hover:text-red-500 font-bold px-2 py-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
@@ -518,6 +524,56 @@ function App() {
               </div>
               <div className="mt-8 text-[9px] uppercase tracking-widest text-gray-500 animate-pulse">Tap anywhere to dismiss</div>
            </div>
+        </div>
+      )}
+
+      {/* --- NEW: DATALINK MODAL --- */}
+      {viewData && character.form && (
+        <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setViewData(false)}>
+            <div className="w-full max-w-sm border border-cyan-900/50 bg-cyan-950/10 p-6 relative shadow-[0_0_50px_rgba(8,145,178,0.2)]" onClick={e => e.stopPropagation()}>
+                
+                {/* DECORATIVE LINES */}
+                <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-cyan-500"></div>
+                <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-cyan-500"></div>
+                <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-cyan-500"></div>
+                <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-cyan-500"></div>
+
+                <div className="text-center mb-6 border-b border-cyan-500/20 pb-4">
+                    <h2 className="text-xl font-black italic text-cyan-400 uppercase tracking-tighter">DATA_UPLINK</h2>
+                    <div className="text-[9px] text-cyan-600 font-mono">SECURE CONNECTION ESTABLISHED</div>
+                </div>
+
+                <div className="space-y-6 overflow-y-auto max-h-[60vh] custom-scrollbar pr-2">
+                    
+                    {/* IDENTITY */}
+                    <div>
+                        <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">Identity Config</div>
+                        <div className="text-lg font-bold text-white uppercase">{character.form.name}</div>
+                        <div className="text-[10px] text-gray-400 leading-relaxed mb-2">{character.form.description}</div>
+                        
+                        <div className="text-sm font-bold text-white uppercase mt-2">{character.destiny.name}</div>
+                        <div className="text-[10px] text-gray-400 leading-relaxed">{character.destiny.description}</div>
+                    </div>
+
+                    {/* CURSE / DARK MARK */}
+                    <div className="border border-red-900/30 bg-red-950/10 p-3">
+                        <div className="text-[9px] font-bold text-red-500 uppercase tracking-widest mb-1">Active Protocol (Curse)</div>
+                        <div className="text-sm font-bold text-red-400 uppercase">{character.darkMark.name}</div>
+                        <div className="text-[10px] text-red-300/80 leading-relaxed">{character.darkMark.description}</div>
+                    </div>
+
+                    {/* LORE / MASTER */}
+                    <div>
+                        <div className="text-[9px] font-bold text-purple-500 uppercase tracking-widest mb-1">Origin Source</div>
+                        <div className="text-sm font-bold text-purple-400 uppercase">{character.master}</div>
+                    </div>
+
+                </div>
+
+                <button onClick={() => setViewData(false)} className="w-full mt-6 border border-cyan-900 text-cyan-500 py-3 uppercase text-xs font-bold hover:bg-cyan-900/20 transition-colors">
+                    Terminate Link
+                </button>
+            </div>
         </div>
       )}
 
