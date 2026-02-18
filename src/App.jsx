@@ -36,12 +36,13 @@ function App() {
   const [step, setStep] = useState(1); 
   const initialCharacter = {
     name: "UNIT_UNNAMED",
+    avatarUrl: "",   // NEW: Custom Portrait
     rank: 1,         
     xp: 0,           
     wallet: { blood: 0, honey: 0 }, 
     upgrades: {},    
     loadout: [],     
-    statuses: [],    // NEW: Active Hazard Effects
+    statuses: [],    
     form: null,      
     destiny: null,   
     master: null,    
@@ -170,7 +171,8 @@ function App() {
     if (!charData.upgrades) charData.upgrades = {};
     if (!charData.wallet) charData.wallet = { blood: 0, honey: 0 }; 
     if (!charData.loadout) charData.loadout = []; 
-    if (!charData.statuses) charData.statuses = []; // LEGACY PATCH
+    if (!charData.statuses) charData.statuses = []; 
+    if (charData.avatarUrl === undefined) charData.avatarUrl = ""; // LEGACY PATCH
     setCharacter(charData);
     setActiveTab('SHEET');
   };
@@ -194,17 +196,14 @@ function App() {
       if (character.id) { try { await updateDoc(doc(db, "characters", character.id), { [`wallet.${type}`]: newVal }); } catch(e) { console.error("Wallet Sync Failed", e); } }
   };
 
-  // --- HAZARD ENGINE ---
   const toggleStatus = async (statusId) => {
       if (!character.id) return;
       let newStatuses = [...(character.statuses || [])];
-      
       if (newStatuses.includes(statusId)) {
-          newStatuses = newStatuses.filter(s => s !== statusId); // Remove
+          newStatuses = newStatuses.filter(s => s !== statusId); 
       } else {
-          newStatuses.push(statusId); // Add
+          newStatuses.push(statusId); 
       }
-      
       setCharacter(prev => ({ ...prev, statuses: newStatuses }));
       try { await updateDoc(doc(db, "characters", character.id), { statuses: newStatuses }); } catch(e) { console.error("Status Sync Failed", e); }
   };
@@ -292,7 +291,6 @@ function App() {
             const wpnCount = newLoadout.filter(i => !getGearStats(i)?.isArmor).length;
             if (wpnCount >= 4) { alert("LOADOUT FULL: Maximum 4 Weapons allowed."); return; }
         }
-
         newEquip.splice(itemIndex, 1);
         newLoadout.push(item);
     }
@@ -338,7 +336,7 @@ function App() {
   return (
     <div className="flex flex-col h-screen w-full bg-black text-white font-mono overflow-hidden relative">
       
-      {/* HEADER */}
+      {/* HEADER (Commander Level) */}
       <div className="h-14 border-b border-red-900/50 flex items-center px-4 justify-between bg-red-950/20 shrink-0 z-50">
         <div className="flex items-center gap-3">
           <img src={user.photoURL} alt="User" className="h-8 w-8 rounded-full border border-red-600" />
@@ -362,7 +360,7 @@ function App() {
       {/* CONTENT */}
       <div className="flex-1 overflow-y-auto pb-24 custom-scrollbar relative">
         
-        {/* VISUAL HAZARD OVERLAYS (Only on Sheet Tab) */}
+        {/* VISUAL HAZARD OVERLAYS */}
         {activeTab === 'SHEET' && (character.statuses || []).includes('BURNING') && <div className="pointer-events-none absolute inset-0 z-0 shadow-[inset_0_0_80px_rgba(234,88,12,0.4)] animate-pulse"></div>}
         {activeTab === 'SHEET' && (character.statuses || []).includes('POISONED') && <div className="pointer-events-none absolute inset-0 z-0 shadow-[inset_0_0_80px_rgba(34,197,94,0.2)]"></div>}
         {activeTab === 'SHEET' && (character.statuses || []).includes('BLEEDING') && <div className="pointer-events-none absolute inset-0 z-0 border-4 border-red-900/60"></div>}
@@ -378,12 +376,18 @@ function App() {
               ) : (
                 roster.map(char => (
                   <div key={char.id} className="w-full bg-white/5 border border-white/10 p-4 flex justify-between items-center group relative overflow-hidden">
-                     <button onClick={() => loadCharacter(char)} className="flex-1 text-left z-10">
-                        <div className="flex items-center gap-2">
-                            <div className="text-lg font-black italic uppercase group-hover:text-red-500 transition-colors">{char.name}</div>
-                            <div className="bg-yellow-600/20 border border-yellow-600/50 text-yellow-500 text-[9px] px-1 font-bold">RK {char.rank || 1}</div>
+                     <button onClick={() => loadCharacter(char)} className="flex-1 text-left z-10 flex items-center gap-3">
+                        {/* MUGSHOT */}
+                        <div className="h-10 w-10 bg-gray-800 border border-white/20 overflow-hidden shrink-0">
+                            {char.avatarUrl ? <img src={char.avatarUrl} alt="avatar" className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center text-[8px] text-gray-600 font-bold uppercase">NO ID</div>}
                         </div>
-                        <div className="text-[10px] text-gray-400 uppercase">{char.form?.name} • {char.destiny?.name}</div>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <div className="text-lg font-black italic uppercase group-hover:text-red-500 transition-colors">{char.name}</div>
+                                <div className="bg-yellow-600/20 border border-yellow-600/50 text-yellow-500 text-[9px] px-1 font-bold">RK {char.rank || 1}</div>
+                            </div>
+                            <div className="text-[10px] text-gray-400 uppercase">{char.form?.name} • {char.destiny?.name}</div>
+                        </div>
                      </button>
                      <div className="flex flex-col items-end gap-2 z-20 pl-4 border-l border-white/10 ml-4">
                         <div className="text-[8px] text-gray-500 uppercase">STATUS: <span className="text-green-500 font-bold">READY</span></div>
@@ -400,9 +404,25 @@ function App() {
           <div className="p-6 animate-in fade-in duration-300 z-10 relative">
              {step === 1 && (
                <div className="space-y-6">
-                 <h2 className="text-3xl font-black uppercase">Initialize</h2>
-                 <input type="text" value={character.name === "UNIT_UNNAMED" ? "" : character.name} placeholder="ENTER_NAME" className="w-full bg-white/5 border-b-2 border-red-600 p-4 text-xl font-bold uppercase focus:outline-none" onChange={(e) => setCharacter({...character, name: e.target.value.toUpperCase()})} />
-                 <button onClick={() => setStep(2)} className="w-full bg-red-600 py-4 font-bold uppercase">Next Phase</button>
+                 <h2 className="text-3xl font-black uppercase">Initialize Unit</h2>
+                 <div>
+                     <div className="text-[10px] text-cyan-500 font-bold uppercase tracking-widest mb-1">Unit Designation</div>
+                     <input type="text" value={character.name === "UNIT_UNNAMED" ? "" : character.name} placeholder="ENTER_NAME" className="w-full bg-white/5 border-b-2 border-cyan-600 p-4 text-xl font-bold uppercase focus:outline-none mb-4" onChange={(e) => setCharacter({...character, name: e.target.value.toUpperCase()})} />
+                     
+                     {/* AVATAR INPUT */}
+                     <div className="text-[10px] text-cyan-500 font-bold uppercase tracking-widest mb-1">Visual ID (Image URL) [Optional]</div>
+                     <input type="text" value={character.avatarUrl || ""} placeholder="https://..." className="w-full bg-white/5 border-b-2 border-cyan-600 p-3 text-sm focus:outline-none text-gray-300" onChange={(e) => setCharacter({...character, avatarUrl: e.target.value})} />
+                 </div>
+                 
+                 {character.avatarUrl && (
+                     <div className="flex justify-center mt-4">
+                         <div className="h-24 w-24 border border-cyan-500/50 bg-black/50 overflow-hidden shadow-[0_0_15px_rgba(6,182,212,0.3)]">
+                             <img src={character.avatarUrl} alt="Preview" className="h-full w-full object-cover" />
+                         </div>
+                     </div>
+                 )}
+
+                 <button onClick={() => setStep(2)} className="w-full bg-cyan-600 hover:bg-cyan-500 py-4 font-bold uppercase text-black transition-colors mt-8">Next Phase</button>
                </div>
             )}
             {step === 2 && (
@@ -479,6 +499,21 @@ function App() {
                     </div>
                 </div>
 
+                {/* HEADER WITH AVATAR & DATALINK */}
+                <div className="flex justify-between items-end mb-6 border-b border-white/10 pb-4">
+                    <div className="flex items-center gap-3">
+                        {/* THE FACE */}
+                        <div className="h-12 w-12 bg-gray-900 border border-white/20 overflow-hidden shrink-0 shadow-md">
+                            {character.avatarUrl ? <img src={character.avatarUrl} alt="Avatar" className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center text-[8px] text-gray-600 font-bold uppercase">NO ID</div>}
+                        </div>
+                        <div>
+                            <div className="text-2xl font-black italic uppercase leading-none">{character.name}</div>
+                            <div className="text-[10px] text-gray-500 font-mono mt-1">ID: 894-XJ • RK {character.rank}</div>
+                        </div>
+                    </div>
+                    <button onClick={() => setViewData(true)} className="bg-cyan-950/30 hover:bg-cyan-900/50 border border-cyan-500/50 text-[9px] px-2 py-1 uppercase text-cyan-400 font-bold tracking-widest shrink-0">:: DATALINK</button>
+                </div>
+
                 {/* AETHER CACHE */}
                 <div className="grid grid-cols-2 gap-2 mb-6">
                     <div className="border border-red-900/50 bg-red-950/20 p-2 relative overflow-hidden">
@@ -491,15 +526,6 @@ function App() {
                     </div>
                 </div>
 
-                {/* HEADER WITH DATALINK */}
-                <div className="flex justify-between items-end mb-4 border-b border-white/10 pb-2">
-                    <div>
-                        <div className="text-2xl font-black italic uppercase leading-none">{character.name}</div>
-                        <div className="text-[10px] text-gray-500 font-mono">ID: 894-XJ • RK {character.rank}</div>
-                    </div>
-                    <button onClick={() => setViewData(true)} className="bg-white/10 hover:bg-white/20 border border-white/10 text-[9px] px-2 py-1 uppercase text-cyan-400 font-bold tracking-widest">:: DATALINK</button>
-                </div>
-                
                 {/* VITALS */}
                 <div className="space-y-2 mb-4">
                     {['life', 'sanity', 'aura'].map(v => {
@@ -522,7 +548,7 @@ function App() {
                     })}
                 </div>
 
-                {/* NEW: HAZARD MONITOR */}
+                {/* HAZARD MONITOR */}
                 <div className="mb-6 border border-white/10 p-2 bg-black/50">
                     <div className="text-[8px] text-gray-500 font-bold uppercase tracking-widest mb-2 text-center">Hazard Monitor</div>
                     <div className="flex flex-wrap gap-1 justify-center">
@@ -653,7 +679,7 @@ function App() {
       </div>
 
       {/* MOBILE NAV BAR */}
-      <div className="h-20 border-t border-red-900/50 bg-black flex items-center justify-around px-2 shrink-0 z-50">
+      <div className="h-20 border-t border-red-900/50 bg-black flex items-center justify-around px-2 shrink-0 z-50 relative">
         <button onClick={() => setActiveTab('ROSTER')} className={`flex flex-col items-center gap-1 w-1/3 ${activeTab === 'ROSTER' ? 'text-red-600' : 'text-gray-600'}`}>
           <span className="text-[10px] font-black uppercase tracking-tighter">Barracks</span>
           <div className={`h-1 w-8 transition-all ${activeTab === 'ROSTER' ? 'bg-red-600 shadow-[0_0_8px_red]' : 'bg-transparent'}`}></div>
@@ -678,11 +704,20 @@ function App() {
         </div>
       )}
 
+      {/* DATALINK MODAL WITH DOSSIER PHOTO */}
       {viewData && character.form && (
         <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setViewData(false)}>
             <div className="w-full max-w-sm border border-cyan-900/50 bg-cyan-950/10 p-6 relative shadow-[0_0_50px_rgba(8,145,178,0.2)]" onClick={e => e.stopPropagation()}>
                 <div className="text-center mb-6 border-b border-cyan-500/20 pb-4"><h2 className="text-xl font-black italic text-cyan-400 uppercase tracking-tighter">DATA_UPLINK</h2><div className="text-[9px] text-cyan-600 font-mono">SECURE CONNECTION ESTABLISHED</div></div>
                 <div className="space-y-6 overflow-y-auto max-h-[60vh] custom-scrollbar pr-2">
+                    
+                    {/* DOSSIER PHOTO */}
+                    {character.avatarUrl && (
+                        <div className="border border-cyan-900/50 p-1 bg-black">
+                            <img src={character.avatarUrl} alt="Dossier" className="w-full h-40 object-cover grayscale opacity-80" />
+                        </div>
+                    )}
+
                     <div><div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">Identity Config</div><div className="text-lg font-bold text-white uppercase">{character.form.name}</div><div className="text-[10px] text-gray-400 leading-relaxed mb-2">{character.form.description}</div><div className="text-sm font-bold text-white uppercase mt-2">{character.destiny.name}</div><div className="text-[10px] text-gray-400 leading-relaxed">{character.destiny.description}</div></div>
                     <div className="border border-red-900/30 bg-red-950/10 p-3"><div className="text-[9px] font-bold text-red-500 uppercase tracking-widest mb-1">Active Protocol (Curse)</div><div className="text-sm font-bold text-red-400 uppercase">{character.darkMark.name}</div><div className="text-[10px] text-red-300/80 leading-relaxed">{character.darkMark.description}</div></div>
                     <div><div className="text-[9px] font-bold text-purple-500 uppercase tracking-widest mb-1">Origin Source</div><div className="text-sm font-bold text-purple-400 uppercase">{character.master}</div></div>
