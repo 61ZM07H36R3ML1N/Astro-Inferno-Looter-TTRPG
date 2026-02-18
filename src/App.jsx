@@ -433,7 +433,7 @@ function App() {
                                 <div className="text-lg font-black italic uppercase group-hover:text-red-500 transition-colors">{char.name}</div>
                                 <div className="bg-yellow-600/20 border border-yellow-600/50 text-yellow-500 text-[9px] px-1 font-bold">RK {char.rank || 1}</div>
                             </div>
-                            <div className="text-[10px] text-gray-400 uppercase">{char.form?.name} • {char.destiny?.name}</div>
+                            <div className="text-[10px] text-gray-400 uppercase">{char.form?.name || 'UNKNOWN FORM'} • {char.destiny?.name || 'UNKNOWN DESTINY'}</div>
                         </div>
                      </button>
                      <div className="flex flex-col items-end gap-2 z-20 pl-4 border-l border-white/10 ml-4">
@@ -733,7 +733,7 @@ function App() {
         </button>
       </div>
 
-      {/* MODAL: ROLL RESULT (UPDATED FOR COMBAT ENGINE) */}
+      {/* MODALS */}
       {rollResult && (
         <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-100" onClick={() => setRollResult(null)}>
            <div className={`w-full max-w-sm border-2 p-8 text-center shadow-[0_0_30px_rgba(0,0,0,0.5)] transform scale-100 transition-all ${
@@ -747,7 +747,6 @@ function App() {
                   {rollResult.type === 'CRIT' ? 'HOT STREAK' : rollResult.type === 'JAM' ? 'FATAL ERROR' : rollResult.type}
               </div>
 
-              {/* NEW: COMBAT TELEMETRY BREAKDOWN */}
               <div className="border-t border-white/20 pt-4 space-y-1 text-left text-[9px] font-mono text-gray-400 uppercase tracking-widest bg-black/50 p-3">
                   <div className="flex justify-between">
                       <span className="text-gray-500">Skill</span>
@@ -780,20 +779,39 @@ function App() {
         </div>
       )}
 
-      {/* DATALINK MODAL */}
+      {/* REPAIRED DATALINK MODAL */}
       {viewData && character.form && (
         <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setViewData(false)}>
             <div className="w-full max-w-sm border border-cyan-900/50 bg-cyan-950/10 p-6 relative shadow-[0_0_50px_rgba(8,145,178,0.2)]" onClick={e => e.stopPropagation()}>
                 <div className="text-center mb-6 border-b border-cyan-500/20 pb-4"><h2 className="text-xl font-black italic text-cyan-400 uppercase tracking-tighter">DATA_UPLINK</h2><div className="text-[9px] text-cyan-600 font-mono">SECURE CONNECTION ESTABLISHED</div></div>
                 <div className="space-y-6 overflow-y-auto max-h-[60vh] custom-scrollbar pr-2">
+                    
                     {character.avatarUrl && (
                         <div className="border border-cyan-900/50 p-1 bg-black">
                             <img src={character.avatarUrl} alt="Dossier" className="w-full h-40 object-cover grayscale opacity-80" />
                         </div>
                     )}
-                    <div><div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">Identity Config</div><div className="text-lg font-bold text-white uppercase">{character.form.name}</div><div className="text-[10px] text-gray-400 leading-relaxed mb-2">{character.form.description}</div><div className="text-sm font-bold text-white uppercase mt-2">{character.destiny.name}</div><div className="text-[10px] text-gray-400 leading-relaxed">{character.destiny.description}</div></div>
-                    <div className="border border-red-900/30 bg-red-950/10 p-3"><div className="text-[9px] font-bold text-red-500 uppercase tracking-widest mb-1">Active Protocol (Curse)</div><div className="text-sm font-bold text-red-400 uppercase">{character.darkMark.name}</div><div className="text-[10px] text-red-300/80 leading-relaxed">{character.darkMark.description}</div></div>
-                    <div><div className="text-[9px] font-bold text-purple-500 uppercase tracking-widest mb-1">Origin Source</div><div className="text-sm font-bold text-purple-400 uppercase">{character.master}</div></div>
+
+                    <div>
+                        <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">Identity Config</div>
+                        <div className="text-lg font-bold text-white uppercase">{character.form?.name || 'UNKNOWN FORM'}</div>
+                        <div className="text-[10px] text-gray-400 leading-relaxed mb-2">{character.form?.description || 'No data found.'}</div>
+                        
+                        <div className="text-sm font-bold text-white uppercase mt-2">{character.destiny?.name || 'UNKNOWN DESTINY'}</div>
+                        <div className="text-[10px] text-gray-400 leading-relaxed">{character.destiny?.description || 'No data found.'}</div>
+                    </div>
+
+                    <div className="border border-red-900/30 bg-red-950/10 p-3">
+                        <div className="text-[9px] font-bold text-red-500 uppercase tracking-widest mb-1">Active Protocol (Curse)</div>
+                        <div className="text-sm font-bold text-red-400 uppercase">{character.darkMark?.name || 'NO ACTIVE PROTOCOL'}</div>
+                        <div className="text-[10px] text-red-300/80 leading-relaxed">{character.darkMark?.description || 'Data corrupted or missing.'}</div>
+                    </div>
+
+                    <div>
+                        <div className="text-[9px] font-bold text-purple-500 uppercase tracking-widest mb-1">Origin Source</div>
+                        <div className="text-sm font-bold text-purple-400 uppercase">{character.master || 'UNKNOWN ORIGIN'}</div>
+                    </div>
+
                 </div>
                 <button onClick={() => setViewData(false)} className="w-full mt-6 border border-cyan-900 text-cyan-500 py-3 uppercase text-xs font-bold hover:bg-cyan-900/20 transition-colors">Terminate Link</button>
             </div>
