@@ -8,7 +8,7 @@ import { auth, googleProvider, db } from './firebase';
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { collection, addDoc, query, where, onSnapshot, deleteDoc, updateDoc, doc } from "firebase/firestore";
 
-// --- UTILS (Outside Component to fix React Error) ---
+// --- UTILS (Outside Component) ---
 const rollD20 = () => Math.floor(Math.random() * 20) + 1;
 
 function App() {
@@ -41,7 +41,6 @@ function App() {
       setLoading(false);
       
       if (currentUser) {
-        // Listen for user's characters
         const q = query(collection(db, "characters"), where("uid", "==", currentUser.uid));
         const unsubscribeSnapshot = onSnapshot(q, (snapshot) => {
           const loadedChars = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
@@ -60,7 +59,6 @@ function App() {
     if (!charData.form) return 10;
     const statMap = { life: 'PHY', sanity: 'DRV', aura: 'SPR' };
     const baseStat = charData.form.baseStats[statMap[type]] || 10;
-    
     let total = 9 + Math.floor(baseStat / 5);
     if (charData.destiny?.bonuses?.[type]) {
       total += charData.destiny.bonuses[type];
@@ -72,18 +70,15 @@ function App() {
   const handleLogin = async () => { try { await signInWithPopup(auth, googleProvider); } catch (e) { console.error(e); } };
   const handleLogout = async () => { await signOut(auth); setActiveTab('ROSTER'); };
 
-  // --- ROBUST SAVE FUNCTION ---
   const saveCharacter = async () => {
     if (!user) { alert("ERROR: You must be logged in to save."); return; }
     if (!character.form) { alert("ERROR: Form data missing. Please complete Phase 2."); return; }
 
     try {
-      // 1. Calculate Max Vitals (Safety Check)
       const maxLife = getMaxVital('life', character) || 10;
       const maxSanity = getMaxVital('sanity', character) || 10;
       const maxAura = getMaxVital('aura', character) || 10;
 
-      // 2. Prepare Payload (Remove ID if exists to create new entry)
       const { id, ...cleanCharacter } = character; 
       const payload = { 
         ...cleanCharacter, 
@@ -92,10 +87,7 @@ function App() {
         createdAt: new Date() 
       };
 
-      // 3. Send to Firebase
       await addDoc(collection(db, "characters"), payload);
-      
-      // 4. Success & Reset
       alert(`UNIT ${character.name} DEPLOYED TO DATABASE`);
       setCharacter(initialCharacter);
       setStep(1);
@@ -114,7 +106,6 @@ function App() {
   };
 
   const loadCharacter = (charData) => {
-    // Patch old characters without currentVitals
     if (!charData.currentVitals) {
         charData.currentVitals = {
             life: getMaxVital('life', charData),
@@ -131,15 +122,12 @@ function App() {
     const currentVal = character.currentVitals?.[type] ?? maxVal;
     let newVal = currentVal + change;
     
-    // Clamp values
     if (newVal < 0) newVal = 0;
     if (newVal > maxVal) newVal = maxVal;
 
-    // Update Local
     const updatedChar = { ...character, currentVitals: { ...(character.currentVitals || {}), [type]: newVal } };
     setCharacter(updatedChar);
 
-    // Update Cloud (if saved)
     if (character.id) {
         try { await updateDoc(doc(db, "characters", character.id), { [`currentVitals.${type}`]: newVal }); } catch (e) { console.error("Sync Failed:", e); }
     }
@@ -157,13 +145,11 @@ function App() {
 
   // --- LOOT ENGINE ---
   const generateLoot = async () => {
-    // SAFETY LOCK: Must save character first
     if (!character.id) {
         alert("COMMAND REJECTED: Unit must be synced to database before equipping loot.");
         return; 
     }
 
-    // 1. Roll for Power (Prefix)
     const roll = Math.floor(Math.random() * 100) + 1;
     let prefix = { name: "Standard Issue", chance: 40 };
     
@@ -175,27 +161,40 @@ function App() {
         }
     }
 
-    // 2. Roll for Weapon & Tier
     const randomWeapon = WEAPON_TABLE[Math.floor(Math.random() * WEAPON_TABLE.length)];
     const tiers = Object.keys(GEAR_STATS.weapons); 
     const selectedTier = tiers[Math.floor(Math.random() * 5)];
-
-    // 3. Construct Name
     const fullName = `${prefix.name === "Standard Issue" ? "" : prefix.name + " "}${selectedTier} ${randomWeapon.name}`;
 
-    // 4. Save to Cloud
     const currentEquip = character.destiny?.equipment || [];
     const newEquip = [...currentEquip, fullName];
 
     try {
         const charRef = doc(db, "characters", character.id);
-        // Update Local State FIRST
         setCharacter(prev => ({ ...prev, destiny: { ...prev.destiny, equipment: newEquip } }));
-        // Update Cloud
         await updateDoc(charRef, { "destiny.equipment": newEquip });
     } catch (e) { 
         console.error("Loot Gen Failed:", e); 
         alert("Database connection failed during loot generation.");
+    }
+  };
+
+  // NEW: DROP LOOT FUNCTION
+  const removeLoot = async (indexToRemove) => {
+    if (!character.id) return;
+    
+    const itemToRemove = character.destiny.equipment[indexToRemove];
+    if (!window.confirm(`CONFIRM: Drop ${itemToRemove}? This cannot be undone.`)) return;
+
+    const currentEquip = character.destiny?.equipment || [];
+    const newEquip = currentEquip.filter((_, index) => index !== indexToRemove);
+
+    try {
+        const charRef = doc(db, "characters", character.id);
+        setCharacter(prev => ({ ...prev, destiny: { ...prev.destiny, equipment: newEquip } }));
+        await updateDoc(charRef, { "destiny.equipment": newEquip });
+    } catch (e) { 
+        console.error("Loot Removal Failed:", e); 
     }
   };
 
@@ -419,7 +418,7 @@ function App() {
                     ))}
                 </div>
 
-                {/* ARMORY & LOOT GENERATOR */}
+                {/* ARMORY & LOOT - WITH DELETE BUTTON */}
                 {character.destiny && (
                     <div className="mt-6 pt-4 border-t border-white/10">
                         <div className="flex justify-between items-end mb-3 border-b border-white/10 pb-1">
@@ -435,15 +434,29 @@ function App() {
                             {character.destiny.equipment.map((item, i) => {
                                 const gear = getGearStats(item);
                                 if (gear) return (
-                                    <div key={i} className="flex justify-between items-center bg-white/5 border border-white/10 p-2">
-                                        <div className="text-[9px] font-bold uppercase">{gear.name}</div>
-                                        <div className="flex gap-2">
-                                            {!gear.isArmor && <span className="text-red-500 text-[9px] font-bold">DMG {toRoman(gear.stats.dmg)}</span>}
-                                            {gear.isArmor && <span className="text-blue-400 text-[9px] font-bold">ARM {gear.stats.arm}</span>}
+                                    <div key={i} className="flex justify-between items-center bg-white/5 border border-white/10 p-2 group">
+                                        <div className="flex-1">
+                                            <div className="text-[9px] font-bold uppercase">{gear.name}</div>
+                                            <div className="flex gap-2">
+                                                {!gear.isArmor && <span className="text-red-500 text-[9px] font-bold">DMG {toRoman(gear.stats.dmg)}</span>}
+                                                {gear.isArmor && <span className="text-blue-400 text-[9px] font-bold">ARM {gear.stats.arm}</span>}
+                                            </div>
                                         </div>
+                                        {/* DELETE BUTTON */}
+                                        <button 
+                                            onClick={() => removeLoot(i)}
+                                            className="text-gray-600 hover:text-red-500 font-bold px-2 py-1 text-xs"
+                                        >
+                                            X
+                                        </button>
                                     </div>
                                 );
-                                return <div key={i} className="text-[9px] text-gray-500 uppercase">{item}</div>;
+                                return (
+                                    <div key={i} className="flex justify-between items-center bg-white/5 border border-white/10 p-2 text-[9px] text-gray-500 uppercase">
+                                        <span>{item}</span>
+                                        <button onClick={() => removeLoot(i)} className="text-gray-600 hover:text-red-500 font-bold px-2 py-1 text-xs">X</button>
+                                    </div>
+                                );
                             })}
                         </div>
                     </div>
@@ -453,18 +466,6 @@ function App() {
             <button onClick={() => setActiveTab('ROSTER')} className="w-full border border-white/10 text-gray-500 py-3 uppercase text-xs hover:border-white hover:text-white transition-colors">Return to Barracks</button>
           </div>
         )}
-      </div>
-
-      {/* MOBILE NAV BAR */}
-      <div className="h-20 border-t border-red-900/50 bg-black flex items-center justify-around px-2 shrink-0 z-50">
-        <button onClick={() => setActiveTab('ROSTER')} className={`flex flex-col items-center gap-1 w-1/3 ${activeTab === 'ROSTER' ? 'text-red-600' : 'text-gray-600'}`}>
-          <span className="text-[10px] font-black uppercase tracking-tighter">Barracks</span>
-          <div className={`h-1 w-8 transition-all ${activeTab === 'ROSTER' ? 'bg-red-600 shadow-[0_0_8px_red]' : 'bg-transparent'}`}></div>
-        </button>
-        <button onClick={() => setActiveTab('SHEET')} className={`flex flex-col items-center gap-1 w-1/3 ${activeTab === 'SHEET' ? 'text-red-600' : 'text-gray-600'}`}>
-          <span className="text-[10px] font-black uppercase tracking-tighter">Active Unit</span>
-          <div className={`h-1 w-8 transition-all ${activeTab === 'SHEET' ? 'bg-red-600 shadow-[0_0_8px_red]' : 'bg-transparent'}`}></div>
-        </button>
       </div>
 
       {/* --- ROLL RESULT MODAL --- */}
