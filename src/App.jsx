@@ -32,7 +32,7 @@ function App() {
     xp: 0,           
     wallet: { blood: 0, honey: 0 }, 
     upgrades: {},    
-    loadout: [],     // NEW: Active Equipped Gear (Max 4 WPN, 1 ARM)
+    loadout: [],     // Active Equipped Gear (Max 4 WPN, 1 ARM)
     form: null,      
     destiny: null,   
     master: null,    
@@ -81,7 +81,7 @@ function App() {
     return val;
   };
 
-  // --- UI HELPERS ---
+  // --- UI & MATH HELPERS ---
   const toRoman = (num) => {
     const roman = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI', 7: 'VII' };
     return roman[Math.max(1, Math.min(7, num))] || num; 
@@ -110,6 +110,18 @@ function App() {
         finalStats.tgt += archetype.stats.tgt;
     }
     return { tier: tierKey, isArmor, stats: finalStats, name: archetype ? archetype.name : cleanName };
+  };
+
+  // RESTORED: SKILL MATH ENGINE
+  const getSkillTotal = (skillId, statName, categoryId) => {
+    if (!character.form) return 0;
+    const baseVal = getStat(statName); 
+    let bonus = 0;
+    if (character.destiny?.bonuses) {
+        if (character.destiny.bonuses[skillId]) bonus += character.destiny.bonuses[skillId];
+        if (character.destiny.bonuses[categoryId]) bonus += character.destiny.bonuses[categoryId];
+    }
+    return baseVal + bonus;
   };
 
   // --- ACTIONS ---
@@ -150,7 +162,7 @@ function App() {
     if (!charData.xp) charData.xp = 0;
     if (!charData.upgrades) charData.upgrades = {};
     if (!charData.wallet) charData.wallet = { blood: 0, honey: 0 }; 
-    if (!charData.loadout) charData.loadout = []; // LEGACY PATCH
+    if (!charData.loadout) charData.loadout = []; 
     setCharacter(charData);
     setActiveTab('SHEET');
   };
@@ -227,7 +239,6 @@ function App() {
     const selectedTier = tiers[Math.floor(Math.random() * 5)];
     const fullName = `${prefix.name === "Standard Issue" ? "" : prefix.name + " "}${selectedTier} ${randomWeapon.name}`;
     
-    // Loot always generates into the STASH (destiny.equipment)
     const currentEquip = character.destiny?.equipment || [];
     const newEquip = [...currentEquip, fullName];
     
@@ -238,7 +249,6 @@ function App() {
     } catch (e) { console.error("Loot Gen Failed:", e); }
   };
 
-  // NEW: TOGGLE EQUIP STATUS
   const toggleEquip = async (itemIndex, isCurrentlyEquipped) => {
     if (!character.id) return;
 
@@ -246,11 +256,9 @@ function App() {
     let newEquip = [...(character.destiny?.equipment || [])];
 
     if (isCurrentlyEquipped) {
-        // Move from Loadout -> Stash
         const item = newLoadout.splice(itemIndex, 1)[0];
         newEquip.push(item);
     } else {
-        // Move from Stash -> Loadout (WITH BORDERLANDS RULES)
         const item = newEquip[itemIndex];
         const stats = getGearStats(item);
         const isArmor = stats ? stats.isArmor : false;
@@ -267,7 +275,6 @@ function App() {
         newLoadout.push(item);
     }
 
-    // Update State & Cloud
     try {
         const charRef = doc(db, "characters", character.id);
         setCharacter(prev => ({ ...prev, loadout: newLoadout, destiny: { ...prev.destiny, equipment: newEquip } }));
@@ -277,7 +284,6 @@ function App() {
 
   const removeLoot = async (indexToRemove, isEquipped) => {
     if (!character.id) return;
-    
     const targetArray = isEquipped ? (character.loadout || []) : (character.destiny?.equipment || []);
     const itemToRemove = targetArray[indexToRemove];
     
@@ -519,7 +525,7 @@ function App() {
                     ))}
                 </div>
 
-                {/* NEW: INVENTORY SYSTEM (EQUIPPED vs STASH) */}
+                {/* INVENTORY SYSTEM (EQUIPPED vs STASH) */}
                 <div className="mt-6 pt-4 border-t border-white/10">
                     
                     {/* SECTION 1: ACTIVE LOADOUT */}
@@ -528,7 +534,6 @@ function App() {
                              <div className="text-[10px] uppercase text-green-500 font-bold tracking-widest">Active Loadout</div>
                              <div className="text-[8px] text-gray-500 uppercase">Max 4 WPN / 1 ARM</div>
                         </div>
-                        
                         <div className="space-y-2">
                             {(!character.loadout || character.loadout.length === 0) && (
                                 <div className="text-[9px] text-gray-600 text-center py-2 border border-dashed border-white/5">LOADOUT EMPTY</div>
@@ -563,7 +568,6 @@ function App() {
                              <div className="text-[10px] uppercase text-gray-500 tracking-widest">The Stash</div>
                              <button onClick={generateLoot} className="text-[9px] bg-red-600 text-white px-2 py-1 font-bold uppercase hover:bg-white hover:text-red-600 transition-colors animate-pulse">+ Generate Loot</button>
                         </div>
-                        
                         <div className="space-y-2">
                             {(!character.destiny?.equipment || character.destiny.equipment.length === 0) && (
                                 <div className="text-[9px] text-gray-600 text-center py-2 border border-dashed border-white/5">STASH EMPTY</div>
