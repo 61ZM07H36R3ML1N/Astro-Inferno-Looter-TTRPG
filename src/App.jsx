@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FORMS, DESTINIES } from './data/reference';
-import { GEAR_STATS, WEAPON_TABLE, LOOT_PREFIXES } from './data/gear'; 
+// NEW: Imported GRENADE_TIERS and GRENADE_JUICE
+import { GEAR_STATS, WEAPON_TABLE, LOOT_PREFIXES, GRENADE_TIERS, GRENADE_JUICE } from './data/gear'; 
 import { SKILL_CATEGORIES } from './data/skills';
 
 // FIREBASE IMPORTS
@@ -29,6 +30,7 @@ function App() {
   
   // ROLLER & MODAL STATE
   const [rollResult, setRollResult] = useState(null);
+  const [grenadeResult, setGrenadeResult] = useState(null); 
   const [viewData, setViewData] = useState(false); 
   const [viewPromotion, setViewPromotion] = useState(false); 
 
@@ -40,6 +42,7 @@ function App() {
     rank: 1,         
     xp: 0,           
     wallet: { blood: 0, honey: 0 }, 
+    consumables: { grenades: 0, stims: 0 }, 
     upgrades: {},    
     loadout: [],     
     statuses: [],    
@@ -173,6 +176,7 @@ function App() {
     if (!charData.loadout) charData.loadout = []; 
     if (!charData.statuses) charData.statuses = []; 
     if (charData.avatarUrl === undefined) charData.avatarUrl = ""; 
+    if (!charData.consumables) charData.consumables = { grenades: 0, stims: 0 }; 
     setCharacter(charData);
     setActiveTab('SHEET');
   };
@@ -217,6 +221,40 @@ function App() {
       try { await updateDoc(doc(db, "characters", character.id), { xp: newXp }); } catch(e) { console.error("XP Sync Failed", e); }
   };
 
+  // --- TACTICAL BACKPACK (CONSUMABLES) ---
+  const updateConsumable = async (type, change) => {
+      if (!character.id) return;
+      const currentVal = character.consumables?.[type] || 0;
+      const newVal = Math.max(0, currentVal + change);
+      
+      const updatedChar = { ...character, consumables: { ...character.consumables, [type]: newVal } };
+      setCharacter(updatedChar);
+      
+      try { await updateDoc(doc(db, "characters", character.id), { [`consumables.${type}`]: newVal }); } catch(e) { console.error("Consumable Sync Failed", e); }
+  };
+
+  // --- THE GRENADE ENGINE ---
+  const pullPin = async () => {
+      if (!character.id) return;
+      if (!character.consumables?.grenades || character.consumables.grenades <= 0) {
+          alert("OUT OF ORDNANCE: No grenades available in backpack.");
+          return;
+      }
+
+      // 1. Consume the Grenade
+      updateConsumable('grenades', -1);
+
+      // 2. Roll Tier & Juice from the imported tables
+      const tierRoll = Math.floor(Math.random() * GRENADE_TIERS.length);
+      const tierData = GRENADE_TIERS[tierRoll];
+
+      const juiceRoll = Math.floor(Math.random() * GRENADE_JUICE.length);
+      const juiceData = GRENADE_JUICE[juiceRoll];
+
+      // 3. Trigger Modal
+      setGrenadeResult({ tier: tierData, juice: juiceData });
+  };
+
   const promoteUnit = async (upgradeType, upgradeKey) => {
       if (!character.id) return;
       const newRank = (character.rank || 1) + 1;
@@ -256,18 +294,15 @@ function App() {
     const roll = rollD20(); 
     let type = 'FAIL';
 
-    // 1. Identify Primary Weapon (First non-armor item in Loadout)
     const activeWeaponString = (character.loadout || []).find(item => {
         const stats = getGearStats(item);
         return stats && !stats.isArmor;
     });
 
-    // 2. Calculate dynamic crit window
     const critWindow = getCritRange(character, activeWeaponString);
-
-    // 3. Calculate dynamic accuracy bonus
     let weaponBonus = 0;
     let weaponName = 'UNARMED';
+    
     if (activeWeaponString) {
         const stats = getGearStats(activeWeaponString);
         if (stats) {
@@ -276,26 +311,16 @@ function App() {
         }
     }
 
-    // 4. Resolve Roll
     const finalTarget = baseTarget + weaponBonus;
 
     if (roll <= critWindow) type = 'CRIT'; 
     else if (roll === 20) type = 'JAM'; 
     else if (roll <= finalTarget) type = 'SUCCESS';
 
-    setRollResult({ 
-        roll, 
-        baseTarget, 
-        finalTarget, 
-        weaponBonus, 
-        critWindow, 
-        type, 
-        skill: skillName,
-        weaponName: weaponName
-    });
+    setRollResult({ roll, baseTarget, finalTarget, weaponBonus, critWindow, type, skill: skillName, weaponName: weaponName });
   };
 
-  // --- LOOT & INVENTORY ENGINE ---
+  // --- LOOT ENGINE ---
   const generateLoot = async () => {
     if (!character.id) { alert("COMMAND REJECTED: Unit must be synced to database."); return; }
     const roll = Math.floor(Math.random() * 100) + 1;
@@ -384,7 +409,7 @@ function App() {
   return (
     <div className="flex flex-col h-screen w-full bg-black text-white font-mono overflow-hidden relative">
       
-      {/* HEADER (Commander Level) */}
+      {/* HEADER */}
       <div className="h-14 border-b border-red-900/50 flex items-center px-4 justify-between bg-red-950/20 shrink-0 z-50">
         <div className="flex items-center gap-3">
           <img src={user.photoURL} alt="User" className="h-8 w-8 rounded-full border border-red-600" />
@@ -455,19 +480,14 @@ function App() {
                  <div>
                      <div className="text-[10px] text-cyan-500 font-bold uppercase tracking-widest mb-1">Unit Designation</div>
                      <input type="text" value={character.name === "UNIT_UNNAMED" ? "" : character.name} placeholder="ENTER_NAME" className="w-full bg-white/5 border-b-2 border-cyan-600 p-4 text-xl font-bold uppercase focus:outline-none mb-4" onChange={(e) => setCharacter({...character, name: e.target.value.toUpperCase()})} />
-                     
                      <div className="text-[10px] text-cyan-500 font-bold uppercase tracking-widest mb-1">Visual ID (Image URL) [Optional]</div>
                      <input type="text" value={character.avatarUrl || ""} placeholder="https://..." className="w-full bg-white/5 border-b-2 border-cyan-600 p-3 text-sm focus:outline-none text-gray-300" onChange={(e) => setCharacter({...character, avatarUrl: e.target.value})} />
                  </div>
-                 
                  {character.avatarUrl && (
                      <div className="flex justify-center mt-4">
-                         <div className="h-24 w-24 border border-cyan-500/50 bg-black/50 overflow-hidden shadow-[0_0_15px_rgba(6,182,212,0.3)]">
-                             <img src={character.avatarUrl} alt="Preview" className="h-full w-full object-cover" />
-                         </div>
+                         <div className="h-24 w-24 border border-cyan-500/50 bg-black/50 overflow-hidden shadow-[0_0_15px_rgba(6,182,212,0.3)]"><img src={character.avatarUrl} alt="Preview" className="h-full w-full object-cover" /></div>
                      </div>
                  )}
-
                  <button onClick={() => setStep(2)} className="w-full bg-cyan-600 hover:bg-cyan-500 py-4 font-bold uppercase text-black transition-colors mt-8">Next Phase</button>
                </div>
             )}
@@ -645,18 +665,39 @@ function App() {
                     ))}
                 </div>
 
-                {/* INVENTORY SYSTEM (EQUIPPED vs STASH) */}
+                {/* --- TACTICAL BACKPACK --- */}
                 <div className="mt-6 pt-4 border-t border-white/10">
+                    <div className="text-[10px] uppercase text-gray-500 font-bold tracking-widest mb-3 border-b border-white/10 pb-1">Tactical Backpack</div>
                     
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                        <div className="bg-blue-950/20 border border-blue-900/30 p-2 flex flex-col items-center justify-between">
+                            <div className="text-[9px] text-blue-400 font-bold uppercase tracking-widest mb-2">Med-Stims</div>
+                            <div className="flex items-center gap-3 mb-2">
+                                <button onClick={() => updateConsumable('stims', -1)} className="bg-blue-900/30 text-blue-500 px-2 py-1 hover:bg-blue-600 hover:text-white">-</button>
+                                <span className="text-xl font-black text-blue-400">{character.consumables?.stims || 0}</span>
+                                <button onClick={() => updateConsumable('stims', 1)} className="bg-blue-900/30 text-blue-500 px-2 py-1 hover:bg-blue-600 hover:text-white">+</button>
+                            </div>
+                            <button onClick={() => { if(character.consumables?.stims > 0) { updateConsumable('stims', -1); updateVital('life', 5); } }} className="w-full bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-600/50 text-[8px] py-1 font-bold uppercase transition-colors">Inject (Heal 5)</button>
+                        </div>
+
+                        <div className="bg-orange-950/20 border border-orange-900/30 p-2 flex flex-col items-center justify-between">
+                            <div className="text-[9px] text-orange-400 font-bold uppercase tracking-widest mb-2">Ordnance</div>
+                            <div className="flex items-center gap-3 mb-2">
+                                <button onClick={() => updateConsumable('grenades', -1)} className="bg-orange-900/30 text-orange-500 px-2 py-1 hover:bg-orange-600 hover:text-white">-</button>
+                                <span className="text-xl font-black text-orange-400">{character.consumables?.grenades || 0}</span>
+                                <button onClick={() => updateConsumable('grenades', 1)} className="bg-orange-900/30 text-orange-500 px-2 py-1 hover:bg-orange-600 hover:text-white">+</button>
+                            </div>
+                            <button onClick={pullPin} className={`w-full text-[8px] py-1 font-bold uppercase transition-colors border ${character.consumables?.grenades > 0 ? 'bg-orange-600 hover:bg-red-600 text-white border-orange-500 animate-pulse' : 'bg-gray-900 text-gray-600 border-gray-800'}`}>PULL PIN</button>
+                        </div>
+                    </div>
+
                     <div className="mb-6">
                         <div className="flex justify-between items-end mb-2 border-b border-green-900/50 pb-1">
                              <div className="text-[10px] uppercase text-green-500 font-bold tracking-widest">Active Loadout</div>
                              <div className="text-[8px] text-gray-500 uppercase">Max 4 WPN / 1 ARM</div>
                         </div>
                         <div className="space-y-2">
-                            {(!character.loadout || character.loadout.length === 0) && (
-                                <div className="text-[9px] text-gray-600 text-center py-2 border border-dashed border-white/5">LOADOUT EMPTY</div>
-                            )}
+                            {(!character.loadout || character.loadout.length === 0) && ( <div className="text-[9px] text-gray-600 text-center py-2 border border-dashed border-white/5">LOADOUT EMPTY</div> )}
                             {(character.loadout || []).map((item, i) => {
                                 const gear = getGearStats(item);
                                 const rarityColor = getLootColor(item);
@@ -687,9 +728,7 @@ function App() {
                              <button onClick={generateLoot} className="text-[9px] bg-red-600 text-white px-2 py-1 font-bold uppercase hover:bg-white hover:text-red-600 transition-colors animate-pulse">+ Generate Loot</button>
                         </div>
                         <div className="space-y-2">
-                            {(!character.destiny?.equipment || character.destiny.equipment.length === 0) && (
-                                <div className="text-[9px] text-gray-600 text-center py-2 border border-dashed border-white/5">STASH EMPTY</div>
-                            )}
+                            {(!character.destiny?.equipment || character.destiny.equipment.length === 0) && ( <div className="text-[9px] text-gray-600 text-center py-2 border border-dashed border-white/5">STASH EMPTY</div> )}
                             {(character.destiny?.equipment || []).map((item, i) => {
                                 const gear = getGearStats(item);
                                 const rarityColor = getLootColor(item);
@@ -733,92 +772,77 @@ function App() {
         </button>
       </div>
 
-      {/* MODALS */}
+      {/* --- DETONATION PROTOCOL MODAL --- */}
+      {grenadeResult && (
+        <div className="fixed inset-0 z-[100] bg-red-950/90 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-100" onClick={() => setGrenadeResult(null)}>
+           <div className="w-full max-w-sm border-4 border-red-600 bg-black p-8 text-center shadow-[0_0_80px_rgba(220,38,38,0.6)]" onClick={e => e.stopPropagation()}>
+              <div className="text-[12px] font-bold uppercase tracking-[0.4em] mb-6 text-red-500 animate-pulse">Detonation Protocol</div>
+              
+              <div className="mb-6 border-b border-red-900/50 pb-4">
+                  <div className="text-3xl font-black text-white uppercase italic">{grenadeResult.tier.name}</div>
+                  <div className="text-orange-400 text-[10px] uppercase font-bold tracking-widest mt-1">Area: {grenadeResult.tier.area}</div>
+              </div>
+
+              <div className="flex justify-center gap-4 mb-6">
+                  <div className="bg-red-900/20 border border-red-900 p-2 w-1/2">
+                      <div className="text-[9px] text-gray-500 uppercase tracking-widest">Damage</div>
+                      <div className="text-2xl font-black text-red-500">{grenadeResult.tier.dmg}</div>
+                  </div>
+                  <div className="bg-orange-900/20 border border-orange-900 p-2 w-1/2">
+                      <div className="text-[9px] text-gray-500 uppercase tracking-widest">Duration</div>
+                      <div className="text-2xl font-black text-orange-500">{grenadeResult.tier.dur}</div>
+                  </div>
+              </div>
+
+              <div className="bg-white/5 p-4 border border-white/10 text-left">
+                  <div className="text-yellow-500 font-bold uppercase text-[10px] mb-1 tracking-widest">Payload: {grenadeResult.juice.type}</div>
+                  <div className="text-sm text-white italic leading-relaxed">"{grenadeResult.juice.desc}"</div>
+                  <div className="text-[9px] text-gray-400 mt-2 border-t border-white/10 pt-2">{grenadeResult.tier.effect}</div>
+              </div>
+
+              <button onClick={() => setGrenadeResult(null)} className="mt-8 w-full border border-red-600 text-red-500 py-3 uppercase text-xs font-bold hover:bg-red-600 hover:text-white transition-colors">Clear Blast Zone</button>
+           </div>
+        </div>
+      )}
+
+      {/* MODALS (Roll, DataLink, Promotion) */}
       {rollResult && (
         <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-100" onClick={() => setRollResult(null)}>
            <div className={`w-full max-w-sm border-2 p-8 text-center shadow-[0_0_30px_rgba(0,0,0,0.5)] transform scale-100 transition-all ${
                rollResult.type === 'CRIT' ? 'border-yellow-500 bg-yellow-900/20' : rollResult.type === 'SUCCESS' ? 'border-green-500 bg-green-900/20' : rollResult.type === 'JAM' ? 'border-red-600 bg-red-900/20 border-dashed' : 'border-red-800 bg-red-950/40'}`}>
-              
               <div className="text-[10px] font-bold uppercase tracking-[0.3em] mb-4 text-white opacity-70">Resolution Protocol</div>
-              
               <div className="text-6xl font-black mb-2 text-white drop-shadow-md">{rollResult.roll}</div>
-              
               <div className={`text-2xl font-black uppercase italic tracking-tighter mb-4 ${ rollResult.type === 'CRIT' ? 'text-yellow-400' : rollResult.type === 'SUCCESS' ? 'text-green-500' : rollResult.type === 'JAM' ? 'text-red-600 animate-pulse' : 'text-red-800'}`}>
                   {rollResult.type === 'CRIT' ? 'HOT STREAK' : rollResult.type === 'JAM' ? 'FATAL ERROR' : rollResult.type}
               </div>
-
               <div className="border-t border-white/20 pt-4 space-y-1 text-left text-[9px] font-mono text-gray-400 uppercase tracking-widest bg-black/50 p-3">
-                  <div className="flex justify-between">
-                      <span className="text-gray-500">Skill</span>
-                      <span className="text-white font-bold">{rollResult.skill}</span>
-                  </div>
-                  <div className="flex justify-between">
-                      <span className="text-gray-500">Active Weapon</span>
-                      <span className="text-blue-400 font-bold">{rollResult.weaponName}</span>
-                  </div>
-                  <div className="flex justify-between mt-2 border-t border-white/10 pt-1">
-                      <span className="text-gray-500">Base Target</span>
-                      <span className="text-white">≤{rollResult.baseTarget}</span>
-                  </div>
-                  <div className="flex justify-between">
-                      <span className="text-gray-500">Weapon Bonus</span>
-                      <span className="text-green-400">+{rollResult.weaponBonus}</span>
-                  </div>
-                  <div className="flex justify-between border-t border-white/10 pt-1 text-xs">
-                      <span className="text-gray-300">Final Target</span>
-                      <span className="text-white font-black">≤{rollResult.finalTarget}</span>
-                  </div>
-                  <div className="flex justify-between text-[8px] text-yellow-500/80 mt-2">
-                      <span>Crit Range</span>
-                      <span>1-{rollResult.critWindow}</span>
-                  </div>
+                  <div className="flex justify-between"><span className="text-gray-500">Skill</span><span className="text-white font-bold">{rollResult.skill}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Active Weapon</span><span className="text-blue-400 font-bold">{rollResult.weaponName}</span></div>
+                  <div className="flex justify-between mt-2 border-t border-white/10 pt-1"><span className="text-gray-500">Base Target</span><span className="text-white">≤{rollResult.baseTarget}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Weapon Bonus</span><span className="text-green-400">+{rollResult.weaponBonus}</span></div>
+                  <div className="flex justify-between border-t border-white/10 pt-1 text-xs"><span className="text-gray-300">Final Target</span><span className="text-white font-black">≤{rollResult.finalTarget}</span></div>
+                  <div className="flex justify-between text-[8px] text-yellow-500/80 mt-2"><span>Crit Range</span><span>1-{rollResult.critWindow}</span></div>
               </div>
-
               <div className="mt-8 text-[9px] uppercase tracking-widest text-gray-500 animate-pulse">Tap anywhere to dismiss</div>
            </div>
         </div>
       )}
 
-      {/* REPAIRED DATALINK MODAL */}
       {viewData && character.form && (
         <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setViewData(false)}>
             <div className="w-full max-w-sm border border-cyan-900/50 bg-cyan-950/10 p-6 relative shadow-[0_0_50px_rgba(8,145,178,0.2)]" onClick={e => e.stopPropagation()}>
                 <div className="text-center mb-6 border-b border-cyan-500/20 pb-4"><h2 className="text-xl font-black italic text-cyan-400 uppercase tracking-tighter">DATA_UPLINK</h2><div className="text-[9px] text-cyan-600 font-mono">SECURE CONNECTION ESTABLISHED</div></div>
                 <div className="space-y-6 overflow-y-auto max-h-[60vh] custom-scrollbar pr-2">
-                    
-                    {character.avatarUrl && (
-                        <div className="border border-cyan-900/50 p-1 bg-black">
-                            <img src={character.avatarUrl} alt="Dossier" className="w-full h-40 object-cover grayscale opacity-80" />
-                        </div>
-                    )}
-
-                    <div>
-                        <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">Identity Config</div>
-                        <div className="text-lg font-bold text-white uppercase">{character.form?.name || 'UNKNOWN FORM'}</div>
-                        <div className="text-[10px] text-gray-400 leading-relaxed mb-2">{character.form?.description || 'No data found.'}</div>
-                        
-                        <div className="text-sm font-bold text-white uppercase mt-2">{character.destiny?.name || 'UNKNOWN DESTINY'}</div>
-                        <div className="text-[10px] text-gray-400 leading-relaxed">{character.destiny?.description || 'No data found.'}</div>
-                    </div>
-
-                    <div className="border border-red-900/30 bg-red-950/10 p-3">
-                        <div className="text-[9px] font-bold text-red-500 uppercase tracking-widest mb-1">Active Protocol (Curse)</div>
-                        <div className="text-sm font-bold text-red-400 uppercase">{character.darkMark?.name || 'NO ACTIVE PROTOCOL'}</div>
-                        <div className="text-[10px] text-red-300/80 leading-relaxed">{character.darkMark?.description || 'Data corrupted or missing.'}</div>
-                    </div>
-
-                    <div>
-                        <div className="text-[9px] font-bold text-purple-500 uppercase tracking-widest mb-1">Origin Source</div>
-                        <div className="text-sm font-bold text-purple-400 uppercase">{character.master || 'UNKNOWN ORIGIN'}</div>
-                    </div>
-
+                    {character.avatarUrl && (<div className="border border-cyan-900/50 p-1 bg-black"><img src={character.avatarUrl} alt="Dossier" className="w-full h-40 object-cover grayscale opacity-80" /></div>)}
+                    <div><div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">Identity Config</div><div className="text-lg font-bold text-white uppercase">{character.form?.name || 'UNKNOWN FORM'}</div><div className="text-[10px] text-gray-400 leading-relaxed mb-2">{character.form?.description || 'No data found.'}</div><div className="text-sm font-bold text-white uppercase mt-2">{character.destiny?.name || 'UNKNOWN DESTINY'}</div><div className="text-[10px] text-gray-400 leading-relaxed">{character.destiny?.description || 'No data found.'}</div></div>
+                    <div className="border border-red-900/30 bg-red-950/10 p-3"><div className="text-[9px] font-bold text-red-500 uppercase tracking-widest mb-1">Active Protocol (Curse)</div><div className="text-sm font-bold text-red-400 uppercase">{character.darkMark?.name || 'NO ACTIVE PROTOCOL'}</div><div className="text-[10px] text-red-300/80 leading-relaxed">{character.darkMark?.description || 'Data corrupted or missing.'}</div></div>
+                    <div><div className="text-[9px] font-bold text-purple-500 uppercase tracking-widest mb-1">Origin Source</div><div className="text-sm font-bold text-purple-400 uppercase">{character.master || 'UNKNOWN ORIGIN'}</div></div>
                 </div>
                 <button onClick={() => setViewData(false)} className="w-full mt-6 border border-cyan-900 text-cyan-500 py-3 uppercase text-xs font-bold hover:bg-cyan-900/20 transition-colors">Terminate Link</button>
             </div>
         </div>
       )}
 
-      {/* PROMOTION MODAL */}
       {viewPromotion && (
           <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setViewPromotion(false)}>
               <div className="w-full max-w-sm border border-yellow-500 bg-yellow-900/20 p-6 relative shadow-[0_0_50px_rgba(234,179,8,0.3)]" onClick={e => e.stopPropagation()}>
