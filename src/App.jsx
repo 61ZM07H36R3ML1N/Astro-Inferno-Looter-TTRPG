@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FORMS, DESTINIES } from './data/reference';
-import { GEAR_STATS, WEAPON_TABLE } from './data/gear';
+import { GEAR_STATS, WEAPON_TABLE, LOOT_PREFIXES } from './data/gear'; 
 import { SKILL_CATEGORIES } from './data/skills';
 
 // FIREBASE IMPORTS
@@ -8,7 +8,7 @@ import { auth, googleProvider, db } from './firebase';
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { collection, addDoc, query, where, onSnapshot, deleteDoc, updateDoc, doc } from "firebase/firestore";
 
-// --- UTILS (Place this OUTSIDE the App component) ---
+// --- UTILS (Outside Component to fix React Error) ---
 const rollD20 = () => Math.floor(Math.random() * 20) + 1;
 
 function App() {
@@ -19,7 +19,7 @@ function App() {
   const [roster, setRoster] = useState([]); 
   
   // ROLLER STATE
-  const [rollResult, setRollResult] = useState(null); // { roll: 15, target: 12, type: 'FAIL', skill: 'Maneuver' }
+  const [rollResult, setRollResult] = useState(null);
 
   // CREATOR STATE
   const [step, setStep] = useState(1); 
@@ -41,6 +41,7 @@ function App() {
       setLoading(false);
       
       if (currentUser) {
+        // Listen for user's characters
         const q = query(collection(db, "characters"), where("uid", "==", currentUser.uid));
         const unsubscribeSnapshot = onSnapshot(q, (snapshot) => {
           const loadedChars = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
@@ -68,36 +69,41 @@ function App() {
   };
 
   // --- ACTIONS ---
-  const handleLogin = async () => {
-    try { await signInWithPopup(auth, googleProvider); } catch (e) { console.error(e); }
-  };
+  const handleLogin = async () => { try { await signInWithPopup(auth, googleProvider); } catch (e) { console.error(e); } };
+  const handleLogout = async () => { await signOut(auth); setActiveTab('ROSTER'); };
 
-  const handleLogout = async () => {
-    await signOut(auth);
-    setActiveTab('ROSTER');
-  };
-
+  // --- ROBUST SAVE FUNCTION ---
   const saveCharacter = async () => {
-    if (!user) return;
-    try {
-      const maxLife = getMaxVital('life', character);
-      const maxSanity = getMaxVital('sanity', character);
-      const maxAura = getMaxVital('aura', character);
+    if (!user) { alert("ERROR: You must be logged in to save."); return; }
+    if (!character.form) { alert("ERROR: Form data missing. Please complete Phase 2."); return; }
 
+    try {
+      // 1. Calculate Max Vitals (Safety Check)
+      const maxLife = getMaxVital('life', character) || 10;
+      const maxSanity = getMaxVital('sanity', character) || 10;
+      const maxAura = getMaxVital('aura', character) || 10;
+
+      // 2. Prepare Payload (Remove ID if exists to create new entry)
+      const { id, ...cleanCharacter } = character; 
       const payload = { 
-        ...character, 
+        ...cleanCharacter, 
         currentVitals: { life: maxLife, sanity: maxSanity, aura: maxAura },
         uid: user.uid, 
         createdAt: new Date() 
       };
-      
+
+      // 3. Send to Firebase
       await addDoc(collection(db, "characters"), payload);
       
+      // 4. Success & Reset
+      alert(`UNIT ${character.name} DEPLOYED TO DATABASE`);
       setCharacter(initialCharacter);
       setStep(1);
       setActiveTab('ROSTER');
+
     } catch (e) {
       console.error("Save Error:", e);
+      alert(`SAVE FAILED: ${e.message}`);
     }
   };
 
@@ -108,6 +114,7 @@ function App() {
   };
 
   const loadCharacter = (charData) => {
+    // Patch old characters without currentVitals
     if (!charData.currentVitals) {
         charData.currentVitals = {
             life: getMaxVital('life', charData),
@@ -122,53 +129,84 @@ function App() {
   const updateVital = async (type, change) => {
     const maxVal = getMaxVital(type);
     const currentVal = character.currentVitals?.[type] ?? maxVal;
-    
     let newVal = currentVal + change;
+    
+    // Clamp values
     if (newVal < 0) newVal = 0;
     if (newVal > maxVal) newVal = maxVal;
 
-    const updatedChar = {
-        ...character,
-        currentVitals: { 
-            ...(character.currentVitals || {}), 
-            [type]: newVal 
-        }
-    };
+    // Update Local
+    const updatedChar = { ...character, currentVitals: { ...(character.currentVitals || {}), [type]: newVal } };
     setCharacter(updatedChar);
 
+    // Update Cloud (if saved)
     if (character.id) {
-        try {
-            const charRef = doc(db, "characters", character.id);
-            await updateDoc(charRef, {
-                [`currentVitals.${type}`]: newVal
-            });
-        } catch (e) {
-            console.error("Sync Failed:", e);
-        }
+        try { await updateDoc(doc(db, "characters", character.id), { [`currentVitals.${type}`]: newVal }); } catch (e) { console.error("Sync Failed:", e); }
     }
   };
 
-  // --- NEW: BLACKJACK ENGINE (DICE ROLLER) ---
+  // --- DICE ENGINE ---
   const performRoll = (skillName, target) => {
-    const roll = rollD20(); // Call external helper
-    
+    const roll = rollD20(); 
     let type = 'FAIL';
-    
-    // Logic: Roll UNDER Target
-    if (roll === 1) type = 'CRIT'; // Natural 1 (Hot Streak)
-    else if (roll === 20) type = 'JAM'; // Natural 20 (Crit Fail)
+    if (roll === 1) type = 'CRIT'; 
+    else if (roll === 20) type = 'JAM'; 
     else if (roll <= target) type = 'SUCCESS';
-    
     setRollResult({ roll, target, type, skill: skillName });
   };
 
-  // --- LOGIC HELPERS ---
+  // --- LOOT ENGINE ---
+  const generateLoot = async () => {
+    // SAFETY LOCK: Must save character first
+    if (!character.id) {
+        alert("COMMAND REJECTED: Unit must be synced to database before equipping loot.");
+        return; 
+    }
+
+    // 1. Roll for Power (Prefix)
+    const roll = Math.floor(Math.random() * 100) + 1;
+    let prefix = { name: "Standard Issue", chance: 40 };
+    
+    if (LOOT_PREFIXES) {
+        let cumulative = 0;
+        for (let p of LOOT_PREFIXES) {
+            cumulative += p.chance;
+            if (roll <= cumulative) { prefix = p; break; }
+        }
+    }
+
+    // 2. Roll for Weapon & Tier
+    const randomWeapon = WEAPON_TABLE[Math.floor(Math.random() * WEAPON_TABLE.length)];
+    const tiers = Object.keys(GEAR_STATS.weapons); 
+    const selectedTier = tiers[Math.floor(Math.random() * 5)];
+
+    // 3. Construct Name
+    const fullName = `${prefix.name === "Standard Issue" ? "" : prefix.name + " "}${selectedTier} ${randomWeapon.name}`;
+
+    // 4. Save to Cloud
+    const currentEquip = character.destiny?.equipment || [];
+    const newEquip = [...currentEquip, fullName];
+
+    try {
+        const charRef = doc(db, "characters", character.id);
+        // Update Local State FIRST
+        setCharacter(prev => ({ ...prev, destiny: { ...prev.destiny, equipment: newEquip } }));
+        // Update Cloud
+        await updateDoc(charRef, { "destiny.equipment": newEquip });
+    } catch (e) { 
+        console.error("Loot Gen Failed:", e); 
+        alert("Database connection failed during loot generation.");
+    }
+  };
+
+  // --- UI HELPERS ---
   const getStat = (n) => character.form ? character.form.baseStats[n] : 10;
   
   const toRoman = (num) => {
     const roman = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI', 7: 'VII' };
     return roman[Math.max(1, Math.min(7, num))] || num; 
   };
+  
   const getGearStats = (itemString) => {
     const tierKey = Object.keys(GEAR_STATS.weapons).find(t => itemString.includes(t));
     if (!tierKey) return null; 
@@ -183,8 +221,9 @@ function App() {
         finalStats.dmg += archetype.stats.dmg;
         finalStats.tgt += archetype.stats.tgt;
     }
-    return { tier: tierKey, isArmor, stats: finalStats, name: archetype ? archetype.name : cleanName, category: archetype ? archetype.category : "Standard" };
+    return { tier: tierKey, isArmor, stats: finalStats, name: archetype ? archetype.name : cleanName };
   };
+
   const getSkillTotal = (skillId, statName, categoryId) => {
     if (!character.form) return 0;
     const baseVal = character.form.baseStats[statName] || 0;
@@ -255,12 +294,7 @@ function App() {
                      </button>
                      <div className="flex flex-col items-end gap-2 z-20 pl-4 border-l border-white/10 ml-4">
                         <div className="text-[8px] text-gray-500 uppercase">STATUS: <span className="text-green-500 font-bold">READY</span></div>
-                        <button 
-                            onClick={(e) => { e.stopPropagation(); deleteCharacter(char.id, char.name); }}
-                            className="text-[8px] text-red-600 border border-red-900/50 px-2 py-1 hover:bg-red-600 hover:text-white transition-colors uppercase"
-                        >
-                            Discharge
-                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); deleteCharacter(char.id, char.name); }} className="text-[8px] text-red-600 border border-red-900/50 px-2 py-1 hover:bg-red-600 hover:text-white transition-colors uppercase">Discharge</button>
                      </div>
                   </div>
                 ))
@@ -274,13 +308,7 @@ function App() {
             {step === 1 && (
                <div className="space-y-6">
                  <h2 className="text-3xl font-black uppercase">Initialize</h2>
-                 <input 
-                   type="text" 
-                   value={character.name === "UNIT_UNNAMED" ? "" : character.name}
-                   placeholder="ENTER_NAME" 
-                   className="w-full bg-white/5 border-b-2 border-red-600 p-4 text-xl font-bold uppercase focus:outline-none" 
-                   onChange={(e) => setCharacter({...character, name: e.target.value.toUpperCase()})} 
-                 />
+                 <input type="text" value={character.name === "UNIT_UNNAMED" ? "" : character.name} placeholder="ENTER_NAME" className="w-full bg-white/5 border-b-2 border-red-600 p-4 text-xl font-bold uppercase focus:outline-none" onChange={(e) => setCharacter({...character, name: e.target.value.toUpperCase()})} />
                  <button onClick={() => setStep(2)} className="w-full bg-red-600 py-4 font-bold uppercase">Next Phase</button>
                </div>
             )}
@@ -304,9 +332,7 @@ function App() {
                     <button key={destiny.id} onClick={() => setCharacter({...character, destiny: destiny})} className={`text-left p-4 border flex flex-col justify-center ${character.destiny?.id === destiny.id ? 'bg-red-600 text-white border-red-600' : 'border-white/10 text-gray-500'}`}>
                       <span className="font-bold uppercase text-sm">{destiny.name}</span>
                       <div className="flex flex-wrap gap-1 mt-1">
-                        {destiny.bonuses && Object.entries(destiny.bonuses).map(([key, val]) => (
-                            <span key={key} className="text-[9px] bg-black/20 px-1 rounded uppercase">{key}+{val}</span>
-                        ))}
+                        {destiny.bonuses && Object.entries(destiny.bonuses).map(([key, val]) => ( <span key={key} className="text-[9px] bg-black/20 px-1 rounded uppercase">{key}+{val}</span> ))}
                       </div>
                     </button>
                   ))}
@@ -317,16 +343,7 @@ function App() {
             {step === 4 && (
               <div className="space-y-6">
                 <h2 className="text-xl font-black text-red-600 uppercase">Finalize Lore</h2>
-                <button 
-                  onClick={() => {
-                    const roll = rollD20(); // Uses external rollD20
-                    const result = character.form.tables.master.find(m => roll >= m.min && roll <= m.max);
-                    setCharacter({...character, master: result?.label});
-                  }}
-                  className="w-full border border-purple-500 p-4 uppercase font-bold text-purple-400"
-                >
-                  {character.master ? character.master : "Roll Master Connection"}
-                </button>
+                <button onClick={() => { const roll = rollD20(); const result = character.form.tables.master.find(m => roll >= m.min && roll <= m.max); setCharacter({...character, master: result?.label}); }} className="w-full border border-purple-500 p-4 uppercase font-bold text-purple-400"> {character.master ? character.master : "Roll Master Connection"} </button>
                 <div className="space-y-2">
                     <div className="text-xs font-bold text-gray-500 uppercase">Select Dark Mark</div>
                     {character.form?.darkMarks.map((mark, i) => (
@@ -336,9 +353,7 @@ function App() {
                         </button>
                     ))}
                 </div>
-                <button onClick={saveCharacter} className="w-full bg-green-600 py-4 font-bold uppercase mt-8 text-black">
-                   Sync to Database
-                </button>
+                <button onClick={saveCharacter} className="w-full bg-green-600 py-4 font-bold uppercase mt-8 text-black">Sync to Database</button>
               </div>
             )}
           </div>
@@ -353,27 +368,19 @@ function App() {
                     <span className="text-[10px] text-red-600 font-mono tracking-tighter">894-XJ</span>
                 </div>
                 
-                {/* INTERACTIVE VITALS */}
+                {/* VITALS */}
                 <div className="space-y-2 mb-6">
                     {['life', 'sanity', 'aura'].map(v => {
                         const max = getMaxVital(v);
                         const current = character.currentVitals?.[v] ?? max;
                         const percent = (current / max) * 100;
-                        
                         return (
                             <div key={v} className="bg-black border border-white/10 p-2">
                                 <div className="flex justify-between items-center mb-1">
                                     <span className="text-[9px] font-bold uppercase text-gray-500 tracking-widest">{v}</span>
-                                    <span className={`text-sm font-black ${v === 'life' ? 'text-green-500' : v === 'sanity' ? 'text-blue-500' : 'text-purple-500'}`}>
-                                        {current} <span className="text-gray-600 text-[10px]">/ {max}</span>
-                                    </span>
+                                    <span className={`text-sm font-black ${v === 'life' ? 'text-green-500' : v === 'sanity' ? 'text-blue-500' : 'text-purple-500'}`}>{current} <span className="text-gray-600 text-[10px]">/ {max}</span></span>
                                 </div>
-                                <div className="h-1 w-full bg-gray-800 mb-2 overflow-hidden">
-                                    <div 
-                                        style={{width: `${percent}%`}} 
-                                        className={`h-full transition-all duration-300 ${v === 'life' ? 'bg-green-600' : v === 'sanity' ? 'bg-blue-600' : 'bg-purple-600'}`}
-                                    ></div>
-                                </div>
+                                <div className="h-1 w-full bg-gray-800 mb-2 overflow-hidden"><div style={{width: `${percent}%`}} className={`h-full transition-all duration-300 ${v === 'life' ? 'bg-green-600' : v === 'sanity' ? 'bg-blue-600' : 'bg-purple-600'}`}></div></div>
                                 <div className="flex gap-1">
                                     <button onClick={() => updateVital(v, -1)} className="flex-1 bg-white/5 hover:bg-red-900/50 text-red-500 font-bold text-xs py-2 border border-white/5">-</button>
                                     <button onClick={() => updateVital(v, 1)} className="flex-1 bg-white/5 hover:bg-green-900/50 text-green-500 font-bold text-xs py-2 border border-white/5">+</button>
@@ -384,15 +391,10 @@ function App() {
                 </div>
 
                 <div className="grid grid-cols-3 gap-1 mb-6">
-                   {['PHY', 'SPD', 'COG', 'DRV', 'CHA', 'SPR'].map(s => (
-                     <div key={s} className="bg-black border border-white/10 p-2 text-center">
-                        <div className="text-[8px] text-gray-400">{s}</div>
-                        <div className="text-sm font-bold">{getStat(s)}</div>
-                     </div>
-                   ))}
+                   {['PHY', 'SPD', 'COG', 'DRV', 'CHA', 'SPR'].map(s => ( <div key={s} className="bg-black border border-white/10 p-2 text-center"> <div className="text-[8px] text-gray-400">{s}</div> <div className="text-sm font-bold">{getStat(s)}</div> </div> ))}
                 </div>
                 
-                {/* INTERACTIVE SKILL LIST (THE ROLLERS) */}
+                {/* SKILLS */}
                 <div className="space-y-4">
                     <div className="text-[10px] uppercase text-gray-500 tracking-widest border-b border-white/10 pb-1">Neural Network</div>
                     {SKILL_CATEGORIES.map(cat => (
@@ -417,10 +419,18 @@ function App() {
                     ))}
                 </div>
 
-                {/* ARMORY */}
+                {/* ARMORY & LOOT GENERATOR */}
                 {character.destiny && (
                     <div className="mt-6 pt-4 border-t border-white/10">
-                        <div className="text-[10px] uppercase text-gray-500 mb-3 tracking-widest">Loadout</div>
+                        <div className="flex justify-between items-end mb-3 border-b border-white/10 pb-1">
+                             <div className="text-[10px] uppercase text-gray-500 tracking-widest">Loadout</div>
+                             <button 
+                                 onClick={generateLoot}
+                                 className="text-[9px] bg-red-600 text-white px-2 py-1 font-bold uppercase hover:bg-white hover:text-red-600 transition-colors animate-pulse"
+                             >
+                                 + Generate Loot
+                             </button>
+                        </div>
                         <div className="space-y-2">
                             {character.destiny.equipment.map((item, i) => {
                                 const gear = getGearStats(item);
@@ -438,6 +448,7 @@ function App() {
                         </div>
                     </div>
                 )}
+
             </div>
             <button onClick={() => setActiveTab('ROSTER')} className="w-full border border-white/10 text-gray-500 py-3 uppercase text-xs hover:border-white hover:text-white transition-colors">Return to Barracks</button>
           </div>
@@ -456,9 +467,9 @@ function App() {
         </button>
       </div>
 
-      {/* --- ROLL RESULT OVERLAY (MODAL) --- */}
+      {/* --- ROLL RESULT MODAL --- */}
       {rollResult && (
-        <div className="fixed inset-0 z-100 bg-black/90 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-100" onClick={() => setRollResult(null)}>
+        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-100" onClick={() => setRollResult(null)}>
            <div className={`w-full max-w-sm border-2 p-8 text-center shadow-[0_0_30px_rgba(0,0,0,0.5)] transform scale-100 transition-all ${
                rollResult.type === 'CRIT' ? 'border-yellow-500 bg-yellow-900/20' :
                rollResult.type === 'SUCCESS' ? 'border-green-500 bg-green-900/20' :
@@ -466,27 +477,19 @@ function App() {
                'border-red-800 bg-red-950/40' // FAIL
            }`}>
               <div className="text-[10px] font-bold uppercase tracking-[0.3em] mb-4 text-white opacity-70">Resolution Protocol</div>
-              
-              <div className="text-6xl font-black mb-2 text-white drop-shadow-md">
-                {rollResult.roll}
-              </div>
-              
+              <div className="text-6xl font-black mb-2 text-white drop-shadow-md">{rollResult.roll}</div>
               <div className={`text-2xl font-black uppercase italic tracking-tighter mb-6 ${
                   rollResult.type === 'CRIT' ? 'text-yellow-400' :
                   rollResult.type === 'SUCCESS' ? 'text-green-500' :
                   rollResult.type === 'JAM' ? 'text-red-600 animate-pulse' :
                   'text-red-800'
               }`}>
-                {rollResult.type === 'CRIT' ? 'HOT STREAK' :
-                 rollResult.type === 'JAM' ? 'FATAL ERROR' :
-                 rollResult.type}
+                {rollResult.type === 'CRIT' ? 'HOT STREAK' : rollResult.type === 'JAM' ? 'FATAL ERROR' : rollResult.type}
               </div>
-              
               <div className="flex justify-between border-t border-white/20 pt-4 text-xs font-mono text-gray-400">
                 <div>SKILL: {rollResult.skill}</div>
                 <div>TARGET: ≤{rollResult.target}</div>
               </div>
-              
               <div className="mt-8 text-[9px] uppercase tracking-widest text-gray-500 animate-pulse">Tap anywhere to dismiss</div>
            </div>
         </div>
