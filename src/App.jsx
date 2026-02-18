@@ -32,7 +32,11 @@ function App() {
   const [grenadeResult, setGrenadeResult] = useState(null); 
   const [viewData, setViewData] = useState(false); 
   const [viewPromotion, setViewPromotion] = useState(false); 
-  const [isLogOpen, setIsLogOpen] = useState(false); // NEW: Collapsible Notes State
+  const [isLogOpen, setIsLogOpen] = useState(false); 
+
+  // MULTIPLAYER SQUAD STATE
+  const [squadRoster, setSquadRoster] = useState([]);
+  const [squadInput, setSquadInput] = useState("");
 
   // CREATOR STATE
   const [step, setStep] = useState(1); 
@@ -46,7 +50,8 @@ function App() {
     upgrades: {},    
     loadout: [],     
     statuses: [], 
-    notes: "",       // NEW: Field Notes
+    notes: "",       
+    squadId: null,   
     form: null,      
     destiny: null,   
     master: null,    
@@ -75,9 +80,22 @@ function App() {
     return () => unsubscribeAuth();
   }, []);
 
+  // --- REAL-TIME SQUAD LISTENER (PATCHED) ---
+  useEffect(() => {
+    // If we don't have a squad ID, gracefully exit without calling setState synchronously
+    if (!character?.squadId) return;
+
+    const q = query(collection(db, "characters"), where("squadId", "==", character.squadId));
+    const unsubscribeSquad = onSnapshot(q, (snapshot) => {
+      const mates = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+      setSquadRoster(mates);
+    });
+    return () => unsubscribeSquad();
+  }, [character?.squadId]);
+
   // --- HELPER: MAX VITALS ---
   const getMaxVital = (type, charData = character) => {
-    if (!charData.form) return 10;
+    if (!charData || !charData.form) return 10;
     const statMap = { life: 'PHY', sanity: 'DRV', aura: 'SPR' };
     const baseStat = charData.form.baseStats[statMap[type]] || 10;
     let total = 9 + Math.floor(baseStat / 5);
@@ -182,7 +200,12 @@ function App() {
     if (!charData.statuses) charData.statuses = []; 
     if (charData.avatarUrl === undefined) charData.avatarUrl = ""; 
     if (!charData.consumables) charData.consumables = { grenades: 0, stims: 0 }; 
-    if (charData.notes === undefined) charData.notes = ""; // LEGACY PATCH
+    if (charData.notes === undefined) charData.notes = ""; 
+    if (charData.squadId === undefined) charData.squadId = null; 
+    
+    // PATCH: Clear out any previous squad data gracefully when swapping characters
+    setSquadRoster([]);
+    
     setCharacter(charData);
     setActiveTab('SHEET');
   };
@@ -394,14 +417,28 @@ function App() {
     } catch (e) { console.error("Loot Removal Failed:", e); }
   };
 
-  // --- NEW: CLOUD SYNC FIELD NOTES ---
   const syncNotes = async () => {
       if (!character.id) return;
-      try {
-          await updateDoc(doc(db, "characters", character.id), { notes: character.notes });
-      } catch (e) {
-          console.error("Notes Sync Failed", e);
-      }
+      try { await updateDoc(doc(db, "characters", character.id), { notes: character.notes }); } catch (e) { console.error("Notes Sync Failed", e); }
+  };
+
+  // --- SQUAD LINK METHODS (PATCHED) ---
+  const joinSquad = async (code) => {
+      if (!character.id) return;
+      if (!code || code.trim() === "") return;
+      const upperCode = code.toUpperCase().trim();
+      setCharacter(prev => ({ ...prev, squadId: upperCode }));
+      try { await updateDoc(doc(db, "characters", character.id), { squadId: upperCode }); } catch(e) { console.error("Squad Join Failed", e); }
+  };
+
+  const leaveSquad = async () => {
+      if (!character.id) return;
+      setCharacter(prev => ({ ...prev, squadId: null }));
+      
+      // PATCH: Clear out the local roster properly on user action, bypassing React's Strict Mode warnings!
+      setSquadRoster([]); 
+      
+      try { await updateDoc(doc(db, "characters", character.id), { squadId: null }); } catch(e) { console.error("Squad Leave Failed", e); }
   };
 
   // --- RENDER ---
@@ -442,7 +479,7 @@ function App() {
       {/* CONTENT */}
       <div className="flex-1 overflow-y-auto pb-24 custom-scrollbar relative">
         
-        {/* VISUAL HAZARD OVERLAYS */}
+        {/* VISUAL HAZARD OVERLAYS (Only on Sheet Tab) */}
         {activeTab === 'SHEET' && (character.statuses || []).includes('BURNING') && <div className="pointer-events-none absolute inset-0 z-0 shadow-[inset_0_0_80px_rgba(234,88,12,0.4)] animate-pulse"></div>}
         {activeTab === 'SHEET' && (character.statuses || []).includes('POISONED') && <div className="pointer-events-none absolute inset-0 z-0 shadow-[inset_0_0_80px_rgba(34,197,94,0.2)]"></div>}
         {activeTab === 'SHEET' && (character.statuses || []).includes('BLEEDING') && <div className="pointer-events-none absolute inset-0 z-0 border-4 border-red-900/60"></div>}
@@ -763,37 +800,105 @@ function App() {
                     </div>
                 </div>
 
-                {/* --- NEW: DATA LOG (FIELD NOTES) --- */}
+                {/* DATA LOG */}
                 <div className="mt-6 pt-4 border-t border-white/10">
-                    <button 
-                        onClick={() => setIsLogOpen(!isLogOpen)}
-                        className="w-full flex justify-between items-center mb-2 border-b border-white/10 pb-1 group"
-                    >
+                    <button onClick={() => setIsLogOpen(!isLogOpen)} className="w-full flex justify-between items-center mb-2 border-b border-white/10 pb-1 group">
                          <div className="text-[10px] uppercase text-gray-500 tracking-widest group-hover:text-white transition-colors">Data Log (Field Notes)</div>
                          <div className="text-[10px] text-gray-500">{isLogOpen ? '▼' : '▶'}</div>
                     </button>
-                    
                     {isLogOpen && (
                         <div className="animate-in fade-in slide-in-from-top-2 duration-200">
-                            <textarea
-                                value={character.notes || ""}
-                                onChange={(e) => setCharacter({...character, notes: e.target.value})}
-                                onBlur={syncNotes}
-                                placeholder="ENTER_MISSION_LOGS_HERE..."
-                                className="w-full bg-black/50 border border-white/10 p-3 text-xs text-gray-300 font-mono h-40 focus:outline-none focus:border-cyan-500/50 transition-colors custom-scrollbar placeholder:text-gray-700"
-                            />
+                            <textarea value={character.notes || ""} onChange={(e) => setCharacter({...character, notes: e.target.value})} onBlur={syncNotes} placeholder="ENTER_MISSION_LOGS_HERE..." className="w-full bg-black/50 border border-white/10 p-3 text-xs text-gray-300 font-mono h-40 focus:outline-none focus:border-cyan-500/50 transition-colors custom-scrollbar placeholder:text-gray-700" />
                             <div className="text-right text-[8px] text-gray-600 uppercase mt-1">Data encrypts and syncs when clicking outside the box.</div>
                         </div>
                     )}
                 </div>
 
             </div>
-            <button onClick={() => setActiveTab('ROSTER')} className="w-full border border-white/10 text-gray-500 py-3 uppercase text-xs hover:border-white hover:text-white transition-colors relative z-10 mt-6">Return to Barracks</button>
           </div>
+        )}
+
+        {/* --- TAB 4: SQUAD NETWORK --- */}
+        {activeTab === 'SQUAD' && (
+           <div className="p-4 space-y-4 animate-in fade-in z-10 relative">
+             {!character.id ? (
+                 <div className="text-center py-20 opacity-50 border border-dashed border-white/20 p-8">
+                     <div className="text-4xl mb-4">⚠</div>
+                     <div className="text-sm font-bold uppercase tracking-widest text-white">No Unit Deployed</div>
+                     <div className="text-[10px] text-gray-400 mt-2">Deploy a unit from the Barracks to access the Squad Network.</div>
+                 </div>
+             ) : !character.squadId ? (
+                 <div className="border border-cyan-900/50 p-6 bg-black/80 backdrop-blur-sm text-center shadow-[0_0_30px_rgba(6,182,212,0.1)]">
+                    <div className="text-[10px] text-cyan-500 font-bold uppercase tracking-[0.3em] mb-6">Neural Link Offline</div>
+                    <input type="text" value={squadInput} onChange={e => setSquadInput(e.target.value)} placeholder="ENTER SQUAD CODE" className="w-full bg-cyan-950/20 border-b-2 border-cyan-600 p-4 text-2xl font-black uppercase text-center text-white focus:outline-none mb-4 tracking-widest placeholder:text-gray-700" maxLength={6} />
+                    <button onClick={() => joinSquad(squadInput)} className="w-full bg-cyan-600 text-black py-4 font-bold uppercase hover:bg-white hover:text-cyan-600 transition-colors mb-6">Establish Link</button>
+                    <div className="text-[8px] text-gray-500 uppercase tracking-widest mb-4">- OR -</div>
+                    <button onClick={() => joinSquad(Math.random().toString(36).substring(2, 6).toUpperCase())} className="w-full border border-cyan-900 text-cyan-500 py-3 text-[10px] font-bold uppercase hover:bg-cyan-900/20 transition-colors">Generate Secure Code</button>
+                 </div>
+             ) : (
+                 <div className="space-y-4">
+                     <div className="flex justify-between items-end border-b border-cyan-500/50 pb-2 mb-6">
+                         <div>
+                             <div className="text-[8px] text-cyan-500 font-bold uppercase tracking-[0.3em] mb-1">Active Network Link</div>
+                             <div className="text-3xl font-black text-white tracking-[0.2em] leading-none drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]">{character.squadId}</div>
+                         </div>
+                         <button onClick={leaveSquad} className="border border-red-900/50 bg-red-900/20 text-red-500 px-3 py-1 text-[9px] font-bold uppercase hover:bg-red-600 hover:text-white transition-colors">Sever Link</button>
+                     </div>
+                     
+                     <div className="space-y-3">
+                         {squadRoster.map(mate => (
+                             <div key={mate.id} className={`border p-3 flex flex-col gap-3 relative overflow-hidden transition-all ${mate.id === character.id ? 'border-cyan-500/50 bg-cyan-950/10' : 'border-white/10 bg-black/60'}`}>
+                                 
+                                 {/* Mini Haz overlays for teammates */}
+                                 {(mate.statuses || []).includes('BLEEDING') && <div className="pointer-events-none absolute inset-0 z-0 border-2 border-red-900/60"></div>}
+                                 {(mate.statuses || []).includes('BURNING') && <div className="pointer-events-none absolute inset-0 z-0 shadow-[inset_0_0_30px_rgba(234,88,12,0.2)]"></div>}
+
+                                 <div className="flex justify-between items-start relative z-10">
+                                     <div className="flex items-center gap-3">
+                                         <div className="h-10 w-10 bg-gray-900 border border-white/20 overflow-hidden shrink-0 shadow-md">
+                                             {mate.avatarUrl ? <img src={mate.avatarUrl} alt="Avatar" className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center text-[8px] text-gray-600 font-bold uppercase">NO ID</div>}
+                                         </div>
+                                         <div>
+                                             <div className="text-lg font-black italic uppercase leading-none text-white">{mate.name} {mate.id === character.id && <span className="text-[8px] text-cyan-500 font-normal not-italic ml-2 tracking-widest">(YOU)</span>}</div>
+                                             <div className="text-[9px] text-gray-400 uppercase mt-1 tracking-widest">RK {mate.rank} • {mate.form?.name || 'UNKNOWN'}</div>
+                                         </div>
+                                     </div>
+                                     
+                                     {/* Hazards Mini-Icons */}
+                                     <div className="flex gap-1">
+                                         {(mate.statuses || []).map(s => (
+                                            <div key={s} className={`h-2 w-2 rounded-full shadow-[0_0_5px_currentColor] ${s === 'BURNING' ? 'bg-orange-500 text-orange-500' : s === 'BLEEDING' ? 'bg-red-600 text-red-600' : s === 'POISONED' ? 'bg-green-500 text-green-500' : s === 'STUNNED' ? 'bg-yellow-500 text-yellow-500' : 'bg-purple-500 text-purple-500'}`}></div>
+                                         ))}
+                                     </div>
+                                 </div>
+
+                                 {/* Mini Vitals */}
+                                 <div className="space-y-1 relative z-10 border-t border-white/10 pt-2">
+                                     {['life', 'sanity', 'aura'].map(v => {
+                                         const mMax = getMaxVital(v, mate);
+                                         const mCur = mate.currentVitals?.[v] ?? mMax;
+                                         const mPct = (mCur / mMax) * 100;
+                                         return (
+                                             <div key={v} className="flex items-center gap-2">
+                                                <div className="w-8 text-[8px] font-bold text-gray-600 uppercase text-right tracking-widest">{v.substring(0,3)}</div>
+                                                <div className="flex-1 h-1.5 bg-gray-900 relative overflow-hidden">
+                                                    <div style={{width: `${mPct}%`}} className={`h-full transition-all duration-300 ${v === 'life' ? 'bg-green-600' : v === 'sanity' ? 'bg-blue-600' : 'bg-purple-600'}`}></div>
+                                                </div>
+                                                <div className={`w-8 text-[9px] font-black text-right ${v === 'life' ? 'text-green-500' : v === 'sanity' ? 'text-blue-500' : 'text-purple-500'}`}>{mCur}</div>
+                                             </div>
+                                         );
+                                     })}
+                                 </div>
+                             </div>
+                         ))}
+                     </div>
+                 </div>
+             )}
+           </div>
         )}
       </div>
 
-      {/* MOBILE NAV BAR */}
+      {/* MOBILE NAV BAR (UPDATED FOR 3 TABS) */}
       <div className="h-20 border-t border-red-900/50 bg-black flex items-center justify-around px-2 shrink-0 z-50 relative">
         <button onClick={() => setActiveTab('ROSTER')} className={`flex flex-col items-center gap-1 w-1/3 ${activeTab === 'ROSTER' ? 'text-red-600' : 'text-gray-600'}`}>
           <span className="text-[10px] font-black uppercase tracking-tighter">Barracks</span>
@@ -803,6 +908,10 @@ function App() {
           <span className="text-[10px] font-black uppercase tracking-tighter">Active Unit</span>
           <div className={`h-1 w-8 transition-all ${activeTab === 'SHEET' ? 'bg-red-600 shadow-[0_0_8px_red]' : 'bg-transparent'}`}></div>
         </button>
+        <button onClick={() => setActiveTab('SQUAD')} className={`flex flex-col items-center gap-1 w-1/3 ${activeTab === 'SQUAD' ? 'text-cyan-400' : 'text-gray-600'}`}>
+          <span className="text-[10px] font-black uppercase tracking-tighter">Squad</span>
+          <div className={`h-1 w-8 transition-all ${activeTab === 'SQUAD' ? 'bg-cyan-500 shadow-[0_0_8px_cyan]' : 'bg-transparent'}`}></div>
+        </button>
       </div>
 
       {/* DETONATION PROTOCOL MODAL */}
@@ -810,29 +919,9 @@ function App() {
         <div className="fixed inset-0 z-[100] bg-red-950/90 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-100" onClick={() => setGrenadeResult(null)}>
            <div className="w-full max-w-sm border-4 border-red-600 bg-black p-8 text-center shadow-[0_0_80px_rgba(220,38,38,0.6)]" onClick={e => e.stopPropagation()}>
               <div className="text-[12px] font-bold uppercase tracking-[0.4em] mb-6 text-red-500 animate-pulse">Detonation Protocol</div>
-              
-              <div className="mb-6 border-b border-red-900/50 pb-4">
-                  <div className="text-3xl font-black text-white uppercase italic">{grenadeResult.tier.name}</div>
-                  <div className="text-orange-400 text-[10px] uppercase font-bold tracking-widest mt-1">Area: {grenadeResult.tier.area}</div>
-              </div>
-
-              <div className="flex justify-center gap-4 mb-6">
-                  <div className="bg-red-900/20 border border-red-900 p-2 w-1/2">
-                      <div className="text-[9px] text-gray-500 uppercase tracking-widest">Damage</div>
-                      <div className="text-2xl font-black text-red-500">{grenadeResult.tier.dmg}</div>
-                  </div>
-                  <div className="bg-orange-900/20 border border-orange-900 p-2 w-1/2">
-                      <div className="text-[9px] text-gray-500 uppercase tracking-widest">Duration</div>
-                      <div className="text-2xl font-black text-orange-500">{grenadeResult.tier.dur}</div>
-                  </div>
-              </div>
-
-              <div className="bg-white/5 p-4 border border-white/10 text-left">
-                  <div className="text-yellow-500 font-bold uppercase text-[10px] mb-1 tracking-widest">Payload: {grenadeResult.juice.type}</div>
-                  <div className="text-sm text-white italic leading-relaxed">"{grenadeResult.juice.desc}"</div>
-                  <div className="text-[9px] text-gray-400 mt-2 border-t border-white/10 pt-2">{grenadeResult.tier.effect}</div>
-              </div>
-
+              <div className="mb-6 border-b border-red-900/50 pb-4"><div className="text-3xl font-black text-white uppercase italic">{grenadeResult.tier.name}</div><div className="text-orange-400 text-[10px] uppercase font-bold tracking-widest mt-1">Area: {grenadeResult.tier.area}</div></div>
+              <div className="flex justify-center gap-4 mb-6"><div className="bg-red-900/20 border border-red-900 p-2 w-1/2"><div className="text-[9px] text-gray-500 uppercase tracking-widest">Damage</div><div className="text-2xl font-black text-red-500">{grenadeResult.tier.dmg}</div></div><div className="bg-orange-900/20 border border-orange-900 p-2 w-1/2"><div className="text-[9px] text-gray-500 uppercase tracking-widest">Duration</div><div className="text-2xl font-black text-orange-500">{grenadeResult.tier.dur}</div></div></div>
+              <div className="bg-white/5 p-4 border border-white/10 text-left"><div className="text-yellow-500 font-bold uppercase text-[10px] mb-1 tracking-widest">Payload: {grenadeResult.juice.type}</div><div className="text-sm text-white italic leading-relaxed">"{grenadeResult.juice.desc}"</div><div className="text-[9px] text-gray-400 mt-2 border-t border-white/10 pt-2">{grenadeResult.tier.effect}</div></div>
               <button onClick={() => setGrenadeResult(null)} className="mt-8 w-full border border-red-600 text-red-500 py-3 uppercase text-xs font-bold hover:bg-red-600 hover:text-white transition-colors">Clear Blast Zone</button>
            </div>
         </div>
