@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FORMS, DESTINIES } from './data/reference';
-// NEW: Imported GRENADE_TIERS and GRENADE_JUICE
-import { GEAR_STATS, WEAPON_TABLE, LOOT_PREFIXES, GRENADE_TIERS, GRENADE_JUICE } from './data/gear'; 
+// NEW: Imported LOOT_SUFFIXES
+import { GEAR_STATS, WEAPON_TABLE, LOOT_PREFIXES, GRENADE_TIERS, GRENADE_JUICE, LOOT_SUFFIXES } from './data/gear'; 
 import { SKILL_CATEGORIES } from './data/skills';
 
 // FIREBASE IMPORTS
@@ -107,21 +107,35 @@ function App() {
     return "text-gray-300"; 
   };
 
+  // UPDATED: GEAR MATH ENGINE (NOW READS SUFFIXES)
   const getGearStats = (itemString) => {
     const tierKey = Object.keys(GEAR_STATS.weapons).find(t => itemString.includes(t));
     if (!tierKey) return null; 
+    
     const isArmor = itemString.toLowerCase().includes("armor");
     const baseStats = isArmor ? GEAR_STATS.armor[tierKey] : GEAR_STATS.weapons[tierKey];
-    const cleanName = itemString.replace(tierKey, "").replace("Weapon", "").trim();
-    const archetype = !isArmor ? WEAPON_TABLE.find(w => cleanName.includes(w.name) || w.name.includes(cleanName)) : null;
+    
+    // Find Archetype (e.g. "Shotgun")
+    const archetype = !isArmor ? WEAPON_TABLE.find(w => itemString.includes(w.name)) : null;
+    
+    // NEW: Find Suffix (e.g. "of the Titan")
+    const suffix = (!isArmor && LOOT_SUFFIXES) ? LOOT_SUFFIXES.find(s => itemString.includes(s.name)) : null;
+
     const finalStats = { ...baseStats };
     if (archetype) {
-        finalStats.att += archetype.stats.att;
-        finalStats.agm += archetype.stats.agm;
-        finalStats.dmg += archetype.stats.dmg;
-        finalStats.tgt += archetype.stats.tgt;
+        // Combine Base + Archetype + Suffix
+        finalStats.att += archetype.stats.att + (suffix?.stats?.att || 0);
+        finalStats.agm += archetype.stats.agm + (suffix?.stats?.agm || 0);
+        finalStats.dmg += archetype.stats.dmg + (suffix?.stats?.dmg || 0);
+        finalStats.tgt += archetype.stats.tgt + (suffix?.stats?.tgt || 0);
     }
-    return { tier: tierKey, isArmor, stats: finalStats, name: archetype ? archetype.name : cleanName };
+    
+    return { 
+        tier: tierKey, 
+        isArmor, 
+        stats: finalStats, 
+        name: itemString // Replaced 'archetype.name' with 'itemString' to show full glory
+    };
   };
 
   const getSkillTotal = (skillId, statName, categoryId) => {
@@ -221,38 +235,25 @@ function App() {
       try { await updateDoc(doc(db, "characters", character.id), { xp: newXp }); } catch(e) { console.error("XP Sync Failed", e); }
   };
 
-  // --- TACTICAL BACKPACK (CONSUMABLES) ---
   const updateConsumable = async (type, change) => {
       if (!character.id) return;
       const currentVal = character.consumables?.[type] || 0;
       const newVal = Math.max(0, currentVal + change);
-      
       const updatedChar = { ...character, consumables: { ...character.consumables, [type]: newVal } };
       setCharacter(updatedChar);
-      
       try { await updateDoc(doc(db, "characters", character.id), { [`consumables.${type}`]: newVal }); } catch(e) { console.error("Consumable Sync Failed", e); }
   };
 
-  // --- THE GRENADE ENGINE ---
   const pullPin = async () => {
       if (!character.id) return;
       if (!character.consumables?.grenades || character.consumables.grenades <= 0) {
           alert("OUT OF ORDNANCE: No grenades available in backpack.");
           return;
       }
-
-      // 1. Consume the Grenade
       updateConsumable('grenades', -1);
-
-      // 2. Roll Tier & Juice from the imported tables
       const tierRoll = Math.floor(Math.random() * GRENADE_TIERS.length);
-      const tierData = GRENADE_TIERS[tierRoll];
-
       const juiceRoll = Math.floor(Math.random() * GRENADE_JUICE.length);
-      const juiceData = GRENADE_JUICE[juiceRoll];
-
-      // 3. Trigger Modal
-      setGrenadeResult({ tier: tierData, juice: juiceData });
+      setGrenadeResult({ tier: GRENADE_TIERS[tierRoll], juice: GRENADE_JUICE[juiceRoll] });
   };
 
   const promoteUnit = async (upgradeType, upgradeKey) => {
@@ -276,7 +277,6 @@ function App() {
       } catch(e) { console.error("Promotion Failed", e); }
   };
 
-  // --- PR MERGE: COMBAT ENGINE HELPERS ---
   const getCritRange = (charData, equippedWeaponString) => {
       let range = 1; 
       if (equippedWeaponString) {
@@ -289,7 +289,6 @@ function App() {
       return range;
   };
 
-  // --- UPDATED DICE ENGINE WITH COMBAT LOGIC ---
   const performRoll = (skillName, baseTarget) => {
     const roll = rollD20(); 
     let type = 'FAIL';
@@ -320,19 +319,29 @@ function App() {
     setRollResult({ roll, baseTarget, finalTarget, weaponBonus, critWindow, type, skill: skillName, weaponName: weaponName });
   };
 
-  // --- LOOT ENGINE ---
+  // --- UPDATED: PROCEDURAL LOOT ENGINE ---
   const generateLoot = async () => {
     if (!character.id) { alert("COMMAND REJECTED: Unit must be synced to database."); return; }
+    
     const roll = Math.floor(Math.random() * 100) + 1;
     let prefix = { name: "Standard Issue", chance: 40 };
     if (LOOT_PREFIXES) {
         let cumulative = 0;
         for (let p of LOOT_PREFIXES) { cumulative += p.chance; if (roll <= cumulative) { prefix = p; break; } }
     }
+    
     const randomWeapon = WEAPON_TABLE[Math.floor(Math.random() * WEAPON_TABLE.length)];
     const tiers = Object.keys(GEAR_STATS.weapons); 
     const selectedTier = tiers[Math.floor(Math.random() * 5)];
-    const fullName = `${prefix.name === "Standard Issue" ? "" : prefix.name + " "}${selectedTier} ${randomWeapon.name}`;
+    
+    // NEW: 50% Chance to append a Suffix for extra chaos
+    let suffixStr = "";
+    if (LOOT_SUFFIXES && Math.random() > 0.5) {
+        const randomSuffix = LOOT_SUFFIXES[Math.floor(Math.random() * LOOT_SUFFIXES.length)];
+        suffixStr = ` ${randomSuffix.name}`;
+    }
+
+    const fullName = `${prefix.name === "Standard Issue" ? "" : prefix.name + " "}${selectedTier} ${randomWeapon.name}${suffixStr}`;
     
     const currentEquip = character.destiny?.equipment || [];
     const newEquip = [...currentEquip, fullName];
@@ -704,6 +713,7 @@ function App() {
                                 return (
                                     <div key={i} className="flex justify-between items-center bg-green-950/10 border border-green-900/30 p-2 group">
                                         <div className="flex-1">
+                                            {/* UI FIX: NOW DISPLAYS FULL NAME INSTEAD OF JUST ARCHETYPE */}
                                             <div className={`text-[9px] font-bold uppercase ${rarityColor}`}>{gear ? gear.name : item}</div>
                                             {gear && (
                                                 <div className="flex gap-2">
@@ -735,6 +745,7 @@ function App() {
                                 return (
                                     <div key={i} className="flex justify-between items-center bg-white/5 border border-white/10 p-2 group hover:bg-white/10 transition-colors">
                                         <div className="flex-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                                            {/* UI FIX: FULL NAME DISPLAY */}
                                             <div className={`text-[9px] font-bold uppercase ${rarityColor}`}>{gear ? gear.name : item}</div>
                                             {gear && (
                                                 <div className="flex gap-2">
