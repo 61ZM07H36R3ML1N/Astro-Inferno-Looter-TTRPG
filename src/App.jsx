@@ -30,8 +30,9 @@ function App() {
     name: "UNIT_UNNAMED",
     rank: 1,         
     xp: 0,           
-    wallet: { blood: 0, honey: 0 }, // NEW: AETHER CURRENCIES
+    wallet: { blood: 0, honey: 0 }, 
     upgrades: {},    
+    loadout: [],     // NEW: Active Equipped Gear (Max 4 WPN, 1 ARM)
     form: null,      
     destiny: null,   
     master: null,    
@@ -80,185 +81,12 @@ function App() {
     return val;
   };
 
-  // --- ACTIONS ---
-  const handleLogin = async () => { try { await signInWithPopup(auth, googleProvider); } catch (e) { console.error(e); } };
-  const handleLogout = async () => { await signOut(auth); setActiveTab('ROSTER'); };
-
-  const saveCharacter = async () => {
-    if (!user) { alert("ERROR: You must be logged in to save."); return; }
-    if (!character.form) { alert("ERROR: Form data missing. Please complete Phase 2."); return; }
-
-    try {
-      const maxLife = getMaxVital('life', character) || 10;
-      const maxSanity = getMaxVital('sanity', character) || 10;
-      const maxAura = getMaxVital('aura', character) || 10;
-
-      const { id, ...cleanCharacter } = character; 
-      const payload = { 
-        ...cleanCharacter, 
-        currentVitals: { life: maxLife, sanity: maxSanity, aura: maxAura },
-        uid: user.uid, 
-        createdAt: new Date() 
-      };
-
-      await addDoc(collection(db, "characters"), payload);
-      alert(`UNIT ${character.name} DEPLOYED TO DATABASE`);
-      setCharacter(initialCharacter);
-      setStep(1);
-      setActiveTab('ROSTER');
-
-    } catch (e) {
-      console.error("Save Error:", e);
-      alert(`SAVE FAILED: ${e.message}`);
-    }
-  };
-
-  const deleteCharacter = async (charId, charName) => {
-    if (window.confirm(`CONFIRM TERMINATION: Permanently delete unit ${charName}?`)) {
-        try { await deleteDoc(doc(db, "characters", charId)); } catch (e) { console.error(e); }
-    }
-  };
-
-  const loadCharacter = (charData) => {
-    // PATCH LEGACY DATA
-    if (!charData.currentVitals) {
-        charData.currentVitals = {
-            life: getMaxVital('life', charData),
-            sanity: getMaxVital('sanity', charData),
-            aura: getMaxVital('aura', charData)
-        };
-    }
-    if (!charData.rank) charData.rank = 1;
-    if (!charData.xp) charData.xp = 0;
-    if (!charData.upgrades) charData.upgrades = {};
-    if (!charData.wallet) charData.wallet = { blood: 0, honey: 0 }; // Patch for Aether
-
-    setCharacter(charData);
-    setActiveTab('SHEET');
-  };
-
-  const updateVital = async (type, change) => {
-    const maxVal = getMaxVital(type);
-    const currentVal = character.currentVitals?.[type] ?? maxVal;
-    let newVal = currentVal + change;
-    if (newVal < 0) newVal = 0;
-    if (newVal > maxVal) newVal = maxVal;
-    const updatedChar = { ...character, currentVitals: { ...(character.currentVitals || {}), [type]: newVal } };
-    setCharacter(updatedChar);
-    if (character.id) {
-        try { await updateDoc(doc(db, "characters", character.id), { [`currentVitals.${type}`]: newVal }); } catch (e) { console.error("Sync Failed:", e); }
-    }
-  };
-
-  // --- CURRENCY ENGINE (NEW) ---
-  const updateWallet = async (type, change) => {
-      const currentVal = character.wallet?.[type] || 0;
-      const newVal = Math.max(0, currentVal + change);
-      
-      const updatedChar = { ...character, wallet: { ...character.wallet, [type]: newVal } };
-      setCharacter(updatedChar);
-      
-      if (character.id) {
-          try { await updateDoc(doc(db, "characters", character.id), { [`wallet.${type}`]: newVal }); } catch(e) { console.error("Wallet Sync Failed", e); }
-      }
-  };
-
-  // --- XP ENGINE ---
-  const addXp = async (amount) => {
-      if (!character.id) return;
-      const currentXp = character.xp || 0;
-      const newXp = Math.min(XP_THRESHOLD, currentXp + amount); 
-      const updatedChar = { ...character, xp: newXp };
-      setCharacter(updatedChar);
-      try { await updateDoc(doc(db, "characters", character.id), { xp: newXp }); } catch(e) { console.error("XP Sync Failed", e); }
-  };
-
-  const promoteUnit = async (upgradeType, upgradeKey) => {
-      if (!character.id) return;
-      const newRank = (character.rank || 1) + 1;
-      const currentUpgrades = character.upgrades || {};
-      const newBonus = (currentUpgrades[upgradeKey] || 0) + (upgradeType === 'stat' ? 1 : 2); 
-      const newUpgrades = { ...currentUpgrades, [upgradeKey]: newBonus };
-      
-      const updatedChar = { 
-          ...character, 
-          rank: newRank, 
-          xp: 0, 
-          upgrades: newUpgrades 
-      };
-      
-      if (upgradeType === 'vital') {
-          updatedChar.currentVitals = {
-              ...updatedChar.currentVitals,
-              [upgradeKey]: (updatedChar.currentVitals[upgradeKey] || 0) + 2
-          };
-      }
-      setCharacter(updatedChar);
-      setViewPromotion(false); 
-      try {
-          await updateDoc(doc(db, "characters", character.id), {
-              rank: newRank,
-              xp: 0,
-              upgrades: newUpgrades,
-              [`currentVitals.${upgradeKey}`]: upgradeType === 'vital' ? updatedChar.currentVitals[upgradeKey] : character.currentVitals[upgradeKey] || 0
-          });
-          alert(`PROMOTION SUCCESSFUL. UNIT RANK: ${newRank}`);
-      } catch(e) { console.error("Promotion Failed", e); }
-  };
-
-  // --- DICE ENGINE ---
-  const performRoll = (skillName, target) => {
-    const roll = rollD20(); 
-    let type = 'FAIL';
-    if (roll === 1) type = 'CRIT'; 
-    else if (roll === 20) type = 'JAM'; 
-    else if (roll <= target) type = 'SUCCESS';
-    setRollResult({ roll, target, type, skill: skillName });
-  };
-
-  // --- LOOT ENGINE ---
-  const generateLoot = async () => {
-    if (!character.id) { alert("COMMAND REJECTED: Unit must be synced to database."); return; }
-    const roll = Math.floor(Math.random() * 100) + 1;
-    let prefix = { name: "Standard Issue", chance: 40 };
-    if (LOOT_PREFIXES) {
-        let cumulative = 0;
-        for (let p of LOOT_PREFIXES) {
-            cumulative += p.chance;
-            if (roll <= cumulative) { prefix = p; break; }
-        }
-    }
-    const randomWeapon = WEAPON_TABLE[Math.floor(Math.random() * WEAPON_TABLE.length)];
-    const tiers = Object.keys(GEAR_STATS.weapons); 
-    const selectedTier = tiers[Math.floor(Math.random() * 5)];
-    const fullName = `${prefix.name === "Standard Issue" ? "" : prefix.name + " "}${selectedTier} ${randomWeapon.name}`;
-    const currentEquip = character.destiny?.equipment || [];
-    const newEquip = [...currentEquip, fullName];
-    try {
-        const charRef = doc(db, "characters", character.id);
-        setCharacter(prev => ({ ...prev, destiny: { ...prev.destiny, equipment: newEquip } }));
-        await updateDoc(charRef, { "destiny.equipment": newEquip });
-    } catch (e) { console.error("Loot Gen Failed:", e); }
-  };
-
-  const removeLoot = async (indexToRemove) => {
-    if (!character.id) return;
-    const itemToRemove = character.destiny.equipment[indexToRemove];
-    if (!window.confirm(`CONFIRM: Drop ${itemToRemove}?`)) return;
-    const currentEquip = character.destiny?.equipment || [];
-    const newEquip = currentEquip.filter((_, index) => index !== indexToRemove);
-    try {
-        const charRef = doc(db, "characters", character.id);
-        setCharacter(prev => ({ ...prev, destiny: { ...prev.destiny, equipment: newEquip } }));
-        await updateDoc(charRef, { "destiny.equipment": newEquip });
-    } catch (e) { console.error("Loot Removal Failed:", e); }
-  };
-
   // --- UI HELPERS ---
   const toRoman = (num) => {
     const roman = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI', 7: 'VII' };
     return roman[Math.max(1, Math.min(7, num))] || num; 
   };
+
   const getLootColor = (itemName) => {
     if (itemName.includes("Void-Forged")) return "text-fuchsia-400 drop-shadow-[0_0_8px_rgba(232,121,249,0.8)] animate-pulse";
     if (itemName.includes("Satanic")) return "text-red-600 drop-shadow-[0_0_3px_rgba(220,38,38,0.5)]";
@@ -266,6 +94,7 @@ function App() {
     if (itemName.includes("Ancient")) return "text-amber-400 drop-shadow-[0_0_3px_rgba(251,191,36,0.5)]";
     return "text-gray-300"; 
   };
+
   const getGearStats = (itemString) => {
     const tierKey = Object.keys(GEAR_STATS.weapons).find(t => itemString.includes(t));
     if (!tierKey) return null; 
@@ -282,15 +111,189 @@ function App() {
     }
     return { tier: tierKey, isArmor, stats: finalStats, name: archetype ? archetype.name : cleanName };
   };
-  const getSkillTotal = (skillId, statName, categoryId) => {
-    if (!character.form) return 0;
-    const baseVal = getStat(statName); 
-    let bonus = 0;
-    if (character.destiny?.bonuses) {
-        if (character.destiny.bonuses[skillId]) bonus += character.destiny.bonuses[skillId];
-        if (character.destiny.bonuses[categoryId]) bonus += character.destiny.bonuses[categoryId];
+
+  // --- ACTIONS ---
+  const handleLogin = async () => { try { await signInWithPopup(auth, googleProvider); } catch (e) { console.error(e); } };
+  const handleLogout = async () => { await signOut(auth); setActiveTab('ROSTER'); };
+
+  const saveCharacter = async () => {
+    if (!user) { alert("ERROR: You must be logged in to save."); return; }
+    if (!character.form) { alert("ERROR: Form data missing. Please complete Phase 2."); return; }
+    try {
+      const maxLife = getMaxVital('life', character) || 10;
+      const maxSanity = getMaxVital('sanity', character) || 10;
+      const maxAura = getMaxVital('aura', character) || 10;
+      const { id, ...cleanCharacter } = character; 
+      const payload = { 
+        ...cleanCharacter, 
+        currentVitals: { life: maxLife, sanity: maxSanity, aura: maxAura },
+        uid: user.uid, 
+        createdAt: new Date() 
+      };
+      await addDoc(collection(db, "characters"), payload);
+      alert(`UNIT ${character.name} DEPLOYED TO DATABASE`);
+      setCharacter(initialCharacter);
+      setStep(1);
+      setActiveTab('ROSTER');
+    } catch (e) { console.error("Save Error:", e); alert(`SAVE FAILED: ${e.message}`); }
+  };
+
+  const deleteCharacter = async (charId, charName) => {
+    if (window.confirm(`CONFIRM TERMINATION: Permanently delete unit ${charName}?`)) {
+        try { await deleteDoc(doc(db, "characters", charId)); } catch (e) { console.error(e); }
     }
-    return baseVal + bonus;
+  };
+
+  const loadCharacter = (charData) => {
+    if (!charData.currentVitals) charData.currentVitals = { life: getMaxVital('life', charData), sanity: getMaxVital('sanity', charData), aura: getMaxVital('aura', charData) };
+    if (!charData.rank) charData.rank = 1;
+    if (!charData.xp) charData.xp = 0;
+    if (!charData.upgrades) charData.upgrades = {};
+    if (!charData.wallet) charData.wallet = { blood: 0, honey: 0 }; 
+    if (!charData.loadout) charData.loadout = []; // LEGACY PATCH
+    setCharacter(charData);
+    setActiveTab('SHEET');
+  };
+
+  const updateVital = async (type, change) => {
+    const maxVal = getMaxVital(type);
+    const currentVal = character.currentVitals?.[type] ?? maxVal;
+    let newVal = currentVal + change;
+    if (newVal < 0) newVal = 0;
+    if (newVal > maxVal) newVal = maxVal;
+    const updatedChar = { ...character, currentVitals: { ...(character.currentVitals || {}), [type]: newVal } };
+    setCharacter(updatedChar);
+    if (character.id) { try { await updateDoc(doc(db, "characters", character.id), { [`currentVitals.${type}`]: newVal }); } catch (e) { console.error("Sync Failed:", e); } }
+  };
+
+  const updateWallet = async (type, change) => {
+      const currentVal = character.wallet?.[type] || 0;
+      const newVal = Math.max(0, currentVal + change);
+      const updatedChar = { ...character, wallet: { ...character.wallet, [type]: newVal } };
+      setCharacter(updatedChar);
+      if (character.id) { try { await updateDoc(doc(db, "characters", character.id), { [`wallet.${type}`]: newVal }); } catch(e) { console.error("Wallet Sync Failed", e); } }
+  };
+
+  const addXp = async (amount) => {
+      if (!character.id) return;
+      const currentXp = character.xp || 0;
+      const newXp = Math.min(XP_THRESHOLD, currentXp + amount); 
+      const updatedChar = { ...character, xp: newXp };
+      setCharacter(updatedChar);
+      try { await updateDoc(doc(db, "characters", character.id), { xp: newXp }); } catch(e) { console.error("XP Sync Failed", e); }
+  };
+
+  const promoteUnit = async (upgradeType, upgradeKey) => {
+      if (!character.id) return;
+      const newRank = (character.rank || 1) + 1;
+      const currentUpgrades = character.upgrades || {};
+      const newBonus = (currentUpgrades[upgradeKey] || 0) + (upgradeType === 'stat' ? 1 : 2); 
+      const newUpgrades = { ...currentUpgrades, [upgradeKey]: newBonus };
+      const updatedChar = { ...character, rank: newRank, xp: 0, upgrades: newUpgrades };
+      if (upgradeType === 'vital') {
+          updatedChar.currentVitals = { ...updatedChar.currentVitals, [upgradeKey]: (updatedChar.currentVitals[upgradeKey] || 0) + 2 };
+      }
+      setCharacter(updatedChar);
+      setViewPromotion(false); 
+      try {
+          await updateDoc(doc(db, "characters", character.id), {
+              rank: newRank, xp: 0, upgrades: newUpgrades,
+              [`currentVitals.${upgradeKey}`]: upgradeType === 'vital' ? updatedChar.currentVitals[upgradeKey] : character.currentVitals[upgradeKey] || 0
+          });
+          alert(`PROMOTION SUCCESSFUL. UNIT RANK: ${newRank}`);
+      } catch(e) { console.error("Promotion Failed", e); }
+  };
+
+  const performRoll = (skillName, target) => {
+    const roll = rollD20(); 
+    let type = 'FAIL';
+    if (roll === 1) type = 'CRIT'; 
+    else if (roll === 20) type = 'JAM'; 
+    else if (roll <= target) type = 'SUCCESS';
+    setRollResult({ roll, target, type, skill: skillName });
+  };
+
+  // --- LOOT & INVENTORY ENGINE ---
+  const generateLoot = async () => {
+    if (!character.id) { alert("COMMAND REJECTED: Unit must be synced to database."); return; }
+    const roll = Math.floor(Math.random() * 100) + 1;
+    let prefix = { name: "Standard Issue", chance: 40 };
+    if (LOOT_PREFIXES) {
+        let cumulative = 0;
+        for (let p of LOOT_PREFIXES) { cumulative += p.chance; if (roll <= cumulative) { prefix = p; break; } }
+    }
+    const randomWeapon = WEAPON_TABLE[Math.floor(Math.random() * WEAPON_TABLE.length)];
+    const tiers = Object.keys(GEAR_STATS.weapons); 
+    const selectedTier = tiers[Math.floor(Math.random() * 5)];
+    const fullName = `${prefix.name === "Standard Issue" ? "" : prefix.name + " "}${selectedTier} ${randomWeapon.name}`;
+    
+    // Loot always generates into the STASH (destiny.equipment)
+    const currentEquip = character.destiny?.equipment || [];
+    const newEquip = [...currentEquip, fullName];
+    
+    try {
+        const charRef = doc(db, "characters", character.id);
+        setCharacter(prev => ({ ...prev, destiny: { ...prev.destiny, equipment: newEquip } }));
+        await updateDoc(charRef, { "destiny.equipment": newEquip });
+    } catch (e) { console.error("Loot Gen Failed:", e); }
+  };
+
+  // NEW: TOGGLE EQUIP STATUS
+  const toggleEquip = async (itemIndex, isCurrentlyEquipped) => {
+    if (!character.id) return;
+
+    let newLoadout = [...(character.loadout || [])];
+    let newEquip = [...(character.destiny?.equipment || [])];
+
+    if (isCurrentlyEquipped) {
+        // Move from Loadout -> Stash
+        const item = newLoadout.splice(itemIndex, 1)[0];
+        newEquip.push(item);
+    } else {
+        // Move from Stash -> Loadout (WITH BORDERLANDS RULES)
+        const item = newEquip[itemIndex];
+        const stats = getGearStats(item);
+        const isArmor = stats ? stats.isArmor : false;
+
+        if (isArmor) {
+            const armorCount = newLoadout.filter(i => getGearStats(i)?.isArmor).length;
+            if (armorCount >= 1) { alert("LOADOUT FULL: Maximum 1 Armor module allowed."); return; }
+        } else {
+            const wpnCount = newLoadout.filter(i => !getGearStats(i)?.isArmor).length;
+            if (wpnCount >= 4) { alert("LOADOUT FULL: Maximum 4 Weapons allowed."); return; }
+        }
+
+        newEquip.splice(itemIndex, 1);
+        newLoadout.push(item);
+    }
+
+    // Update State & Cloud
+    try {
+        const charRef = doc(db, "characters", character.id);
+        setCharacter(prev => ({ ...prev, loadout: newLoadout, destiny: { ...prev.destiny, equipment: newEquip } }));
+        await updateDoc(charRef, { "loadout": newLoadout, "destiny.equipment": newEquip });
+    } catch (e) { console.error("Equip Toggle Failed:", e); }
+  };
+
+  const removeLoot = async (indexToRemove, isEquipped) => {
+    if (!character.id) return;
+    
+    const targetArray = isEquipped ? (character.loadout || []) : (character.destiny?.equipment || []);
+    const itemToRemove = targetArray[indexToRemove];
+    
+    if (!window.confirm(`CONFIRM DELETION: Drop ${itemToRemove}?`)) return;
+
+    let newLoadout = [...(character.loadout || [])];
+    let newEquip = [...(character.destiny?.equipment || [])];
+
+    if (isEquipped) newLoadout.splice(indexToRemove, 1);
+    else newEquip.splice(indexToRemove, 1);
+
+    try {
+        const charRef = doc(db, "characters", character.id);
+        setCharacter(prev => ({ ...prev, loadout: newLoadout, destiny: { ...prev.destiny, equipment: newEquip } }));
+        await updateDoc(charRef, { "loadout": newLoadout, "destiny.equipment": newEquip });
+    } catch (e) { console.error("Loot Removal Failed:", e); }
   };
 
   // --- RENDER ---
@@ -336,10 +339,7 @@ function App() {
            <div className="p-4 space-y-4 animate-in fade-in">
               <div className="text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-white/10 pb-2">Deployable Units</div>
               {roster.length === 0 ? (
-                <div className="text-center py-10 opacity-50">
-                   <div className="text-4xl mb-2">∅</div>
-                   <div>No Units Found</div>
-                </div>
+                <div className="text-center py-10 opacity-50"><div className="text-4xl mb-2">∅</div><div>No Units Found</div></div>
               ) : (
                 roster.map(char => (
                   <div key={char.id} className="w-full bg-white/5 border border-white/10 p-4 flex justify-between items-center group relative overflow-hidden">
@@ -447,29 +447,15 @@ function App() {
                     </div>
                 </div>
 
-                {/* NEW: AETHER CACHE (BLOOD & HONEY) */}
+                {/* AETHER CACHE */}
                 <div className="grid grid-cols-2 gap-2 mb-6">
-                    {/* BLOOD AETHER */}
                     <div className="border border-red-900/50 bg-red-950/20 p-2 relative overflow-hidden">
-                         <div className="flex justify-between items-center mb-2">
-                             <div className="text-[9px] text-red-500 font-bold uppercase tracking-widest">BLOOD AETHER</div>
-                             <div className="text-xl font-black text-red-500 drop-shadow-[0_0_5px_rgba(220,38,38,0.8)]">{character.wallet?.blood || 0}</div>
-                         </div>
-                         <div className="flex gap-1">
-                             <button onClick={() => updateWallet('blood', -1)} className="flex-1 bg-red-900/20 hover:bg-red-600 hover:text-white border border-red-900/50 text-red-500 text-xs font-bold py-1 transition-colors">-</button>
-                             <button onClick={() => updateWallet('blood', 1)} className="flex-1 bg-red-900/20 hover:bg-red-600 hover:text-white border border-red-900/50 text-red-500 text-xs font-bold py-1 transition-colors">+</button>
-                         </div>
+                         <div className="flex justify-between items-center mb-2"><div className="text-[9px] text-red-500 font-bold uppercase tracking-widest">BLOOD AETHER</div><div className="text-xl font-black text-red-500 drop-shadow-[0_0_5px_rgba(220,38,38,0.8)]">{character.wallet?.blood || 0}</div></div>
+                         <div className="flex gap-1"><button onClick={() => updateWallet('blood', -1)} className="flex-1 bg-red-900/20 hover:bg-red-600 hover:text-white border border-red-900/50 text-red-500 text-xs font-bold py-1">-</button><button onClick={() => updateWallet('blood', 1)} className="flex-1 bg-red-900/20 hover:bg-red-600 hover:text-white border border-red-900/50 text-red-500 text-xs font-bold py-1">+</button></div>
                     </div>
-                    {/* HONEY AETHER */}
                     <div className="border border-yellow-600/50 bg-yellow-950/20 p-2 relative overflow-hidden">
-                         <div className="flex justify-between items-center mb-2">
-                             <div className="text-[9px] text-yellow-500 font-bold uppercase tracking-widest">HONEY AETHER</div>
-                             <div className="text-xl font-black text-yellow-500 drop-shadow-[0_0_5px_rgba(234,179,8,0.8)]">{character.wallet?.honey || 0}</div>
-                         </div>
-                         <div className="flex gap-1">
-                             <button onClick={() => updateWallet('honey', -1)} className="flex-1 bg-yellow-900/20 hover:bg-yellow-500 hover:text-black border border-yellow-600/50 text-yellow-500 text-xs font-bold py-1 transition-colors">-</button>
-                             <button onClick={() => updateWallet('honey', 1)} className="flex-1 bg-yellow-900/20 hover:bg-yellow-500 hover:text-black border border-yellow-600/50 text-yellow-500 text-xs font-bold py-1 transition-colors">+</button>
-                         </div>
+                         <div className="flex justify-between items-center mb-2"><div className="text-[9px] text-yellow-500 font-bold uppercase tracking-widest">HONEY AETHER</div><div className="text-xl font-black text-yellow-500 drop-shadow-[0_0_5px_rgba(234,179,8,0.8)]">{character.wallet?.honey || 0}</div></div>
+                         <div className="flex gap-1"><button onClick={() => updateWallet('honey', -1)} className="flex-1 bg-yellow-900/20 hover:bg-yellow-500 hover:text-black border border-yellow-600/50 text-yellow-500 text-xs font-bold py-1">-</button><button onClick={() => updateWallet('honey', 1)} className="flex-1 bg-yellow-900/20 hover:bg-yellow-500 hover:text-black border border-yellow-600/50 text-yellow-500 text-xs font-bold py-1">+</button></div>
                     </div>
                 </div>
 
@@ -533,39 +519,80 @@ function App() {
                     ))}
                 </div>
 
-                {/* ARMORY */}
-                {character.destiny && (
-                    <div className="mt-6 pt-4 border-t border-white/10">
-                        <div className="flex justify-between items-end mb-3 border-b border-white/10 pb-1">
-                             <div className="text-[10px] uppercase text-gray-500 tracking-widest">Loadout</div>
-                             <button onClick={generateLoot} className="text-[9px] bg-red-600 text-white px-2 py-1 font-bold uppercase hover:bg-white hover:text-red-600 transition-colors animate-pulse">+ Generate Loot</button>
+                {/* NEW: INVENTORY SYSTEM (EQUIPPED vs STASH) */}
+                <div className="mt-6 pt-4 border-t border-white/10">
+                    
+                    {/* SECTION 1: ACTIVE LOADOUT */}
+                    <div className="mb-6">
+                        <div className="flex justify-between items-end mb-2 border-b border-green-900/50 pb-1">
+                             <div className="text-[10px] uppercase text-green-500 font-bold tracking-widest">Active Loadout</div>
+                             <div className="text-[8px] text-gray-500 uppercase">Max 4 WPN / 1 ARM</div>
                         </div>
+                        
                         <div className="space-y-2">
-                            {character.destiny.equipment.map((item, i) => {
+                            {(!character.loadout || character.loadout.length === 0) && (
+                                <div className="text-[9px] text-gray-600 text-center py-2 border border-dashed border-white/5">LOADOUT EMPTY</div>
+                            )}
+                            {(character.loadout || []).map((item, i) => {
                                 const gear = getGearStats(item);
                                 const rarityColor = getLootColor(item);
-                                if (gear) return (
-                                    <div key={i} className="flex justify-between items-center bg-white/5 border border-white/10 p-2 group hover:bg-white/10 transition-colors">
-                                        <div className="flex-1">
-                                            <div className={`text-[9px] font-bold uppercase ${rarityColor}`}>{gear.name}</div>
-                                            <div className="flex gap-2">
-                                                {!gear.isArmor && <span className="text-gray-500 text-[9px] font-bold">DMG {toRoman(gear.stats.dmg)}</span>}
-                                                {gear.isArmor && <span className="text-blue-500 text-[9px] font-bold">ARM {gear.stats.arm}</span>}
-                                            </div>
-                                        </div>
-                                        <button onClick={() => removeLoot(i)} className="text-gray-600 hover:text-red-500 font-bold px-2 py-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity">X</button>
-                                    </div>
-                                );
                                 return (
-                                    <div key={i} className="flex justify-between items-center bg-white/5 border border-white/10 p-2 text-[9px] uppercase">
-                                        <span className={rarityColor}>{item}</span>
-                                        <button onClick={() => removeLoot(i)} className="text-gray-600 hover:text-red-500 font-bold px-2 py-1 text-xs">X</button>
+                                    <div key={i} className="flex justify-between items-center bg-green-950/10 border border-green-900/30 p-2 group">
+                                        <div className="flex-1">
+                                            <div className={`text-[9px] font-bold uppercase ${rarityColor}`}>{gear ? gear.name : item}</div>
+                                            {gear && (
+                                                <div className="flex gap-2">
+                                                    {!gear.isArmor && <span className="text-gray-400 text-[9px] font-bold">DMG {toRoman(gear.stats.dmg)}</span>}
+                                                    {gear.isArmor && <span className="text-blue-400 text-[9px] font-bold">ARM {gear.stats.arm}</span>}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button onClick={() => toggleEquip(i, true)} className="text-[8px] bg-orange-900/50 text-orange-400 px-2 py-1 font-bold uppercase hover:bg-orange-600 hover:text-white">Unequip</button>
+                                            <button onClick={() => removeLoot(i, true)} className="text-gray-600 hover:text-red-500 font-bold px-2 py-1 text-xs">X</button>
+                                        </div>
                                     </div>
                                 );
                             })}
                         </div>
                     </div>
-                )}
+
+                    {/* SECTION 2: THE STASH */}
+                    <div>
+                        <div className="flex justify-between items-end mb-2 border-b border-white/10 pb-1">
+                             <div className="text-[10px] uppercase text-gray-500 tracking-widest">The Stash</div>
+                             <button onClick={generateLoot} className="text-[9px] bg-red-600 text-white px-2 py-1 font-bold uppercase hover:bg-white hover:text-red-600 transition-colors animate-pulse">+ Generate Loot</button>
+                        </div>
+                        
+                        <div className="space-y-2">
+                            {(!character.destiny?.equipment || character.destiny.equipment.length === 0) && (
+                                <div className="text-[9px] text-gray-600 text-center py-2 border border-dashed border-white/5">STASH EMPTY</div>
+                            )}
+                            {(character.destiny?.equipment || []).map((item, i) => {
+                                const gear = getGearStats(item);
+                                const rarityColor = getLootColor(item);
+                                return (
+                                    <div key={i} className="flex justify-between items-center bg-white/5 border border-white/10 p-2 group hover:bg-white/10 transition-colors">
+                                        <div className="flex-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                                            <div className={`text-[9px] font-bold uppercase ${rarityColor}`}>{gear ? gear.name : item}</div>
+                                            {gear && (
+                                                <div className="flex gap-2">
+                                                    {!gear.isArmor && <span className="text-gray-500 text-[9px] font-bold">DMG {toRoman(gear.stats.dmg)}</span>}
+                                                    {gear.isArmor && <span className="text-blue-500 text-[9px] font-bold">ARM {gear.stats.arm}</span>}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button onClick={() => toggleEquip(i, false)} className="text-[8px] bg-green-900/50 text-green-400 px-2 py-1 font-bold uppercase hover:bg-green-600 hover:text-white">Equip</button>
+                                            <button onClick={() => removeLoot(i, false)} className="text-gray-600 hover:text-red-500 font-bold px-2 py-1 text-xs">X</button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                </div>
             </div>
             <button onClick={() => setActiveTab('ROSTER')} className="w-full border border-white/10 text-gray-500 py-3 uppercase text-xs hover:border-white hover:text-white transition-colors">Return to Barracks</button>
           </div>
