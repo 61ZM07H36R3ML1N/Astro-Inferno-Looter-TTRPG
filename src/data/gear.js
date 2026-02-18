@@ -47,3 +47,11 @@ export const WEAPON_TABLE = [
   { name: "Conquistador Great Axe of Hate", category: "Crushing", stats: { att: 2, agm: 8, dmg: 2, tgt: -2 } },
   { name: "Abyssal Grenade Launcher of Blood", category: "Heavy", stats: { att: -9, agm: 4, dmg: 2, tgt: 0 } }
 ];
+
+export const LOOT_PREFIXES = [
+  { name: "Standard Issue", chance: 40, bonus: "None" }, //0-40%
+  { name: "Genesis", chance: 25, bonus: "Precision +1" }, //41-65%
+  { name: "Satanic", chance: 20, bonus: "Damage +1" }, //66-85%
+  { name: "Ancient", chance: 10, bonus: "Range +1" }, //86-95%
+  { name: "Void-Forged", chance: 5, bonus: "ALL STATS +1" } //96-100% (Jackpot)
+];
