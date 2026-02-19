@@ -954,12 +954,48 @@ function App() {
       {viewData && character.form && (
         <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setViewData(false)}>
             <div className="w-full max-w-sm border border-cyan-900/50 bg-cyan-950/10 p-6 relative shadow-[0_0_50px_rgba(8,145,178,0.2)]" onClick={e => e.stopPropagation()}>
-                <div className="text-center mb-6 border-b border-cyan-500/20 pb-4"><h2 className="text-xl font-black italic text-cyan-400 uppercase tracking-tighter">DATA_UPLINK</h2><div className="text-[9px] text-cyan-600 font-mono">SECURE CONNECTION ESTABLISHED</div></div>
+                <div className="text-center mb-6 border-b border-cyan-500/20 pb-4">
+                    <h2 className="text-xl font-black italic text-cyan-400 uppercase tracking-tighter">DATA_UPLINK</h2>
+                    <div className="text-[9px] text-cyan-600 font-mono">SECURE CONNECTION ESTABLISHED</div>
+                </div>
                 <div className="space-y-6 overflow-y-auto max-h-[60vh] custom-scrollbar pr-2">
-                    {character.avatarUrl && (<div className="border border-cyan-900/50 p-1 bg-black"><img src={character.avatarUrl} alt="Dossier" className="w-full h-40 object-cover grayscale opacity-80" /></div>)}
-                    <div><div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">Identity Config</div><div className="text-lg font-bold text-white uppercase">{character.form?.name || 'UNKNOWN FORM'}</div><div className="text-[10px] text-gray-400 leading-relaxed mb-2">{character.form?.description || 'No data found.'}</div><div className="text-sm font-bold text-white uppercase mt-2">{character.destiny?.name || 'UNKNOWN DESTINY'}</div><div className="text-[10px] text-gray-400 leading-relaxed">{character.destiny?.description || 'No data found.'}</div></div>
-                    <div className="border border-red-900/30 bg-red-950/10 p-3"><div className="text-[9px] font-bold text-red-500 uppercase tracking-widest mb-1">Active Protocol (Curse)</div><div className="text-sm font-bold text-red-400 uppercase">{character.darkMark?.name || 'NO ACTIVE PROTOCOL'}</div><div className="text-[10px] text-red-300/80 leading-relaxed">{character.darkMark?.description || 'Data corrupted or missing.'}</div></div>
-                    <div><div className="text-[9px] font-bold text-purple-500 uppercase tracking-widest mb-1">Origin Source</div><div className="text-sm font-bold text-purple-400 uppercase">{character.master || 'UNKNOWN ORIGIN'}</div></div>
+                    
+                    {character.avatarUrl && (
+                        <div className="border border-cyan-900/50 p-1 bg-black">
+                            <img src={character.avatarUrl} alt="Dossier" className="w-full h-40 object-cover grayscale opacity-80" />
+                        </div>
+                    )}
+                    
+                    <div>
+                        <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">Identity Config</div>
+                        
+                        {/* FORM */}
+                        <div className="text-lg font-bold text-white uppercase">{character.form?.name || 'UNKNOWN FORM'}</div>
+                        <div className="text-[10px] text-gray-400 leading-relaxed mb-4">{character.form?.description || 'No data found.'}</div>
+                        
+                        {/* DESTINY & FEATURE */}
+                        <div className="text-sm font-bold text-white uppercase">{character.destiny?.name || 'UNKNOWN DESTINY'}</div>
+                        {character.destiny?.feature ? (
+                            <div className="mt-2 bg-black/50 border border-white/5 p-3">
+                                <div className="text-[9px] font-bold text-yellow-500 uppercase tracking-widest mb-1">{character.destiny.feature.name}</div>
+                                <div className="text-[10px] text-gray-300 leading-relaxed">{character.destiny.feature.description}</div>
+                            </div>
+                        ) : (
+                            <div className="text-[10px] text-gray-400 leading-relaxed mt-1">{character.destiny?.description || 'No data found.'}</div>
+                        )}
+                    </div>
+
+                    <div className="border border-red-900/30 bg-red-950/10 p-3">
+                        <div className="text-[9px] font-bold text-red-500 uppercase tracking-widest mb-1">Active Protocol (Curse)</div>
+                        <div className="text-sm font-bold text-red-400 uppercase">{character.darkMark?.name || 'NO ACTIVE PROTOCOL'}</div>
+                        <div className="text-[10px] text-red-300/80 leading-relaxed">{character.darkMark?.description || 'Data corrupted or missing.'}</div>
+                    </div>
+                    
+                    <div>
+                        <div className="text-[9px] font-bold text-purple-500 uppercase tracking-widest mb-1">Origin Source</div>
+                        <div className="text-sm font-bold text-purple-400 uppercase">{character.master || 'UNKNOWN ORIGIN'}</div>
+                    </div>
+
                 </div>
                 <button onClick={() => setViewData(false)} className="w-full mt-6 border border-cyan-900 text-cyan-500 py-3 uppercase text-xs font-bold hover:bg-cyan-900/20 transition-colors">Terminate Link</button>
             </div>
