@@ -47,3 +47,6 @@ yarn-error.log*
 
 # Optional: TypeScript (if you switch later)
 *.tsbuildinfo
+
+# Ignore hardcoded Service Worker config
+public/firebase-messaging-sw.js
