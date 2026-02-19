@@ -1,5 +1,6 @@
 // src/components/Tabs/OverseerTab.jsx
 import React from 'react';
+import { BEASTIARY } from '../../data/beastiary';
 
 export default function OverseerTab({
     gmSquadId,
@@ -19,6 +20,19 @@ export default function OverseerTab({
     squadRoster,
     getMaxVital
 }) {
+
+  // Logic: When a monster is picked, auto-fill the manual inputs
+  const handleBestiarySelect = (e) => {
+    const selectedMonster = BESTIARY.find(m => m.name === e.target.value);
+    if (selectedMonster) {
+      setBossNameInput(selectedMonster.name);
+      setBossHpInput(selectedMonster.hp);
+    } else {
+      setBossNameInput("");
+      setBossHpInput("");
+    }
+  };
+
   return (
     <div className="p-4 space-y-4 animate-in fade-in z-10 relative">
         {!gmSquadId ? (
@@ -54,10 +68,47 @@ export default function OverseerTab({
                     <div className="text-[8px] text-red-500 font-bold uppercase tracking-[0.3em] mb-4 border-b border-red-900/50 pb-2">Global Encounter Tracker</div>
                     
                     {!encounter ? (
-                        <div className="space-y-2">
-                            <input type="text" value={bossNameInput} onChange={e => setBossNameInput(e.target.value)} placeholder="THREAT CLASSIFICATION (e.g. Leviathan)" className="w-full bg-red-950/20 border border-red-900/50 p-2 text-xs text-white focus:outline-none uppercase" />
-                            <input type="number" value={bossHpInput} onChange={e => setBossHpInput(e.target.value)} placeholder="MAX HEALTH (e.g. 500)" className="w-full bg-red-950/20 border border-red-900/50 p-2 text-xs text-white focus:outline-none uppercase" />
-                            <button onClick={spawnBoss} className="w-full bg-red-600 text-white py-2 font-bold uppercase text-[10px] hover:bg-white hover:text-red-600 transition-colors mt-2">Initialize Threat</button>
+                        <div className="space-y-3">
+                            {/* 1. THE DROPDOWN (Bestiary Injection) */}
+                            <div>
+                                <label className="block text-[8px] text-gray-500 uppercase tracking-widest mb-1">Select Threat Template</label>
+                                <select 
+                                    onChange={handleBestiarySelect}
+                                    className="w-full bg-red-950/20 border border-red-900/50 p-2 text-xs text-red-400 focus:outline-none uppercase custom-scrollbar"
+                                    value={bossNameInput}
+                                >
+                                    <option value="">-- Manual/Custom Threat --</option>
+                                    {(BESTIARY || []).map((monster) => (
+                                        <option key={monster.name} value={monster.name} className="bg-black text-white">
+                                            [{monster.threat?.toUpperCase() || '???'}] {monster.name} — ({monster.hp} HP)
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* 2. MANUAL OVERRIDES */}
+                            <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label className="block text-[8px] text-gray-500 uppercase tracking-widest mb-1">Entity Name</label>
+                                    <input type="text" value={bossNameInput} onChange={e => setBossNameInput(e.target.value)} placeholder="CUSTOM NAME" className="w-full bg-red-950/20 border border-red-900/50 p-2 text-xs text-white focus:outline-none uppercase" />
+                                </div>
+                                <div>
+                                    <label className="block text-[8px] text-gray-500 uppercase tracking-widest mb-1">Base HP</label>
+                                    <input type="number" value={bossHpInput} onChange={e => setBossHpInput(e.target.value)} placeholder="MAX HEALTH" className="w-full bg-red-950/20 border border-red-900/50 p-2 text-xs text-white focus:outline-none uppercase" />
+                                </div>
+                            </div>
+                            
+                            {/* 3. SOCKET EMIT TRIGGER */}
+                            <button 
+                                onClick={spawnBoss} 
+                                disabled={!bossNameInput || !bossHpInput} 
+                                className="w-full bg-red-600 text-white py-3 font-bold uppercase text-[10px] tracking-widest hover:bg-white hover:text-red-600 transition-colors mt-2 disabled:opacity-30 disabled:hover:bg-red-600 disabled:hover:text-white disabled:cursor-not-allowed"
+                            >
+                                Initialize Threat Synchronization
+                            </button>
+                            <div className="text-[8px] text-red-500/70 italic leading-tight text-center mt-2">
+                                Warning: Deploying a threat updates the Global State for all connected operatives.
+                            </div>
                         </div>
                     ) : (
                         <div>

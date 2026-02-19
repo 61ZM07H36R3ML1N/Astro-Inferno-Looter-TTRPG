@@ -16,6 +16,15 @@ import SquadTab from './components/Tabs/SquadTab';
 import OverseerTab from './components/Tabs/OverseerTab';
 import Modals from './components/UI/Modals';
 
+import { requestNotificationPermission } from './firebase';
+
+// Add this temporary function
+const testNeuralLink = async () => {
+    const token = await requestNotificationPermission();
+    console.log("MY SECURE DEVICE TOKEN:", token);
+    alert("Token printed to console! Open DevTools (F12).");
+};
+
 // --- UTILS (Outside Component) ---
 const rollD20 = () => Math.floor(Math.random() * 20) + 1;
 const XP_THRESHOLD = 100; 
