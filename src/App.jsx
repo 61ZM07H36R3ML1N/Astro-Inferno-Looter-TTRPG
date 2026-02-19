@@ -3,10 +3,10 @@ import { FORMS, DESTINIES } from './data/reference';
 import { GEAR_STATS, WEAPON_TABLE, LOOT_PREFIXES, GRENADE_TIERS, GRENADE_JUICE, LOOT_SUFFIXES } from './data/gear'; 
 import { SKILL_CATEGORIES } from './data/skills';
 
-// FIREBASE IMPORTS
+// FIREBASE IMPORTS (Updated with setDoc for the GM Tracker)
 import { auth, googleProvider, db } from './firebase'; 
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
-import { collection, addDoc, query, where, onSnapshot, deleteDoc, updateDoc, doc } from "firebase/firestore";
+import { collection, addDoc, query, where, onSnapshot, deleteDoc, updateDoc, doc, setDoc } from "firebase/firestore";
 
 // --- UTILS (Outside Component) ---
 const rollD20 = () => Math.floor(Math.random() * 20) + 1;
@@ -37,6 +37,12 @@ function App() {
   // MULTIPLAYER SQUAD STATE
   const [squadRoster, setSquadRoster] = useState([]);
   const [squadInput, setSquadInput] = useState("");
+  
+  // NEW: OVERSEER (GM) STATE
+  const [gmSquadId, setGmSquadId] = useState(null);
+  const [encounter, setEncounter] = useState(null);
+  const [bossNameInput, setBossNameInput] = useState("");
+  const [bossHpInput, setBossHpInput] = useState("");
 
   // CREATOR STATE
   const [step, setStep] = useState(1); 
@@ -80,18 +86,30 @@ function App() {
     return () => unsubscribeAuth();
   }, []);
 
-  // --- REAL-TIME SQUAD LISTENER (PATCHED) ---
-  useEffect(() => {
-    // If we don't have a squad ID, gracefully exit without calling setState synchronously
-    if (!character?.squadId) return;
+  // --- REAL-TIME SQUAD & ENCOUNTER LISTENER ---
+  const activeNetworkId = gmSquadId || character?.squadId;
 
-    const q = query(collection(db, "characters"), where("squadId", "==", character.squadId));
+  useEffect(() => {
+    if (!activeNetworkId) return;
+
+    // 1. Listen to Squad Roster
+    const q = query(collection(db, "characters"), where("squadId", "==", activeNetworkId));
     const unsubscribeSquad = onSnapshot(q, (snapshot) => {
       const mates = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
       setSquadRoster(mates);
     });
-    return () => unsubscribeSquad();
-  }, [character?.squadId]);
+
+    // 2. Listen to Global Encounter (Boss Tracker)
+    const unsubscribeEncounter = onSnapshot(doc(db, "encounters", activeNetworkId), (docSnap) => {
+        if (docSnap.exists()) {
+            setEncounter(docSnap.data());
+        } else {
+            setEncounter(null);
+        }
+    });
+
+    return () => { unsubscribeSquad(); unsubscribeEncounter(); };
+  }, [activeNetworkId]);
 
   // --- HELPER: MAX VITALS ---
   const getMaxVital = (type, charData = character) => {
@@ -129,13 +147,10 @@ function App() {
   const getGearStats = (itemString) => {
     const tierKey = Object.keys(GEAR_STATS.weapons).find(t => itemString.includes(t));
     if (!tierKey) return null; 
-    
     const isArmor = itemString.toLowerCase().includes("armor");
     const baseStats = isArmor ? GEAR_STATS.armor[tierKey] : GEAR_STATS.weapons[tierKey];
-    
     const archetype = !isArmor ? WEAPON_TABLE.find(w => itemString.includes(w.name)) : null;
     const suffix = (!isArmor && LOOT_SUFFIXES) ? LOOT_SUFFIXES.find(s => itemString.includes(s.name)) : null;
-
     const finalStats = { ...baseStats };
     if (archetype) {
         finalStats.att += archetype.stats.att + (suffix?.stats?.att || 0);
@@ -143,7 +158,6 @@ function App() {
         finalStats.dmg += archetype.stats.dmg + (suffix?.stats?.dmg || 0);
         finalStats.tgt += archetype.stats.tgt + (suffix?.stats?.tgt || 0);
     }
-    
     return { tier: tierKey, isArmor, stats: finalStats, name: itemString };
   };
 
@@ -203,9 +217,7 @@ function App() {
     if (charData.notes === undefined) charData.notes = ""; 
     if (charData.squadId === undefined) charData.squadId = null; 
     
-    // PATCH: Clear out any previous squad data gracefully when swapping characters
-    setSquadRoster([]);
-    
+    setSquadRoster([]); 
     setCharacter(charData);
     setActiveTab('SHEET');
   };
@@ -422,7 +434,7 @@ function App() {
       try { await updateDoc(doc(db, "characters", character.id), { notes: character.notes }); } catch (e) { console.error("Notes Sync Failed", e); }
   };
 
-  // --- SQUAD LINK METHODS (PATCHED) ---
+  // --- SQUAD LINK METHODS ---
   const joinSquad = async (code) => {
       if (!character.id) return;
       if (!code || code.trim() === "") return;
@@ -434,11 +446,48 @@ function App() {
   const leaveSquad = async () => {
       if (!character.id) return;
       setCharacter(prev => ({ ...prev, squadId: null }));
-      
-      // PATCH: Clear out the local roster properly on user action, bypassing React's Strict Mode warnings!
       setSquadRoster([]); 
-      
       try { await updateDoc(doc(db, "characters", character.id), { squadId: null }); } catch(e) { console.error("Squad Leave Failed", e); }
+  };
+
+  // --- GM OVERSEER METHODS ---
+  const joinAsGm = (code) => {
+      if (!code || code.trim() === "") return;
+      setGmSquadId(code.toUpperCase().trim());
+  };
+
+  const leaveGm = () => {
+      setGmSquadId(null);
+      setSquadRoster([]);
+      setEncounter(null);
+  };
+
+  const spawnBoss = async () => {
+      if (!gmSquadId || !bossNameInput || !bossHpInput) return;
+      try {
+          await setDoc(doc(db, "encounters", gmSquadId), {
+              name: bossNameInput.toUpperCase(),
+              hp: parseInt(bossHpInput),
+              maxHp: parseInt(bossHpInput)
+          });
+          setBossNameInput("");
+          setBossHpInput("");
+      } catch (e) { console.error("Spawn Boss Failed", e); }
+  };
+
+  const updateBossHp = async (change) => {
+      if (!gmSquadId || !encounter) return;
+      const newHp = Math.max(0, encounter.hp + change);
+      try {
+          await updateDoc(doc(db, "encounters", gmSquadId), { hp: newHp });
+      } catch (e) { console.error("Update Boss Failed", e); }
+  };
+
+  const clearBoss = async () => {
+      if (!gmSquadId) return;
+      if (window.confirm("TERMINATE THREAT: Clear the current encounter?")) {
+          try { await deleteDoc(doc(db, "encounters", gmSquadId)); } catch (e) { console.error("Clear Boss Failed", e); }
+      }
   };
 
   // --- RENDER ---
@@ -477,7 +526,7 @@ function App() {
       </div>
 
       {/* CONTENT */}
-      <div className="flex-1 overflow-y-auto pb-24 custom-scrollbar relative">
+      <div className="flex-1 overflow-y-auto pb-20 custom-scrollbar relative">
         
         {/* VISUAL HAZARD OVERLAYS (Only on Sheet Tab) */}
         {activeTab === 'SHEET' && (character.statuses || []).includes('BURNING') && <div className="pointer-events-none absolute inset-0 z-0 shadow-[inset_0_0_80px_rgba(234,88,12,0.4)] animate-pulse"></div>}
@@ -818,7 +867,7 @@ function App() {
           </div>
         )}
 
-        {/* --- TAB 4: SQUAD NETWORK --- */}
+        {/* --- TAB 4: SQUAD NETWORK (PLAYER VIEW) --- */}
         {activeTab === 'SQUAD' && (
            <div className="p-4 space-y-4 animate-in fade-in z-10 relative">
              {!character.id ? (
@@ -837,19 +886,29 @@ function App() {
                  </div>
              ) : (
                  <div className="space-y-4">
-                     <div className="flex justify-between items-end border-b border-cyan-500/50 pb-2 mb-6">
+                     <div className="flex justify-between items-end border-b border-cyan-500/50 pb-2 mb-4">
                          <div>
                              <div className="text-[8px] text-cyan-500 font-bold uppercase tracking-[0.3em] mb-1">Active Network Link</div>
                              <div className="text-3xl font-black text-white tracking-[0.2em] leading-none drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]">{character.squadId}</div>
                          </div>
                          <button onClick={leaveSquad} className="border border-red-900/50 bg-red-900/20 text-red-500 px-3 py-1 text-[9px] font-bold uppercase hover:bg-red-600 hover:text-white transition-colors">Sever Link</button>
                      </div>
+
+                     {/* PLAYER VIEW: SHARED ENCOUNTER TRACKER */}
+                     {encounter && (
+                        <div className="border border-red-900 bg-red-950/20 p-4 mb-6 shadow-[0_0_20px_rgba(220,38,38,0.2)] animate-pulse">
+                            <div className="text-[8px] text-red-500 font-bold uppercase tracking-[0.3em] mb-2">Hostile Threat Detected</div>
+                            <div className="text-2xl font-black text-white uppercase italic tracking-tighter mb-2">{encounter.name}</div>
+                            <div className="h-4 w-full bg-black border border-red-900/50 relative overflow-hidden">
+                                <div style={{width: `${(encounter.hp / encounter.maxHp) * 100}%`}} className="h-full bg-red-600 transition-all duration-500"></div>
+                            </div>
+                            <div className="text-right text-[10px] font-black text-red-400 mt-1">{encounter.hp} / {encounter.maxHp} HP</div>
+                        </div>
+                     )}
                      
                      <div className="space-y-3">
                          {squadRoster.map(mate => (
                              <div key={mate.id} className={`border p-3 flex flex-col gap-3 relative overflow-hidden transition-all ${mate.id === character.id ? 'border-cyan-500/50 bg-cyan-950/10' : 'border-white/10 bg-black/60'}`}>
-                                 
-                                 {/* Mini Haz overlays for teammates */}
                                  {(mate.statuses || []).includes('BLEEDING') && <div className="pointer-events-none absolute inset-0 z-0 border-2 border-red-900/60"></div>}
                                  {(mate.statuses || []).includes('BURNING') && <div className="pointer-events-none absolute inset-0 z-0 shadow-[inset_0_0_30px_rgba(234,88,12,0.2)]"></div>}
 
@@ -863,8 +922,6 @@ function App() {
                                              <div className="text-[9px] text-gray-400 uppercase mt-1 tracking-widest">RK {mate.rank} • {mate.form?.name || 'UNKNOWN'}</div>
                                          </div>
                                      </div>
-                                     
-                                     {/* Hazards Mini-Icons */}
                                      <div className="flex gap-1">
                                          {(mate.statuses || []).map(s => (
                                             <div key={s} className={`h-2 w-2 rounded-full shadow-[0_0_5px_currentColor] ${s === 'BURNING' ? 'bg-orange-500 text-orange-500' : s === 'BLEEDING' ? 'bg-red-600 text-red-600' : s === 'POISONED' ? 'bg-green-500 text-green-500' : s === 'STUNNED' ? 'bg-yellow-500 text-yellow-500' : 'bg-purple-500 text-purple-500'}`}></div>
@@ -872,7 +929,6 @@ function App() {
                                      </div>
                                  </div>
 
-                                 {/* Mini Vitals */}
                                  <div className="space-y-1 relative z-10 border-t border-white/10 pt-2">
                                      {['life', 'sanity', 'aura'].map(v => {
                                          const mMax = getMaxVital(v, mate);
@@ -896,21 +952,110 @@ function App() {
              )}
            </div>
         )}
+
+        {/* --- NEW TAB 5: OVERSEER (GM DASHBOARD) --- */}
+        {activeTab === 'OVERSEER' && (
+            <div className="p-4 space-y-4 animate-in fade-in z-10 relative">
+                {!gmSquadId ? (
+                    <div className="border border-purple-900/50 p-6 bg-black/80 backdrop-blur-sm text-center shadow-[0_0_30px_rgba(168,85,247,0.1)] mt-10">
+                        <div className="text-[10px] text-purple-500 font-bold uppercase tracking-[0.3em] mb-6">Game Master Link</div>
+                        <input type="text" value={squadInput} onChange={e => setSquadInput(e.target.value)} placeholder="ENTER SQUAD CODE" className="w-full bg-purple-950/20 border-b-2 border-purple-600 p-4 text-2xl font-black uppercase text-center text-white focus:outline-none mb-6 tracking-widest placeholder:text-gray-700" maxLength={6} />
+                        <button onClick={() => joinAsGm(squadInput)} className="w-full bg-purple-600 text-black py-4 font-bold uppercase hover:bg-white hover:text-purple-600 transition-colors">Assume Control</button>
+                    </div>
+                ) : (
+                    <div className="space-y-6">
+                        
+                        {/* GM HEADER */}
+                        <div className="flex justify-between items-end border-b border-purple-500/50 pb-2">
+                             <div>
+                                 <div className="text-[8px] text-purple-500 font-bold uppercase tracking-[0.3em] mb-1">Overseeing Network</div>
+                                 <div className="text-2xl font-black text-white tracking-[0.2em] leading-none drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]">{gmSquadId}</div>
+                             </div>
+                             <button onClick={leaveGm} className="border border-gray-600 text-gray-400 px-3 py-1 text-[9px] font-bold uppercase hover:bg-white hover:text-black transition-colors">Relinquish</button>
+                        </div>
+
+                        {/* GM ENCOUNTER TRACKER (BOSS CONTROLS) */}
+                        <div className="border-2 border-red-900 bg-black p-4 relative shadow-[0_0_20px_rgba(220,38,38,0.2)]">
+                            <div className="text-[8px] text-red-500 font-bold uppercase tracking-[0.3em] mb-4 border-b border-red-900/50 pb-2">Global Encounter Tracker</div>
+                            
+                            {!encounter ? (
+                                <div className="space-y-2">
+                                    <input type="text" value={bossNameInput} onChange={e => setBossNameInput(e.target.value)} placeholder="THREAT CLASSIFICATION (e.g. Leviathan)" className="w-full bg-red-950/20 border border-red-900/50 p-2 text-xs text-white focus:outline-none uppercase" />
+                                    <input type="number" value={bossHpInput} onChange={e => setBossHpInput(e.target.value)} placeholder="MAX HEALTH (e.g. 500)" className="w-full bg-red-950/20 border border-red-900/50 p-2 text-xs text-white focus:outline-none uppercase" />
+                                    <button onClick={spawnBoss} className="w-full bg-red-600 text-white py-2 font-bold uppercase text-[10px] hover:bg-white hover:text-red-600 transition-colors mt-2">Initialize Threat</button>
+                                </div>
+                            ) : (
+                                <div>
+                                    <div className="text-xl font-black text-white uppercase italic tracking-tighter mb-2">{encounter.name}</div>
+                                    <div className="h-4 w-full bg-black border border-red-900/50 relative overflow-hidden mb-2">
+                                        <div style={{width: `${(encounter.hp / encounter.maxHp) * 100}%`}} className="h-full bg-red-600 transition-all duration-500"></div>
+                                    </div>
+                                    <div className="flex justify-between items-center mb-4">
+                                        <div className="text-[12px] font-black text-red-500">{encounter.hp} <span className="text-red-900 text-[10px]">/ {encounter.maxHp} HP</span></div>
+                                        <div className="flex gap-1">
+                                            <button onClick={() => updateBossHp(-10)} className="bg-red-900/30 text-red-400 border border-red-900/50 px-2 py-1 text-[9px] hover:bg-red-600 hover:text-white">-10</button>
+                                            <button onClick={() => updateBossHp(-1)} className="bg-red-900/30 text-red-400 border border-red-900/50 px-2 py-1 text-[9px] hover:bg-red-600 hover:text-white">-1</button>
+                                            <button onClick={() => updateBossHp(1)} className="bg-red-900/30 text-red-400 border border-red-900/50 px-2 py-1 text-[9px] hover:bg-red-600 hover:text-white">+1</button>
+                                            <button onClick={() => updateBossHp(10)} className="bg-red-900/30 text-red-400 border border-red-900/50 px-2 py-1 text-[9px] hover:bg-red-600 hover:text-white">+10</button>
+                                        </div>
+                                    </div>
+                                    <button onClick={clearBoss} className="w-full border border-red-900 text-red-600 py-2 font-bold uppercase text-[9px] hover:bg-red-600 hover:text-white transition-colors">Terminate Threat</button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* GM SQUAD GRID */}
+                        <div>
+                            <div className="text-[8px] text-gray-500 font-bold uppercase tracking-[0.3em] mb-2">Active Operatives</div>
+                            <div className="grid grid-cols-2 gap-2">
+                                {squadRoster.map(mate => (
+                                    <div key={mate.id} className="bg-black/60 border border-white/10 p-2 relative overflow-hidden">
+                                        {(mate.statuses || []).includes('BLEEDING') && <div className="pointer-events-none absolute inset-0 z-0 border-2 border-red-900/60"></div>}
+                                        
+                                        <div className="text-[10px] font-black uppercase text-white truncate mb-1 relative z-10">{mate.name}</div>
+                                        
+                                        <div className="space-y-1 relative z-10 border-b border-white/10 pb-1 mb-1">
+                                            {['life', 'sanity', 'aura'].map(v => {
+                                                const mMax = getMaxVital(v, mate);
+                                                const mCur = mate.currentVitals?.[v] ?? mMax;
+                                                return (
+                                                    <div key={v} className="flex justify-between items-center text-[8px]">
+                                                        <span className="text-gray-500 uppercase">{v.substring(0,3)}</span>
+                                                        <span className={`font-bold ${v === 'life' ? 'text-green-500' : v === 'sanity' ? 'text-blue-500' : 'text-purple-500'}`}>{mCur}/{mMax}</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+
+                                        <div className="flex justify-between text-[8px] text-gray-400 relative z-10">
+                                            <span>STIM: <span className="text-blue-400 font-bold">{mate.consumables?.stims || 0}</span></span>
+                                            <span>ORD: <span className="text-orange-400 font-bold">{mate.consumables?.grenades || 0}</span></span>
+                                        </div>
+                                    </div>
+                                ))}
+                                {squadRoster.length === 0 && <div className="col-span-2 text-center text-[9px] text-gray-600 py-4 border border-dashed border-white/10">NO OPERATIVES DETECTED</div>}
+                            </div>
+                        </div>
+
+                    </div>
+                )}
+            </div>
+        )}
       </div>
 
-      {/* MOBILE NAV BAR (UPDATED FOR 3 TABS) */}
-      <div className="h-20 border-t border-red-900/50 bg-black flex items-center justify-around px-2 shrink-0 z-50 relative">
-        <button onClick={() => setActiveTab('ROSTER')} className={`flex flex-col items-center gap-1 w-1/3 ${activeTab === 'ROSTER' ? 'text-red-600' : 'text-gray-600'}`}>
-          <span className="text-[10px] font-black uppercase tracking-tighter">Barracks</span>
-          <div className={`h-1 w-8 transition-all ${activeTab === 'ROSTER' ? 'bg-red-600 shadow-[0_0_8px_red]' : 'bg-transparent'}`}></div>
+      {/* MOBILE NAV BAR (NOW 4 TABS) */}
+      <div className="h-16 border-t border-red-900/50 bg-black flex items-center justify-around px-1 shrink-0 z-50 relative">
+        <button onClick={() => setActiveTab('ROSTER')} className={`flex flex-col items-center justify-center w-1/4 h-full transition-all ${activeTab === 'ROSTER' ? 'bg-red-950/30 border-t-2 border-red-600 text-red-500' : 'text-gray-600 border-t-2 border-transparent'}`}>
+          <span className="text-[9px] font-black uppercase tracking-widest">Barracks</span>
         </button>
-        <button onClick={() => setActiveTab('SHEET')} className={`flex flex-col items-center gap-1 w-1/3 ${activeTab === 'SHEET' ? 'text-red-600' : 'text-gray-600'}`}>
-          <span className="text-[10px] font-black uppercase tracking-tighter">Active Unit</span>
-          <div className={`h-1 w-8 transition-all ${activeTab === 'SHEET' ? 'bg-red-600 shadow-[0_0_8px_red]' : 'bg-transparent'}`}></div>
+        <button onClick={() => setActiveTab('SHEET')} className={`flex flex-col items-center justify-center w-1/4 h-full transition-all ${activeTab === 'SHEET' ? 'bg-red-950/30 border-t-2 border-red-600 text-red-500' : 'text-gray-600 border-t-2 border-transparent'}`}>
+          <span className="text-[9px] font-black uppercase tracking-widest">Unit</span>
         </button>
-        <button onClick={() => setActiveTab('SQUAD')} className={`flex flex-col items-center gap-1 w-1/3 ${activeTab === 'SQUAD' ? 'text-cyan-400' : 'text-gray-600'}`}>
-          <span className="text-[10px] font-black uppercase tracking-tighter">Squad</span>
-          <div className={`h-1 w-8 transition-all ${activeTab === 'SQUAD' ? 'bg-cyan-500 shadow-[0_0_8px_cyan]' : 'bg-transparent'}`}></div>
+        <button onClick={() => setActiveTab('SQUAD')} className={`flex flex-col items-center justify-center w-1/4 h-full transition-all ${activeTab === 'SQUAD' ? 'bg-cyan-950/30 border-t-2 border-cyan-500 text-cyan-400' : 'text-gray-600 border-t-2 border-transparent'}`}>
+          <span className="text-[9px] font-black uppercase tracking-widest">Squad</span>
+        </button>
+        <button onClick={() => setActiveTab('OVERSEER')} className={`flex flex-col items-center justify-center w-1/4 h-full transition-all ${activeTab === 'OVERSEER' ? 'bg-purple-950/30 border-t-2 border-purple-500 text-purple-400' : 'text-gray-600 border-t-2 border-transparent'}`}>
+          <span className="text-[9px] font-black uppercase tracking-widest">Overseer</span>
         </button>
       </div>
 
