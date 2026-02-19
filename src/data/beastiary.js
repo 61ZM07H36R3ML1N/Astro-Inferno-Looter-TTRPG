@@ -1,7 +1,7 @@
 // src/data/bestiary.js
 // Extracted from Astro Inferno: Digital Core Edition (Pages 163-171)
 
-export const BESTIARY = [
+export const BEASTIARY = [
   {
     category: "The Black Legion & Souls",
     threats: [
