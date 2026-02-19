@@ -37,7 +37,7 @@ function App() {
   // MULTIPLAYER SQUAD STATE
   const [squadRoster, setSquadRoster] = useState([]);
   const [squadInput, setSquadInput] = useState("");
-  const [squadLogs, setSquadLogs] = useState([]); // NEW: Combat Log State
+  const [squadLogs, setSquadLogs] = useState([]); // Combat Log State
   
   // OVERSEER (GM) STATE
   const [gmSquadId, setGmSquadId] = useState(null);
@@ -643,6 +643,27 @@ function App() {
                   </div>
                 ))
               )}
+
+              {/* --- OVERSEER TIP JAR --- */}
+              <div className="mt-8 border border-white/10 bg-black/50 p-4 relative overflow-hidden">
+                  <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-3 border-b border-white/10 pb-1 text-center">Support Network Command</div>
+                  <div className="flex gap-2 relative z-10">
+                      
+                      {/* BRIAN'S TIP JAR */}
+                      <a href="https://ko-fi.com/YOUR_LINK" target="_blank" rel="noreferrer" className="flex-1 bg-red-900/20 border border-red-900/50 hover:bg-red-600 hover:text-white text-red-500 p-3 text-center transition-colors group">
+                          <div className="text-[8px] uppercase tracking-widest mb-1 text-gray-400 group-hover:text-red-200 transition-colors">Fuel the Architect</div>
+                          <div className="text-xs font-bold uppercase">Send Brian a Coffee</div>
+                      </a>
+
+                      {/* RJ'S TIP JAR */}
+                      <a href="https://ko-fi.com/RJS_LINK" target="_blank" rel="noreferrer" className="flex-1 bg-purple-900/20 border border-purple-900/50 hover:bg-purple-600 hover:text-white text-purple-500 p-3 text-center transition-colors group">
+                          <div className="text-[8px] uppercase tracking-widest mb-1 text-gray-400 group-hover:text-purple-200 transition-colors">Bribe the Co-GM</div>
+                          <div className="text-xs font-bold uppercase">Buy RJ a Drink</div>
+                      </a>
+                      
+                  </div>
+              </div>
+
            </div>
         )}
 
