@@ -969,20 +969,34 @@ function App() {
                     <div>
                         <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">Identity Config</div>
                         
-                        {/* FORM */}
-                        <div className="text-lg font-bold text-white uppercase">{character.form?.name || 'UNKNOWN FORM'}</div>
-                        <div className="text-[10px] text-gray-400 leading-relaxed mb-4">{character.form?.description || 'No data found.'}</div>
+                        {/* FORM - DYNAMIC LIVE LOOKUP */}
+                        {(() => {
+                            const freshForm = FORMS.find(f => f.id === character.form?.id) || character.form;
+                            return (
+                                <>
+                                    <div className="text-lg font-bold text-white uppercase">{freshForm?.name || 'UNKNOWN FORM'}</div>
+                                    <div className="text-[10px] text-gray-400 leading-relaxed mb-4">{freshForm?.description || 'No data found.'}</div>
+                                </>
+                            );
+                        })()}
                         
-                        {/* DESTINY & FEATURE */}
-                        <div className="text-sm font-bold text-white uppercase">{character.destiny?.name || 'UNKNOWN DESTINY'}</div>
-                        {character.destiny?.feature ? (
-                            <div className="mt-2 bg-black/50 border border-white/5 p-3">
-                                <div className="text-[9px] font-bold text-yellow-500 uppercase tracking-widest mb-1">{character.destiny.feature.name}</div>
-                                <div className="text-[10px] text-gray-300 leading-relaxed">{character.destiny.feature.description}</div>
-                            </div>
-                        ) : (
-                            <div className="text-[10px] text-gray-400 leading-relaxed mt-1">{character.destiny?.description || 'No data found.'}</div>
-                        )}
+                        {/* DESTINY & FEATURE - DYNAMIC LIVE LOOKUP */}
+                        {(() => {
+                            const freshDestiny = DESTINIES.find(d => d.id === character.destiny?.id) || character.destiny;
+                            return (
+                                <>
+                                    <div className="text-sm font-bold text-white uppercase">{freshDestiny?.name || 'UNKNOWN DESTINY'}</div>
+                                    {freshDestiny?.feature ? (
+                                        <div className="mt-2 bg-black/50 border border-white/5 p-3">
+                                            <div className="text-[9px] font-bold text-yellow-500 uppercase tracking-widest mb-1">{freshDestiny.feature.name}</div>
+                                            <div className="text-[10px] text-gray-300 leading-relaxed">{freshDestiny.feature.description}</div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-[10px] text-gray-400 leading-relaxed mt-1">{freshDestiny?.description || 'No data found.'}</div>
+                                    )}
+                                </>
+                            );
+                        })()}
                     </div>
 
                     <div className="border border-red-900/30 bg-red-950/10 p-3">
