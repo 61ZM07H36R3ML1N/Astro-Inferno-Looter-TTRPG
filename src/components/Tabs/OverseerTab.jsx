@@ -22,8 +22,8 @@ export default function OverseerTab({
 }) {
 
   // Logic: When a monster is picked, auto-fill the manual inputs
-  const handleBestiarySelect = (e) => {
-    const selectedMonster = BESTIARY.find(m => m.name === e.target.value);
+  const handleBeastiarySelect = (e) => {
+    const selectedMonster = BEASTIARY.find(m => m.name === e.target.value);
     if (selectedMonster) {
       setBossNameInput(selectedMonster.name);
       setBossHpInput(selectedMonster.hp);
@@ -69,16 +69,16 @@ export default function OverseerTab({
                     
                     {!encounter ? (
                         <div className="space-y-3">
-                            {/* 1. THE DROPDOWN (Bestiary Injection) */}
+                            {/* 1. THE DROPDOWN (Beastiary Injection) */}
                             <div>
                                 <label className="block text-[8px] text-gray-500 uppercase tracking-widest mb-1">Select Threat Template</label>
                                 <select 
-                                    onChange={handleBestiarySelect}
+                                    onChange={handleBeastiarySelect}
                                     className="w-full bg-red-950/20 border border-red-900/50 p-2 text-xs text-red-400 focus:outline-none uppercase custom-scrollbar"
                                     value={bossNameInput}
                                 >
                                     <option value="">-- Manual/Custom Threat --</option>
-                                    {(BESTIARY || []).map((monster) => (
+                                    {(BEASTIARY || []).map((monster) => (
                                         <option key={monster.name} value={monster.name} className="bg-black text-white">
                                             [{monster.threat?.toUpperCase() || '???'}] {monster.name} — ({monster.hp} HP)
                                         </option>
