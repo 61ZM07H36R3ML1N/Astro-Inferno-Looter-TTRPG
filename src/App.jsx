@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { GEAR_STATS, WEAPON_TABLE, LOOT_PREFIXES, GRENADE_TIERS, GRENADE_JUICE, LOOT_SUFFIXES } from './data/gear'; 
 
 // Firebase Imports 
-import { auth, googleProvider, db } from './firebase'; 
+// Added requestNotificationPermission here!
+import { auth, googleProvider, db, requestNotificationPermission } from './firebase'; 
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { collection, addDoc, query, where, onSnapshot, deleteDoc, updateDoc, doc, setDoc } from "firebase/firestore";
 
@@ -15,15 +16,6 @@ import SheetTab from './components/Tabs/SheetTab';
 import SquadTab from './components/Tabs/SquadTab';
 import OverseerTab from './components/Tabs/OverseerTab';
 import Modals from './components/UI/Modals';
-
-import { requestNotificationPermission } from './firebase';
-
-// Add this temporary function
-const testNeuralLink = async () => {
-    const token = await requestNotificationPermission();
-    console.log("MY SECURE DEVICE TOKEN:", token);
-    alert("Token printed to console! Open DevTools (F12).");
-};
 
 // --- UTILS (Outside Component) ---
 const rollD20 = () => Math.floor(Math.random() * 20) + 1;
@@ -119,6 +111,33 @@ function App() {
               squadId: targetSquadId, message, type, createdAt: new Date().getTime() 
           });
       } catch (e) { console.error("Broadcast failed", e); }
+  };
+
+  // --- NEURAL LINK (PUSH NOTIFICATIONS) ---
+  const testNeuralLink = async () => {
+    if (!user) {
+        alert("ERROR: You must be logged in to link your device.");
+        return;
+    }
+
+    console.log("--- SECURING NEURAL LINK ---");
+    
+    try {
+        const token = await requestNotificationPermission();
+        console.log("TOKEN SECURED:", token);
+        
+        if (token) {
+            // Send the token to your database so the Cloud Function can find it
+            await setDoc(doc(db, "users", user.uid), {
+                fcmToken: token,
+                lastSynced: new Date().getTime()
+            }, { merge: true });
+            
+            alert("Neural Link Established! Your device is ready to receive Overseer telemetry.");
+        }
+    } catch (error) {
+        console.error("CRITICAL FAILURE:", error);
+    }
   };
 
   // --- HELPER METHODS ---
@@ -423,7 +442,7 @@ function App() {
 
   const syncNotes = async () => {
       if (!character.id) return;
-      try { await updateDoc(doc(db, "characters", character.id), { notes: character.notes }); } catch (e) { console.error("Notes Sync Failed", e); }
+      try { await updateDoc(doc(db, "characters", character.id), { notes: character.notes }); } catch (e) { console.error("Notes Sync Sync Failed", e); }
   };
 
   const joinSquad = async (code) => {
@@ -520,6 +539,11 @@ function App() {
           </div>
         </div>
         <div className="flex gap-2">
+            {/* NEW NEURAL LINK BUTTON */}
+            <button onClick={testNeuralLink} className="text-[10px] text-cyan-400 border border-cyan-900 px-2 py-1 uppercase hover:bg-cyan-900 hover:text-white transition-colors animate-pulse">
+                Link Device
+            </button>
+            
             {activeTab === 'ROSTER' && (
                 <button onClick={() => { setActiveTab('CREATOR'); setStep(1); setCharacter(initialCharacter); }} className="text-[10px] bg-red-600 text-white px-3 py-1 font-bold uppercase">+ New Unit</button>
             )}
