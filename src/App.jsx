@@ -3,7 +3,7 @@ import { FORMS, DESTINIES } from './data/reference';
 import { GEAR_STATS, WEAPON_TABLE, LOOT_PREFIXES, GRENADE_TIERS, GRENADE_JUICE, LOOT_SUFFIXES } from './data/gear'; 
 import { SKILL_CATEGORIES } from './data/skills';
 
-// FIREBASE IMPORTS (Updated with setDoc for the GM Tracker)
+// FIREBASE IMPORTS 
 import { auth, googleProvider, db } from './firebase'; 
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { collection, addDoc, query, where, onSnapshot, deleteDoc, updateDoc, doc, setDoc } from "firebase/firestore";
@@ -37,8 +37,9 @@ function App() {
   // MULTIPLAYER SQUAD STATE
   const [squadRoster, setSquadRoster] = useState([]);
   const [squadInput, setSquadInput] = useState("");
+  const [squadLogs, setSquadLogs] = useState([]); // NEW: Combat Log State
   
-  // NEW: OVERSEER (GM) STATE
+  // OVERSEER (GM) STATE
   const [gmSquadId, setGmSquadId] = useState(null);
   const [encounter, setEncounter] = useState(null);
   const [bossNameInput, setBossNameInput] = useState("");
@@ -86,30 +87,50 @@ function App() {
     return () => unsubscribeAuth();
   }, []);
 
-  // --- REAL-TIME SQUAD & ENCOUNTER LISTENER ---
+  // --- REAL-TIME SQUAD, ENCOUNTER & LOG LISTENER ---
   const activeNetworkId = gmSquadId || character?.squadId;
 
   useEffect(() => {
     if (!activeNetworkId) return;
 
     // 1. Listen to Squad Roster
-    const q = query(collection(db, "characters"), where("squadId", "==", activeNetworkId));
-    const unsubscribeSquad = onSnapshot(q, (snapshot) => {
+    const qRoster = query(collection(db, "characters"), where("squadId", "==", activeNetworkId));
+    const unsubscribeSquad = onSnapshot(qRoster, (snapshot) => {
       const mates = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
       setSquadRoster(mates);
     });
 
     // 2. Listen to Global Encounter (Boss Tracker)
     const unsubscribeEncounter = onSnapshot(doc(db, "encounters", activeNetworkId), (docSnap) => {
-        if (docSnap.exists()) {
-            setEncounter(docSnap.data());
-        } else {
-            setEncounter(null);
-        }
+        if (docSnap.exists()) setEncounter(docSnap.data());
+        else setEncounter(null);
     });
 
-    return () => { unsubscribeSquad(); unsubscribeEncounter(); };
+    // 3. Listen to Network Combat Logs
+    const qLogs = query(collection(db, "logs"), where("squadId", "==", activeNetworkId));
+    const unsubscribeLogs = onSnapshot(qLogs, (snapshot) => {
+        const fetchedLogs = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+        // Sort by timestamp locally to avoid needing complex Firebase indexes
+        fetchedLogs.sort((a, b) => a.createdAt - b.createdAt);
+        // Keep only the last 40 logs to prevent lag
+        setSquadLogs(fetchedLogs.slice(-40)); 
+    });
+
+    return () => { unsubscribeSquad(); unsubscribeEncounter(); unsubscribeLogs(); };
   }, [activeNetworkId]);
+
+  // --- BROADCAST TELEMETRY UTILITY ---
+  const broadcastEvent = async (targetSquadId, message, type = 'info') => {
+      if (!targetSquadId) return;
+      try {
+          await addDoc(collection(db, "logs"), {
+              squadId: targetSquadId,
+              message,
+              type,
+              createdAt: new Date().getTime() 
+          });
+      } catch (e) { console.error("Broadcast failed", e); }
+  };
 
   // --- HELPER: MAX VITALS ---
   const getMaxVital = (type, charData = character) => {
@@ -278,9 +299,18 @@ function App() {
           return;
       }
       updateConsumable('grenades', -1);
+      
       const tierRoll = Math.floor(Math.random() * GRENADE_TIERS.length);
       const juiceRoll = Math.floor(Math.random() * GRENADE_JUICE.length);
-      setGrenadeResult({ tier: GRENADE_TIERS[tierRoll], juice: GRENADE_JUICE[juiceRoll] });
+      const t = GRENADE_TIERS[tierRoll];
+      const j = GRENADE_JUICE[juiceRoll];
+      
+      setGrenadeResult({ tier: t, juice: j });
+      
+      // BROADCAST: Grenade Pin Pulled
+      if (character.squadId) {
+          broadcastEvent(character.squadId, `${character.name} pulled a pin... [${t.name} - ${j.type} Payload]`, 'warning');
+      }
   };
 
   const promoteUnit = async (upgradeType, upgradeKey) => {
@@ -339,9 +369,17 @@ function App() {
 
     const finalTarget = baseTarget + weaponBonus;
 
-    if (roll <= critWindow) type = 'CRIT'; 
-    else if (roll === 20) type = 'JAM'; 
-    else if (roll <= finalTarget) type = 'SUCCESS';
+    if (roll <= critWindow) {
+        type = 'CRIT';
+        if (character.squadId) broadcastEvent(character.squadId, `HOT STREAK! ${character.name} rolled a ${roll} on ${skillName}!`, 'success');
+    } 
+    else if (roll === 20) {
+        type = 'JAM';
+        if (character.squadId) broadcastEvent(character.squadId, `FATAL ERROR: ${character.name} jammed their weapon (${weaponName})!`, 'danger');
+    } 
+    else if (roll <= finalTarget) {
+        type = 'SUCCESS';
+    }
 
     setRollResult({ roll, baseTarget, finalTarget, weaponBonus, critWindow, type, skill: skillName, weaponName: weaponName });
   };
@@ -375,6 +413,14 @@ function App() {
         const charRef = doc(db, "characters", character.id);
         setCharacter(prev => ({ ...prev, destiny: { ...prev.destiny, equipment: newEquip } }));
         await updateDoc(charRef, { "destiny.equipment": newEquip });
+        
+        // BROADCAST: Loot Generated
+        if (character.squadId) {
+            let logType = 'info';
+            if (fullName.includes('Ancient') || fullName.includes('Void-Forged')) logType = 'loot-legendary';
+            broadcastEvent(character.squadId, `${character.name} extracted gear: ${fullName}`, logType);
+        }
+
     } catch (e) { console.error("Loot Gen Failed:", e); }
   };
 
@@ -440,11 +486,15 @@ function App() {
       if (!code || code.trim() === "") return;
       const upperCode = code.toUpperCase().trim();
       setCharacter(prev => ({ ...prev, squadId: upperCode }));
-      try { await updateDoc(doc(db, "characters", character.id), { squadId: upperCode }); } catch(e) { console.error("Squad Join Failed", e); }
+      try { 
+          await updateDoc(doc(db, "characters", character.id), { squadId: upperCode }); 
+          broadcastEvent(upperCode, `>>> UNIT DEPLOYED: ${character.name} has linked to the network.`, 'info');
+      } catch(e) { console.error("Squad Join Failed", e); }
   };
 
   const leaveSquad = async () => {
       if (!character.id) return;
+      if (character.squadId) broadcastEvent(character.squadId, `<<< UNIT EXTRACTED: ${character.name} severed the link.`, 'info');
       setCharacter(prev => ({ ...prev, squadId: null }));
       setSquadRoster([]); 
       try { await updateDoc(doc(db, "characters", character.id), { squadId: null }); } catch(e) { console.error("Squad Leave Failed", e); }
@@ -454,6 +504,7 @@ function App() {
   const joinAsGm = (code) => {
       if (!code || code.trim() === "") return;
       setGmSquadId(code.toUpperCase().trim());
+      broadcastEvent(code.toUpperCase().trim(), `OVERSEER PROTOCOL: A Game Master has locked onto the network.`, 'boss');
   };
 
   const leaveGm = () => {
@@ -470,6 +521,7 @@ function App() {
               hp: parseInt(bossHpInput),
               maxHp: parseInt(bossHpInput)
           });
+          broadcastEvent(gmSquadId, `WARNING: Hostile Threat Detected - ${bossNameInput.toUpperCase()}`, 'boss');
           setBossNameInput("");
           setBossHpInput("");
       } catch (e) { console.error("Spawn Boss Failed", e); }
@@ -486,9 +538,37 @@ function App() {
   const clearBoss = async () => {
       if (!gmSquadId) return;
       if (window.confirm("TERMINATE THREAT: Clear the current encounter?")) {
-          try { await deleteDoc(doc(db, "encounters", gmSquadId)); } catch (e) { console.error("Clear Boss Failed", e); }
+          try { 
+              await deleteDoc(doc(db, "encounters", gmSquadId)); 
+              broadcastEvent(gmSquadId, `TARGET ELIMINATED: Encounter cleared by Overseer.`, 'success');
+          } catch (e) { console.error("Clear Boss Failed", e); }
       }
   };
+
+  // --- RENDER HELPERS ---
+  const renderCombatLog = () => (
+      <div className="border border-white/10 bg-black/60 p-2 mb-4 flex flex-col h-40 shadow-[inset_0_0_10px_rgba(0,0,0,0.8)] relative">
+          <div className="text-[8px] text-gray-500 font-bold uppercase tracking-widest mb-2 border-b border-white/10 pb-1 sticky top-0 bg-black/80 z-10 backdrop-blur-sm">Network Activity Log</div>
+          {squadLogs.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center text-[9px] text-gray-700 italic">Awaiting telemetry...</div>
+          ) : (
+              <div className="flex-1 overflow-y-auto custom-scrollbar space-y-1 flex flex-col-reverse">
+                  {[...squadLogs].reverse().map(log => (
+                      <div key={log.id} className="text-[9px] font-mono leading-snug break-words">
+                          <span className="text-gray-600 opacity-50 mr-2">[{new Date(log.createdAt).toLocaleTimeString([], {hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit'})}]</span>
+                          <span className={`
+                              ${log.type === 'success' ? 'text-green-400 font-bold' : 
+                                log.type === 'danger' ? 'text-red-500 font-bold animate-pulse' : 
+                                log.type === 'warning' ? 'text-orange-400' : 
+                                log.type === 'loot-legendary' ? 'text-fuchsia-400 font-bold drop-shadow-[0_0_3px_currentColor]' : 
+                                log.type === 'boss' ? 'text-red-600 font-black uppercase tracking-widest' : 'text-gray-300'}
+                          `}>{log.message}</span>
+                      </div>
+                  ))}
+              </div>
+          )}
+      </div>
+  );
 
   // --- RENDER ---
   if (loading) return <div className="h-screen bg-black text-red-600 flex items-center justify-center font-mono">INITIALIZING...</div>;
@@ -894,6 +974,9 @@ function App() {
                          <button onClick={leaveSquad} className="border border-red-900/50 bg-red-900/20 text-red-500 px-3 py-1 text-[9px] font-bold uppercase hover:bg-red-600 hover:text-white transition-colors">Sever Link</button>
                      </div>
 
+                     {/* NETWORK ACTIVITY LOG */}
+                     {renderCombatLog()}
+
                      {/* PLAYER VIEW: SHARED ENCOUNTER TRACKER */}
                      {encounter && (
                         <div className="border border-red-900 bg-red-950/20 p-4 mb-6 shadow-[0_0_20px_rgba(220,38,38,0.2)] animate-pulse">
@@ -953,7 +1036,7 @@ function App() {
            </div>
         )}
 
-        {/* --- NEW TAB 5: OVERSEER (GM DASHBOARD) --- */}
+        {/* --- TAB 5: OVERSEER (GM DASHBOARD) --- */}
         {activeTab === 'OVERSEER' && (
             <div className="p-4 space-y-4 animate-in fade-in z-10 relative">
                 {!gmSquadId ? (
@@ -973,6 +1056,9 @@ function App() {
                              </div>
                              <button onClick={leaveGm} className="border border-gray-600 text-gray-400 px-3 py-1 text-[9px] font-bold uppercase hover:bg-white hover:text-black transition-colors">Relinquish</button>
                         </div>
+
+                        {/* GM NETWORK LOG */}
+                        {renderCombatLog()}
 
                         {/* GM ENCOUNTER TRACKER (BOSS CONTROLS) */}
                         <div className="border-2 border-red-900 bg-black p-4 relative shadow-[0_0_20px_rgba(220,38,38,0.2)]">
