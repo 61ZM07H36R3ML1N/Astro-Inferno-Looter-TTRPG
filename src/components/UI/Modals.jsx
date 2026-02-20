@@ -6,6 +6,20 @@ const Modals = ({
   viewData, setViewData, character,
   viewPromotion, setViewPromotion, promoteUnit
 }) => {
+
+  // --- SAFETY FILTERS ---
+  const safeName = (field, fallback) => {
+    if (!field) return fallback;
+    if (typeof field === 'string') return field;
+    return field.name || fallback;
+  };
+
+  const safeDesc = (field) => {
+    if (!field) return null;
+    if (typeof field === 'string') return null;
+    return field.description || null;
+  };
+
   return (
     <>
       {/* --- GRENADE RESULT MODAL --- */}
@@ -40,54 +54,97 @@ const Modals = ({
         </div>
       )}
 
-      {/* --- DATALINK MODAL --- */}
+      {/* --- DATALINK MODAL (RESTORED AESTHETIC) --- */}
       {viewData && (
-        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-zinc-900 border-2 border-cyan-900 max-w-2xl w-full p-6 relative shadow-[0_0_30px_rgba(8,145,178,0.3)] max-h-[90vh] overflow-y-auto custom-scrollbar">
-            <button onClick={() => setViewData(false)} className="absolute top-4 right-4 text-gray-500 hover:text-white font-black text-xl leading-none">X</button>
-
+        <div className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4 backdrop-blur-md">
+          <div className="max-w-md w-full relative max-h-[90vh] overflow-y-auto custom-scrollbar font-mono text-left">
+            
+            {/* FALLBACK FOR CORRUPT DATA */}
             {!character?.form ? (
-              <div className="text-center py-10">
+              <div className="text-center py-10 border border-red-900 bg-black p-6 shadow-[0_0_30px_rgba(220,38,38,0.2)]">
                 <h2 className="text-red-500 font-black text-2xl uppercase tracking-widest mb-2 animate-pulse">FILE CORRUPTED</h2>
                 <p className="text-gray-400 text-xs">No Core Form detected for this unit. Please deploy a new unit via the Barracks.</p>
+                <button onClick={() => setViewData(false)} className="mt-8 w-full border border-cyan-900 bg-black text-cyan-400 font-bold py-4 uppercase tracking-widest hover:bg-cyan-900/30 transition-colors">
+                  Terminate Link
+                </button>
               </div>
             ) : (
-              <div>
-                <h2 className="text-cyan-500 font-black text-xl uppercase tracking-widest border-b border-cyan-900/50 pb-2 mb-4">
-                  Datalink // {character.name || "UNIT_UNNAMED"}
-                </h2>
+              <div className="bg-black/80 border border-cyan-900/20 p-6 shadow-[0_0_20px_rgba(8,145,178,0.1)]">
                 
-                <div className="grid grid-cols-2 gap-4 text-xs font-mono mb-6">
-                  <div className="bg-black/50 p-3 border border-cyan-900/30">
-                    <div className="text-gray-500 mb-1">RANK // XP</div>
-                    <div className="text-white font-bold">{character.rank} // {character.xp}</div>
-                  </div>
-                  <div className="bg-black/50 p-3 border border-cyan-900/30">
-                    <div className="text-gray-500 mb-1">CORE FORM</div>
-                    <div className="text-cyan-400 font-bold">{character.form.name}</div>
-                  </div>
-                  <div className="bg-black/50 p-3 border border-cyan-900/30 col-span-2">
-                    <div className="text-gray-500 mb-1">DESTINY PROTOCOL</div>
-                    <div className="text-purple-400 font-bold">{character.destiny?.name || "UNASSIGNED"}</div>
-                    <div className="text-gray-400 text-[10px] mt-1 italic">{character.destiny?.description || ""}</div>
-                  </div>
+                {/* HEADER */}
+                <div className="text-center mb-8 border-b border-cyan-900/30 pb-6 mt-2">
+                  <h2 className="text-cyan-400 font-black text-2xl italic uppercase tracking-widest drop-shadow-[0_0_5px_rgba(34,211,238,0.8)]">DATA_UPLINK</h2>
+                  <p className="text-cyan-600 text-[9px] uppercase tracking-[0.2em] mt-2">Secure Connection Established</p>
                 </div>
+                
+                {/* FORM / BACKGROUND */}
+                <div className="mb-6">
+                  <h3 className="text-white font-black text-lg uppercase tracking-widest mb-2">
+                    {safeName(character.form, "UNKNOWN FORM")}
+                  </h3>
+                  
+                  {/* If there's a description, show it */}
+                  {safeDesc(character.form) && (
+                    <p className="text-gray-400 text-[11px] leading-relaxed mb-4">
+                      {safeDesc(character.form)}
+                    </p>
+                  )}
 
-                <div className="border border-cyan-900/50 p-4 bg-black/30">
-                  <h3 className="text-[10px] text-cyan-600 uppercase font-black tracking-widest mb-3">Active Upgrades</h3>
-                  {Object.keys(character.upgrades || {}).length === 0 ? (
-                    <span className="text-gray-600 italic text-xs">No cybernetic or arcane modifications installed.</span>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      {Object.entries(character.upgrades).map(([key, val]) => (
-                        <div key={key} className="flex justify-between border-b border-white/5 pb-1">
-                          <span className="text-gray-400 uppercase">{key}</span>
-                          <span className="text-cyan-400 font-bold">+{val}</span>
-                        </div>
-                      ))}
+                  {/* If the Form has Base Stats, display them in a grid! */}
+                  {character.form?.baseStats && (
+                    <div className="mt-3 bg-cyan-950/10 border border-cyan-900/30 p-2">
+                      <div className="text-cyan-600 text-[8px] font-bold uppercase tracking-[0.2em] mb-2 text-center">Core Combat Matrix</div>
+                      <div className="grid grid-cols-4 gap-1">
+                        {Object.entries(character.form.baseStats).map(([stat, val]) => (
+                          <div key={stat} className="bg-black/50 border border-cyan-900/20 p-1 text-center">
+                            <div className="text-gray-500 text-[8px] uppercase">{stat}</div>
+                            <div className="text-cyan-400 text-xs font-bold">{val}</div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
+
+                {/* DARK MARK / SECONDARY TRAIT */}
+                <div className="mb-8">
+                  <h3 className="text-white font-black text-lg uppercase tracking-widest mb-2">
+                    {safeName(character.darkMark, "UNDETECTED")}
+                  </h3>
+                  <p className="text-gray-400 text-[11px] leading-relaxed">
+                    {safeDesc(character.darkMark) || "No anomaly data found."}
+                  </p>
+                </div>
+
+                {/* PROTOCOL / DESTINY (RED BOX) */}
+                <div className="border border-red-900/40 bg-red-950/10 p-5 mb-8">
+                  <div className="text-red-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-2">Active Protocol (Curse)</div>
+                  <div className="text-red-400 font-black text-lg uppercase tracking-widest mb-2">
+                    {safeName(character.destiny, "UNASSIGNED")}
+                  </div>
+                  <p className="text-red-400/80 text-[11px] leading-relaxed">
+                    {safeDesc(character.destiny) || "No protocol data found."}
+                  </p>
+                </div>
+
+                {/* ORIGIN SOURCE / MASTER (PURPLE) */}
+                <div className="mb-10">
+                  <div className="text-purple-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-1">Origin Source</div>
+                  <div className="text-purple-400 font-black text-lg uppercase tracking-widest">
+                    {safeName(character.master, "NONE")}
+                  </div>
+                  {safeDesc(character.master) && (
+                    <p className="text-purple-400/80 text-[11px] leading-relaxed mt-2">
+                      {safeDesc(character.master)}
+                    </p>
+                  )}
+                </div>
+
+                {/* TERMINATE BUTTON */}
+                <button onClick={() => setViewData(false)} className="w-full border border-cyan-900 bg-transparent text-cyan-400 font-bold py-4 text-xs uppercase tracking-[0.2em] hover:bg-cyan-900/30 transition-colors">
+                  Terminate Link
+                </button>
+                
               </div>
             )}
           </div>
