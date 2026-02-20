@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 
 // Data Imports
 import { GEAR_STATS, WEAPON_TABLE, LOOT_PREFIXES, GRENADE_TIERS, GRENADE_JUICE, LOOT_SUFFIXES } from './data/gear'; 
+import { BEASTIARY } from './data/beastiary';
 
 // Firebase Imports 
 // Added requestNotificationPermission here!
