@@ -22,16 +22,23 @@ export default function OverseerTab({
 }) {
 
   // Logic: When a monster is picked, auto-fill the manual inputs
-  const handleBeastiarySelect = (e) => {
-    const selectedMonster = BEASTIARY.find(m => m.name === e.target.value);
-    if (selectedMonster) {
-      setBossNameInput(selectedMonster.name);
-      setBossHpInput(selectedMonster.hp);
-    } else {
-      setBossNameInput("");
-      setBossHpInput("");
-    }
-  };
+const handleBeastiarySelect = (e) => {
+  let selectedMonster = null;
+  
+  // Look through each category to find the monster name
+  for (const category of BEASTIARY) {
+    selectedMonster = category.threats.find(m => m.name === e.target.value);
+    if (selectedMonster) break;
+  }
+
+  if (selectedMonster) {
+    setBossNameInput(selectedMonster.name);
+    setBossHpInput(selectedMonster.hp);
+  } else {
+    setBossNameInput("");
+    setBossHpInput(0);
+  }
+};
 
   return (
     <div className="p-4 space-y-4 animate-in fade-in z-10 relative">
@@ -72,25 +79,20 @@ export default function OverseerTab({
  {/* 1. THE DROPDOWN (Beastiary Injection) */}
 <div>
   <label className="block text-[8px] text-gray-500 uppercase tracking-widest mb-1">Select Threat Template</label>
-  <select 
-    onChange={handleBeastiarySelect} 
-    className="w-full bg-red-950/20 border border-red-900/50 p-2 text-xs text-red-400 focus:outline-none uppercase custom-scrollbar" 
-    value={bossNameInput}
-  >
-    <option value="">-- Manual/Custom Threat --</option>
-    {(BEASTIARY || []).map((monster, index) => {
-      // Create fallbacks for Case Sensitivity
-      const mName = monster.name || monster.Name || "Unknown";
-      const mHp = monster.hp || monster.HP || 0;
-      const mThreat = (monster.threat || monster.Threat || "???").toUpperCase();
-
-      return (
-        <option key={index} value={mName} className="bg-black text-white">
-          [{mThreat}] {mName} — ({mHp} HP)
-        </option>
-      );
-    })}
-  </select>
+<select 
+            onChange={handleBeastiarySelect} 
+            className="w-full bg-red-950/20 border border-red-900/50 p-2 text-xs text-red-400 focus:outline-none uppercase custom-scrollbar" 
+            value={bossNameInput}
+          >
+            <option value="">-- Manual/Custom Threat --</option>
+            {BEASTIARY.map((category) => 
+              category.threats.map((monster) => (
+                <option key={monster.id || monster.name} value={monster.name} className="bg-black text-white">
+                  {monster.name} — ({monster.hp} HP)
+                </option>
+              ))
+            )}
+          </select>
 </div>
                             {/* 2. MANUAL OVERRIDES */}
                             <div className="grid grid-cols-2 gap-2">
