@@ -72,3 +72,25 @@ export const COMBINED_LOOT_TABLE = [
   { min: 98, max: 99, tier: "Legendary V", category: "Consumables", color: "text-yellow-500" },
   { min: 100, max: 100, tier: "Legendary V", category: "Vestige or Gear", color: "text-yellow-500" } 
 ];
+
+// Master Suffix List (d20 Roll) - Added to high-tier gear and vestiges
+export const GEAR_SUFFIXES = {
+  1: "Appearance", 2: "Aura", 3: "Charm", 4: "Dreams", 5: "Drive",
+  6: "Element", 7: "Emotions", 8: "Euphoria", 9: "Focus", 10: "Health",
+  11: "Leadership", 12: "Mind", 13: "Motivation", 14: "Morality", 15: "Movement",
+  16: "Restoration", 17: "Sense", 18: "Shape", 19: "Strength", 20: "Travel"
+};
+
+// Procedural Consumables: POISONS (d20 Rolls)
+export const POISON_PARTS = {
+  part1: ["Blazing", "Boiling", "Crippling", "Cursed", "Delirious", "Delicious", "Digital", "Dry", "Elderitch", "Luminous", "Nano", "Ominious", "Psychic", "Radiating", "Rapid", "Slow", "Spiritual", "Silent", "Wet", "Withering"],
+  part2: ["Anchored", "Blackened", "Blinding", "Commanding", "Corrosive", "Crawling", "Dazzling", "Floating", "Frenzied", "Growing", "Haunting", "Infectious", "Living", "Morphing", "Multitasking", "Paralyzing", "Sparkling", "Unbearable", "Vile", "Whispering"],
+  part3: ["Amnesia", "Attraction", "Bleeding", "Blindness", "Boiling", "Confusion", "Decay", "Diarrhea", "Disease", "Rupture", "Insanity", "Insomnia", "Mirage", "Nausea", "Nightmare", "Pain", "Possession", "Rage", "Seizure", "Weakness"]
+};
+
+// Procedural Consumables: GRENADES (d20 Rolls)
+export const GRENADE_PARTS = {
+  part1: ["Abyssal", "Crystal", "Dangerous", "Demonic", "Divine", "Dreamy", "Fuse", "Genesis", "Glass", "Ice", "Liquid", "Living", "Metal", "Organ", "Paper", "Powered", "Psychic", "Reflective", "Scrap", "Wooden"],
+  part2: ["Blinding", "Corroding", "Collateral", "Dazzling", "Deafening", "Distant", "Electric", "Entangling", "Gravity", "Impaling", "Lingering", "Magnetizing", "Paralyzing", "Penetrating", "Shattering", "Silencing", "Slumbering", "Steaming", "Sticking", "Triggered"],
+  part3: ["Blast", "Blood", "Death", "Dirt", "Fire", "Flesh", "Gas", "Gate", "Holtzfield", "Infection", "Light", "Poison", "Radiation", "Slime", "Smoke", "Tar", "Tendrils", "Trap", "Venom", "Water"]
+};
