@@ -6,3 +6,43 @@ export const LOOT_CATEGORIES = [
   { min: 12, max: 15, type: "Vestiges" },
   { min: 16, max: 20, type: "Gear" }
 ];
+
+// RNG Weights for Loot Rarity
+export const LOOT_TIERS = [
+  { min: 1, max: 3, name: "Mundane I", color: "text-gray-400" },
+  { min: 4, max: 10, name: "Ordinary II", color: "text-white" },
+  { min: 11, max: 16, name: "Excellent III", color: "text-blue-400" },
+  { min: 17, max: 19, name: "Masterful IV", color: "text-purple-500" },
+  { min: 20, max: 20, name: "Legendary V", color: "text-yellow-500" }
+];
+
+// If the loot category rolls "Gear", roll to see what kind:
+export const GEAR_TYPES = [
+  { min: 1, max: 8, type: "Melee Weapon" },
+  { min: 9, max: 16, type: "Ranged Weapon" },
+  { min: 17, max: 20, type: "Armor" }
+];
+
+export const ITEM_CONDITIONS = {
+  1: "Dangerous", 2: "Broken", 3: "Slimy", 4: "Foul smelling", 5: "Unreliable", 
+  6: "Fragile", 7: "Inefficient", 8: "Loud", 9: "High maintenance", 10: "Simple", 
+  11: "Dusty", 12: "Conspicuous", 13: "Horrific", 14: "Narrow", 15: "Rotten", 
+  16: "Nasty", 17: "Corrupted", 18: "Corroded", 19: "Dull", 20: "Bulky", 
+  21: "Colorful", 22: "Raised", 23: "Oily", 24: "Balanced", 25: "Gets hot", 
+  26: "Rugged", 27: "Small", 28: "Short", 29: "Neat", 30: "Cold", 
+  31: "Convenient", 32: "Fossilized", 33: "Peculiar", 34: "Twin", 35: "Thin", 
+  36: "Angular", 37: "Long", 38: "Satanic", 39: "Effective", 40: "Remarkable", 
+  41: "Graceful", 42: "Great", 43: "Sparkling", 44: "Heavy", 45: "Tactical", 
+  46: "Oozing", 47: "Fast", 48: "Murmuring", 49: "Sticky", 50: "Quiet", 
+  51: "Profound", 52: "Beeping", 53: "Transparent", 54: "Breathing", 55: "Transmitting", 
+  56: "Glowing", 57: "Contorting", 58: "Inconspicuous", 59: "Recording", 60: "Watching", 
+  61: "Burning", 62: "Talking", 63: "Helpful", 64: "Impressive", 65: "Very intelligent", 
+  66: "Sharp", 67: "Pulsating", 68: "Devious", 69: "Crystalline", 70: "Hardened", 
+  71: "Fiery", 72: "Translucent", 73: "Thunderous", 74: "Strong", 75: "Dark", 
+  76: "Crackling", 77: "Twisting", 78: "Infested", 79: "Cultural", 80: "Precious", 
+  81: "Fanged", 82: "Shiny", 83: "Thin", 84: "Ghastly", 85: "Raven", 
+  86: "Brilliant", 87: "Decorative", 88: "Poisonous", 89: "Smoking", 90: "Translucent", 
+  91: "Self-cleaning", 92: "Impressive", 93: "Luxurious", 94: "Advanced", 95: "Soothing", 
+  96: "Large", 97: "Renowned", 98: "Stealthy", 99: "Smart", 100: "Evil"
+};
+
