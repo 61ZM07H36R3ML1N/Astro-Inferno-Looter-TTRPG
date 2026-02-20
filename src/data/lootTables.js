@@ -46,3 +46,29 @@ export const ITEM_CONDITIONS = {
   96: "Large", 97: "Renowned", 98: "Stealthy", 99: "Smart", 100: "Evil"
 };
 
+// The Master d100 Combined Loot & Tier Table
+export const COMBINED_LOOT_TABLE = [
+  { min: 1, max: 3, tier: "Mundane I", category: "Valuables", color: "text-gray-400" },
+  { min: 4, max: 8, tier: "Mundane I", category: "Consumables", color: "text-gray-400" },
+  { min: 9, max: 11, tier: "Mundane I", category: "Vestiges", color: "text-gray-400" },
+  { min: 12, max: 15, tier: "Mundane I", category: "Gear", color: "text-gray-400" },
+  
+  { min: 16, max: 22, tier: "Ordinary II", category: "Valuables", color: "text-white" },
+  { min: 23, max: 34, tier: "Ordinary II", category: "Consumables", color: "text-white" },
+  { min: 35, max: 41, tier: "Ordinary II", category: "Vestiges", color: "text-white" },
+  { min: 42, max: 50, tier: "Ordinary II", category: "Gear", color: "text-white" },
+  
+  { min: 51, max: 56, tier: "Excellent III", category: "Valuables", color: "text-blue-400" },
+  { min: 57, max: 66, tier: "Excellent III", category: "Consumables", color: "text-blue-400" },
+  { min: 67, max: 72, tier: "Excellent III", category: "Vestiges", color: "text-blue-400" },
+  { min: 73, max: 80, tier: "Excellent III", category: "Gear", color: "text-blue-400" },
+  
+  { min: 81, max: 83, tier: "Masterful IV", category: "Valuables", color: "text-purple-500" },
+  { min: 84, max: 88, tier: "Masterful IV", category: "Consumables", color: "text-purple-500" },
+  { min: 89, max: 91, tier: "Masterful IV", category: "Vestiges", color: "text-purple-500" },
+  { min: 92, max: 95, tier: "Masterful IV", category: "Gear", color: "text-purple-500" },
+  
+  { min: 96, max: 97, tier: "Legendary V", category: "Valuables", color: "text-yellow-500" },
+  { min: 98, max: 99, tier: "Legendary V", category: "Consumables", color: "text-yellow-500" },
+  { min: 100, max: 100, tier: "Legendary V", category: "Vestige or Gear", color: "text-yellow-500" } 
+];
