@@ -1,19 +1,22 @@
-import { COMBINED_LOOT_TABLE, GEAR_TYPES, ITEM_CONDITIONS } from '../data/lootTables';
+import { COMBINED_LOOT_TABLE, GEAR_TYPES, ITEM_CONDITIONS, ITEM_BRANDS } from '../data/lootTables';
 import { WEAPONS, ARMOR } from '../data/gear'; 
 
 const rollD20 = () => Math.floor(Math.random() * 20) + 1;
 const rollD100 = () => Math.floor(Math.random() * 100) + 1;
 
 export const generateProceduralLoot = () => {
-  // 1. One Master Roll for Category and Tier
+  // 1. Master Roll for Category and Tier
   const masterRoll = rollD100();
   const lootData = COMBINED_LOOT_TABLE.find(l => masterRoll >= l.min && masterRoll <= l.max);
   
-  // 2. Roll for the Item's Physical Condition
+  // 2. Roll for Physical Condition
   const conditionRoll = rollD100();
   const itemCondition = ITEM_CONDITIONS[conditionRoll] || "Unknown";
 
-  // Handle the special 100 roll split (50/50 chance of Vestige or Gear)
+  // 3. Roll for the Brand / Origin
+  const brandRoll = rollD20();
+  const itemBrand = ITEM_BRANDS.find(b => brandRoll >= b.min && brandRoll <= b.max).name;
+
   let resolvedCategory = lootData.category;
   if (resolvedCategory === "Vestige or Gear") {
     resolvedCategory = Math.random() > 0.5 ? "Gear" : "Vestiges";
@@ -24,11 +27,12 @@ export const generateProceduralLoot = () => {
     tier: lootData.tier,
     color: lootData.color,
     condition: itemCondition,
+    brand: itemBrand, // <-- Brand assigned!
     name: "Unknown Item",
     stats: {}
   };
 
-  // 3. If it's Gear, build the procedural weapon/armor
+  // 4. Build the Procedural Item
   if (resolvedCategory === "Gear") {
     const gearTypeRoll = rollD20();
     const gearType = GEAR_TYPES.find(g => gearTypeRoll >= g.min && gearTypeRoll <= g.max);
@@ -41,16 +45,15 @@ export const generateProceduralLoot = () => {
       baseFrame = filteredWeapons[Math.floor(Math.random() * filteredWeapons.length)];
     }
 
-    // Assign the Base Frame Name and Stats
-    let itemName = baseFrame.name;
-    
-    // NOTE: Once you drop the Genesis/Satanic prefixes and suffixes, 
-    // we will inject the logic right here to attach them to the itemName!
+    // Combine the Brand and the Base Item Name!
+    // Example: "Genesis Combat Shotgun"
+    let itemName = `${itemBrand} ${baseFrame.name}`;
     
     finalItem.name = itemName;
     finalItem.stats = { ...baseFrame }; 
+  } else if (resolvedCategory === "Vestiges") {
+    finalItem.name = `${itemBrand} Vestige`;
   } else {
-    // If it's a Consumable, Valuable, or Vestige
     finalItem.name = `Random ${resolvedCategory}`;
   }
 
