@@ -69,23 +69,29 @@ export default function OverseerTab({
                     
                     {!encounter ? (
                         <div className="space-y-3">
-                            {/* 1. THE DROPDOWN (Beastiary Injection) */}
-                            <div>
-                                <label className="block text-[8px] text-gray-500 uppercase tracking-widest mb-1">Select Threat Template</label>
-                                <select 
-                                    onChange={handleBeastiarySelect}
-                                    className="w-full bg-red-950/20 border border-red-900/50 p-2 text-xs text-red-400 focus:outline-none uppercase custom-scrollbar"
-                                    value={bossNameInput}
-                                >
-                                    <option value="">-- Manual/Custom Threat --</option>
-                                    {(BEASTIARY || []).map((monster) => (
-                                        <option key={monster.name} value={monster.name} className="bg-black text-white">
-                                            [{monster.threat?.toUpperCase() || '???'}] {monster.name} — ({monster.hp} HP)
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
+ {/* 1. THE DROPDOWN (Beastiary Injection) */}
+<div>
+  <label className="block text-[8px] text-gray-500 uppercase tracking-widest mb-1">Select Threat Template</label>
+  <select 
+    onChange={handleBeastiarySelect} 
+    className="w-full bg-red-950/20 border border-red-900/50 p-2 text-xs text-red-400 focus:outline-none uppercase custom-scrollbar" 
+    value={bossNameInput}
+  >
+    <option value="">-- Manual/Custom Threat --</option>
+    {(BEASTIARY || []).map((monster, index) => {
+      // Create fallbacks for Case Sensitivity
+      const mName = monster.name || monster.Name || "Unknown";
+      const mHp = monster.hp || monster.HP || 0;
+      const mThreat = (monster.threat || monster.Threat || "???").toUpperCase();
 
+      return (
+        <option key={index} value={mName} className="bg-black text-white">
+          [{mThreat}] {mName} — ({mHp} HP)
+        </option>
+      );
+    })}
+  </select>
+</div>
                             {/* 2. MANUAL OVERRIDES */}
                             <div className="grid grid-cols-2 gap-2">
                                 <div>
