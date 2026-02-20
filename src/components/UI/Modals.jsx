@@ -17,7 +17,8 @@ const Modals = ({
   const safeDesc = (field) => {
     if (!field) return null;
     if (typeof field === 'string') return null;
-    return field.description || null;
+    // This now checks for a direct description OR a nested feature description
+    return field.description || field?.feature?.description || null;
   };
 
   return (
@@ -119,9 +120,17 @@ const Modals = ({
                 {/* PROTOCOL / DESTINY (RED BOX) */}
                 <div className="border border-red-900/40 bg-red-950/10 p-5 mb-8">
                   <div className="text-red-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-2">Active Protocol (Curse)</div>
-                  <div className="text-red-400 font-black text-lg uppercase tracking-widest mb-2">
+                  <div className="text-red-400 font-black text-lg uppercase tracking-widest">
                     {safeName(character.destiny, "UNASSIGNED")}
                   </div>
+                  
+                  {/* Inject the Feature Name if it exists! */}
+                  {character.destiny?.feature?.name && (
+                    <div className="text-red-500/80 text-[9px] font-bold uppercase tracking-widest mt-1 mb-3">
+                      // {character.destiny.feature.name}
+                    </div>
+                  )}
+
                   <p className="text-red-400/80 text-[11px] leading-relaxed">
                     {safeDesc(character.destiny) || "No protocol data found."}
                   </p>
