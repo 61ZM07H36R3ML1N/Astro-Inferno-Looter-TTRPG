@@ -65,6 +65,17 @@ const handleLootGen = async () => {
         console.error("Loot Generation Error:", error);
     }
 };
+    const handleTerminateAndLoot = async () => {
+  try {
+    // Trigger the loot generation and isDefeated flag
+    await handleLootGen();
+
+    // Remove the boss from the encounter tracker
+    clearBoss();
+  } catch (error) {
+    console.error("Termination Sequence Error:", error);
+  }
+};
   return (
     <div className="p-4 space-y-4 animate-in fade-in z-10 relative">
         {!gmSquadId ? (
@@ -159,12 +170,18 @@ const handleLootGen = async () => {
                                     <button onClick={() => updateBossHp(10)} className="bg-red-900/30 text-red-400 border border-red-900/50 px-2 py-1 text-[9px] hover:bg-red-600 hover:text-white">+10</button>
                                 </div>
                             </div>
-                            <button onClick={clearBoss} className="w-full border border-red-900 text-red-600 py-2 font-bold uppercase text-[9px] hover:bg-red-600 hover:text-white transition-colors">Terminate Threat</button> {/* NEW GM BUTTON */}
-<button 
-    onClick={handleLootGen}
-    className="w-full bg-yellow-600 text-black py-2 mt-2 font-bold uppercase text-[9px] hover:bg-white transition-colors"
+<button
+  onClick={handleTerminateAndLoot} 
+  className="w-full border border-red-900 bg-red-900/20 text-red-500 py-2 font-bold uppercase text-[9px] hover:bg-red-600 hover:text-white transition-colors"
 >
-    Execute Loot Drop (3 Items)
+  Terminate Threat
+</button>
+
+<button 
+  onClick={handleLootGen} 
+  className="w-full bg-yellow-600 text-black py-2 mt-2 font-bold uppercase text-[9px] hover:bg-white transition-colors"
+>
+  Execute Loot Drop (3 Items)
 </button>
                         </div>
                     )}
