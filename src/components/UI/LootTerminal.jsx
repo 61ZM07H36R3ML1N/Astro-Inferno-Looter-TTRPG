@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { generateProceduralLoot } from '../utils/lootGenerator';
+import { generateProceduralLoot } from '../../utils/lootGenerator';
 // Import your Firebase database and the Firestore functions
-import { db } from '../firebase'; // Adjust this path if your firebase.js is somewhere else!
+import { db } from '../../firebase'; // Adjust this path if your firebase.js is somewhere else!
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const LootTerminal = () => {

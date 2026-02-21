@@ -2,6 +2,10 @@
 import React from 'react';
 import { BEASTIARY } from '../../data/beastiary';
 
+// Init extraction sequence for Overseer Tab
+// (Note: double check if your folder is named "ui" or "UI". Vite is case-sensitive!)
+import LootTerminal from '../UI/LootTerminal';
+
 export default function OverseerTab({
     gmSquadId,
     squadInput,
@@ -22,23 +26,23 @@ export default function OverseerTab({
 }) {
 
   // Logic: When a monster is picked, auto-fill the manual inputs
-const handleBeastiarySelect = (e) => {
-  let selectedMonster = null;
-  
-  // Look through each category to find the monster name
-  for (const category of BEASTIARY) {
-    selectedMonster = category.threats.find(m => m.name === e.target.value);
-    if (selectedMonster) break;
-  }
+  const handleBeastiarySelect = (e) => {
+    let selectedMonster = null;
+    
+    // Look through each category to find the monster name
+    for (const category of BEASTIARY) {
+      selectedMonster = category.threats.find(m => m.name === e.target.value);
+      if (selectedMonster) break;
+    }
 
-  if (selectedMonster) {
-    setBossNameInput(selectedMonster.name);
-    setBossHpInput(selectedMonster.hp);
-  } else {
-    setBossNameInput("");
-    setBossHpInput(0);
-  }
-};
+    if (selectedMonster) {
+      setBossNameInput(selectedMonster.name);
+      setBossHpInput(selectedMonster.hp);
+    } else {
+      setBossNameInput("");
+      setBossHpInput(0);
+    }
+  };
 
   return (
     <div className="p-4 space-y-4 animate-in fade-in z-10 relative">
@@ -76,24 +80,25 @@ const handleBeastiarySelect = (e) => {
                     
                     {!encounter ? (
                         <div className="space-y-3">
- {/* 1. THE DROPDOWN (Beastiary Injection) */}
-<div>
-  <label className="block text-[8px] text-gray-500 uppercase tracking-widest mb-1">Select Threat Template</label>
-<select 
-            onChange={handleBeastiarySelect} 
-            className="w-full bg-red-950/20 border border-red-900/50 p-2 text-xs text-red-400 focus:outline-none uppercase custom-scrollbar" 
-            value={bossNameInput}
-          >
-            <option value="">-- Manual/Custom Threat --</option>
-            {BEASTIARY.map((category) => 
-              category.threats.map((monster) => (
-                <option key={monster.id || monster.name} value={monster.name} className="bg-black text-white">
-                  {monster.name} — ({monster.hp} HP)
-                </option>
-              ))
-            )}
-          </select>
-</div>
+                            {/* 1. THE DROPDOWN (Beastiary Injection) */}
+                            <div>
+                              <label className="block text-[8px] text-gray-500 uppercase tracking-widest mb-1">Select Threat Template</label>
+                              <select 
+                                onChange={handleBeastiarySelect} 
+                                className="w-full bg-red-950/20 border border-red-900/50 p-2 text-xs text-red-400 focus:outline-none uppercase custom-scrollbar" 
+                                value={bossNameInput}
+                              >
+                                <option value="">-- Manual/Custom Threat --</option>
+                                {BEASTIARY.map((category) => 
+                                  category.threats.map((monster) => (
+                                    <option key={monster.id || monster.name} value={monster.name} className="bg-black text-white">
+                                      {monster.name} — ({monster.hp} HP)
+                                    </option>
+                                  ))
+                                )}
+                              </select>
+                            </div>
+                            
                             {/* 2. MANUAL OVERRIDES */}
                             <div className="grid grid-cols-2 gap-2">
                                 <div>
@@ -136,6 +141,16 @@ const handleBeastiarySelect = (e) => {
                             <button onClick={clearBoss} className="w-full border border-red-900 text-red-600 py-2 font-bold uppercase text-[9px] hover:bg-red-600 hover:text-white transition-colors">Terminate Threat</button>
                         </div>
                     )}
+                </div>
+
+                {/* ========================================== */}
+                {/* 🚀 NEW: THE PROCEDURAL ARMORY FORGE 🚀     */}
+                {/* ========================================== */}
+                <div className="border border-green-900/50 bg-black/40 p-4 rounded-sm shadow-[0_0_15px_rgba(34,197,94,0.1)]">
+                    <h3 className="text-[10px] text-green-500 font-bold uppercase tracking-[0.3em] mb-4 border-b border-green-900/50 pb-2">
+                        Network Asset Forge
+                    </h3>
+                    <LootTerminal />
                 </div>
 
                 {/* GM SQUAD GRID */}
