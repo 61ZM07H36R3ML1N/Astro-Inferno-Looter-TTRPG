@@ -2,6 +2,7 @@
 import React from 'react';
 
 export default function SquadTab({
+       claimGroundLoot,
     character,
     squadInput,
     setSquadInput,
@@ -59,6 +60,27 @@ export default function SquadTab({
                      <div className="text-right text-[10px] font-black text-red-400 mt-1">{encounter.hp} / {encounter.maxHp} HP</div>
                  </div>
               )}
+{/* PLAYER VIEW: THE LOOT PILE (FIRST COME, FIRST SERVE) */}
+        {encounter?.isDefeated && encounter.groundLoot?.length > 0 && (
+            <div className="border-2 border-yellow-500 bg-yellow-900/20 p-4 mb-6 shadow-[0_0_30px_rgba(234,179,8,0.2)] animate-pulse">
+                <div className="text-[10px] text-yellow-500 font-bold uppercase tracking-[0.3em] mb-3 border-b border-yellow-500/50 pb-2">
+                    ⚠️ ASSETS DETECTED IN SECTOR ⚠️
+                </div>
+                <div className="space-y-2">
+                    {encounter.groundLoot.map((item, index) => (
+                        <div key={index} className="flex justify-between items-center bg-black/80 border border-yellow-900/50 p-2">
+                            <span className="text-xs font-black uppercase text-yellow-400 drop-shadow-md">{item}</span>
+                            <button 
+                                onClick={() => claimGroundLoot(item, index)} 
+                                className="bg-yellow-600 text-black px-4 py-2 text-[10px] font-black uppercase hover:bg-white transition-colors tracking-widest"
+                            >
+                                Claim
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        )}
               
               <div className="space-y-3">
                   {squadRoster.map(mate => (
