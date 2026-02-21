@@ -39,7 +39,7 @@ function App() {
   const [squadRoster, setSquadRoster] = useState([]);
   const [squadInput, setSquadInput] = useState("");
   const [squadLogs, setSquadLogs] = useState([]); 
-  const [partyLoot, setPartyLoot] = useState([]); // <-- NEW: Drop Pod State
+  const [partyLoot, setPartyLoot] = useState([]); 
   
   // OVERSEER (GM) STATE
   const [gmSquadId, setGmSquadId] = useState(null);
@@ -194,7 +194,14 @@ function App() {
 
   // --- ACTIONS ---
   const handleLogin = async () => { try { await signInWithPopup(auth, googleProvider); } catch (e) { console.error(e); } };
-  const handleLogout = async () => { await signOut(auth); setActiveTab('ROSTER'); };
+  
+  const handleLogout = async () => {
+    setGmSquadId(null);
+    setCharacter(initialCharacter); 
+    setSquadRoster([]);
+    await signOut(auth); 
+    setActiveTab('ROSTER'); 
+  };
 
   const saveCharacter = async () => {
     if (!user) { alert("ERROR: You must be logged in to save."); return; }
@@ -568,7 +575,12 @@ const triggerLootDrop = async (numberOfItems = 3) => {
       {/* HEADER */}
       <div className="h-14 border-b border-red-900/50 flex items-center px-4 justify-between bg-red-950/20 shrink-0 z-50">
         <div className="flex items-center gap-3">
-          <img src={user.photoURL} alt="User" className="h-8 w-8 rounded-full border border-red-600" />
+          <img 
+            src={user.photoURL} 
+            onError={(e) => { e.target.onerror = null; e.target.src = `https://ui-avatars.com/api/?name=${user.displayName}&background=7f1d1d&color=f87171`; }}
+            alt="User" 
+            className="h-8 w-8 rounded-full border border-red-600" 
+          />
           <div>
             <h1 className="text-sm font-black italic text-red-600 uppercase tracking-tighter leading-none">ASTRO INFERNO</h1>
             <div className="text-[8px] text-gray-500 font-bold uppercase">CMD: {user.displayName.split(' ')[0]}</div>
