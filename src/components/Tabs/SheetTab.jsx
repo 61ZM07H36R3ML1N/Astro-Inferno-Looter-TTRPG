@@ -102,28 +102,64 @@ export default function SheetTab({
                 })}
             </div>
 
-            {/* HAZARD MONITOR */}
-            <div className="mb-6 border border-white/10 p-2 bg-black/50">
-                <div className="text-[8px] text-gray-500 font-bold uppercase tracking-widest mb-2 text-center">Hazard Monitor</div>
-                <div className="flex flex-wrap gap-1 justify-center">
-                    {HAZARDS.map(hazard => {
-                        const isActive = (character.statuses || []).includes(hazard.id);
-                        return (
-                            <button 
-                                key={hazard.id}
-                                onClick={() => toggleStatus(hazard.id)}
-                                className={`text-[8px] px-2 py-1 font-bold uppercase transition-all border ${
-                                    isActive 
-                                    ? `${hazard.bg} ${hazard.border} ${hazard.color} drop-shadow-[0_0_5px_currentColor]` 
-                                    : 'bg-transparent border-white/10 text-gray-600 hover:text-gray-400'
-                                }`}
-                            >
-                                {hazard.id}
-                            </button>
-                        );
-                    })}
-                </div>
-            </div>
+{/* HAZARD MONITOR */}
+<div className="mt-8 border border-red-900/50 bg-black/40 p-4 rounded-sm shadow-inner">
+  <h3 className="text-xs text-red-500 font-bold uppercase tracking-[0.2em] mb-4 text-center border-b border-red-900/30 pb-2">
+    Hazard Monitor
+  </h3>
+  
+  <div className="flex flex-wrap justify-center gap-3">
+    {["BURNING", "BLEEDING", "POISONED", "STUNNED", "PANICKED"].map(status => {
+      const isActive = character.statuses?.includes(status);
+      
+      // Determine unique colors based on the hazard type
+      let activeStyles = "";
+      let hoverStyles = "";
+      
+      switch(status) {
+        case "BURNING":
+          activeStyles = "bg-orange-600 text-white border-orange-500 shadow-[0_0_15px_rgba(234,88,12,0.6)]";
+          hoverStyles = "hover:border-orange-500 hover:text-orange-400";
+          break;
+        case "BLEEDING":
+          activeStyles = "bg-red-600 text-white border-red-500 shadow-[0_0_15px_rgba(220,38,38,0.6)]";
+          hoverStyles = "hover:border-red-500 hover:text-red-400";
+          break;
+        case "POISONED":
+          activeStyles = "bg-green-600 text-white border-green-500 shadow-[0_0_15px_rgba(22,163,74,0.6)]";
+          hoverStyles = "hover:border-green-500 hover:text-green-400";
+          break;
+        case "STUNNED":
+          activeStyles = "bg-yellow-600 text-white border-yellow-500 shadow-[0_0_15px_rgba(202,138,4,0.6)]";
+          hoverStyles = "hover:border-yellow-500 hover:text-yellow-400";
+          break;
+        case "PANICKED":
+          activeStyles = "bg-purple-600 text-white border-purple-500 shadow-[0_0_15px_rgba(147,51,234,0.6)]";
+          hoverStyles = "hover:border-purple-500 hover:text-purple-400";
+          break;
+        default:
+          activeStyles = "bg-gray-600 text-white border-gray-500";
+          hoverStyles = "hover:border-gray-500 hover:text-gray-400";
+      }
+
+      return (
+        <button
+          key={status}
+          onClick={() => toggleStatus(status)}
+          className={`
+            px-4 py-2 text-xs md:text-sm font-bold uppercase tracking-widest rounded-sm border transition-all duration-200
+            ${isActive 
+              ? `${activeStyles} animate-pulse` 
+              : `bg-gray-900 text-gray-500 border-gray-700 ${hoverStyles}`
+            }
+          `}
+        >
+          {status}
+        </button>
+      );
+    })}
+  </div>
+</div>
 
             <div className="grid grid-cols-3 gap-1 mb-6">
                {['PHY', 'SPD', 'COG', 'DRV', 'CHA', 'SPR'].map(s => ( <div key={s} className="bg-black border border-white/10 p-2 text-center"> <div className="text-[8px] text-gray-400">{s}</div> <div className="text-sm font-bold">{getStat(s)}</div> </div> ))}
