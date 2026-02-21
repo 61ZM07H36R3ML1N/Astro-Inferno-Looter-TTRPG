@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 // Data Imports
 import { GEAR_STATS, WEAPON_TABLE, LOOT_PREFIXES, GRENADE_TIERS, GRENADE_JUICE, LOOT_SUFFIXES } from './data/gear'; 
 import { BEASTIARY } from './data/beastiary';
-
+import { generateProceduralLoot} from './utils/lootGenerator';
 // Firebase Imports 
 // Added requestNotificationPermission here!
 import { auth, googleProvider, db, requestNotificationPermission } from './firebase'; 
@@ -376,34 +376,44 @@ function App() {
   };
 
   const generateLoot = async () => {
-    if (!character.id) { alert("COMMAND REJECTED: Unit must be synced to database."); return; }
-    const roll = Math.floor(Math.random() * 100) + 1;
-    let prefix = { name: "Standard Issue", chance: 40 };
-    if (LOOT_PREFIXES) { let cumulative = 0; for (let p of LOOT_PREFIXES) { cumulative += p.chance; if (roll <= cumulative) { prefix = p; break; } } }
-    
-    const randomWeapon = WEAPON_TABLE[Math.floor(Math.random() * WEAPON_TABLE.length)];
-    const tiers = Object.keys(GEAR_STATS.weapons); 
-    const selectedTier = tiers[Math.floor(Math.random() * 5)];
-    let suffixStr = "";
-    if (LOOT_SUFFIXES && Math.random() > 0.5) {
-        const randomSuffix = LOOT_SUFFIXES[Math.floor(Math.random() * LOOT_SUFFIXES.length)];
-        suffixStr = ` ${randomSuffix.name}`;
+    if (!character.id) { 
+        alert("COMMAND REJECTED: Unit must be synced to database."); 
+        return; 
     }
+    
+    // 1. Fire the new v2.5.0 Procedural Forge!
+    const generatedItem = generateProceduralLoot();
 
-    const fullName = `${prefix.name === "Standard Issue" ? "" : prefix.name + " "}${selectedTier} ${randomWeapon.name}${suffixStr}`;
+    // 2. Format the string so your existing inventory logic (getGearStats) can still read it.
+    // Example output: "[Pulsating] Masterful IV Ancient Combat Shotgun of Euphoria"
+    const fullName = `[${generatedItem.condition}] ${generatedItem.tier} ${generatedItem.name}`;
+    
     const currentEquip = character.destiny?.equipment || [];
     const newEquip = [...currentEquip, fullName];
     
     try {
         const charRef = doc(db, "characters", character.id);
+        
+        // 3. Update the local UI instantly
         setCharacter(prev => ({ ...prev, destiny: { ...prev.destiny, equipment: newEquip } }));
+        
+        // 4. Sync to the Firebase Database
         await updateDoc(charRef, { "destiny.equipment": newEquip });
+        
+        // 5. Broadcast the extraction to the Neural Link with dynamic colors!
         if (character.squadId) {
             let logType = 'info';
-            if (fullName.includes('Ancient') || fullName.includes('Void-Forged')) logType = 'loot-legendary';
+            // Make high-tier drops light up the party's combat log in special colors
+            if (generatedItem.tier.includes('Legendary') || generatedItem.tier.includes('Masterful')) {
+                logType = 'loot-legendary';
+            } else if (generatedItem.tier.includes('Excellent')) {
+                logType = 'success';
+            }
             broadcastEvent(character.squadId, `${character.name} extracted gear: ${fullName}`, logType);
         }
-    } catch (e) { console.error("Loot Gen Failed:", e); }
+    } catch (e) { 
+        console.error("Loot Gen Failed:", e); 
+    }
   };
 
   const toggleEquip = async (itemIndex, isCurrentlyEquipped) => {
