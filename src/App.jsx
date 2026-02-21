@@ -48,11 +48,12 @@ function App() {
   const [bossNameInput, setBossNameInput] = useState("");
   const [bossHpInput, setBossHpInput] = useState("");
 
-  // --- STATE: UNIT CREATOR ---
+ // --- STATE: UNIT CREATOR ---
   const [step, setStep] = useState(1); 
   const initialCharacter = {
     name: "UNIT_UNNAMED", avatarUrl: "", rank: 1, xp: 0,           
-    wallet: { blood: 0, honey: 0 }, consumables: { grenades: 0, stims: 0 }, 
+    wallet: { blood: 0, honey: 0 }, 
+    consumables: { grenades: 0, stims: 0, batteries: 0, souls: 0 }, // <--- ADDED BATTERIES and SOULS
     upgrades: {}, loadout: [], statuses: [], notes: "", squadId: null,   
     form: null, destiny: null, master: null, darkMark: null, innerDemon: null,
     currentVitals: { life: null, sanity: null, aura: null } 
@@ -324,7 +325,11 @@ function App() {
     if (!charData.wallet) charData.wallet = { blood: 0, honey: 0 }; 
     if (!charData.loadout) charData.loadout = []; 
     if (!charData.statuses) charData.statuses = []; 
-    if (!charData.consumables) charData.consumables = { grenades: 0, stims: 0 }; 
+    
+    // THE FIX: Ensure old characters get a battery slot
+    if (!charData.consumables) charData.consumables = { grenades: 0, stims: 0, batteries: 0 }; 
+    if (charData.consumables.batteries === undefined) charData.consumables.batteries = 0;
+    
     if (charData.notes === undefined) charData.notes = ""; 
     
     setSquadRoster([]); 
@@ -410,19 +415,48 @@ function App() {
   };
 
   const performRoll = (skillName, baseTarget) => {
-    const roll = rollD20(); 
     let type = 'FAIL';
-    const activeWeaponString = (character.loadout || []).find(item => { const stats = getGearStats(item); return stats && !stats.isArmor; });
-    const critWindow = getCritRange(character, activeWeaponString);
+    const activeWeaponString = (character.loadout || []).find(item => { 
+        const stats = getGearStats(item); 
+        return stats && !stats.isArmor; 
+    });
+    
     let weaponBonus = 0;
     let weaponName = 'UNARMED';
     
     if (activeWeaponString) {
         const stats = getGearStats(activeWeaponString);
         if (stats) { weaponBonus = stats.stats.att || 0; weaponName = stats.name; }
+        
+        // --- AMMO & RESOURCE GATEWAY ---
+        if (activeWeaponString.includes("Genesis")) {
+            if ((character.consumables?.batteries || 0) <= 0) {
+                alert("OUT OF BATTERY: Genesis weapon systems locked. Reload required.");
+                return; // Halts the roll
+            }
+            updateConsumable('batteries', -1); // Drains 1 battery
+        } 
+        else if (activeWeaponString.includes("Satanic")) {
+            if ((character.wallet?.blood || 0) <= 0) {
+                alert("SOUL STARVED: Insufficient Blood to feed Satanic weapon.");
+                return; // Halts the roll
+            }
+            updateWallet('blood', -1); // Drains 1 blood
+        } 
+        else if (activeWeaponString.includes("Ancient")) {
+            if ((character.wallet?.honey || 0) <= 0) {
+                alert("RESONANCE FADED: Insufficient Honey to channel Ancient weapon.");
+                return; // Halts the roll
+            }
+            updateWallet('honey', -1); // Drains 1 honey
+        }
     }
 
+    // --- PROCEED WITH THE ROLL ---
+    const roll = rollD20(); 
+    const critWindow = getCritRange(character, activeWeaponString);
     const finalTarget = baseTarget + weaponBonus;
+
     if (roll <= critWindow) {
         type = 'CRIT';
         if (character.squadId) broadcastEvent(character.squadId, `HOT STREAK! ${character.name} rolled a ${roll} on ${skillName}!`, 'success');
@@ -432,6 +466,7 @@ function App() {
     } else if (roll <= finalTarget) {
         type = 'SUCCESS';
     }
+    
     setRollResult({ roll, baseTarget, finalTarget, weaponBonus, critWindow, type, skill: skillName, weaponName: weaponName });
   };
 
