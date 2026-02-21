@@ -79,6 +79,29 @@ export default function SheetTab({
                      <div className="flex gap-1"><button onClick={() => updateWallet('honey', -1)} className="flex-1 bg-yellow-900/20 hover:bg-yellow-500 hover:text-black border border-yellow-600/50 text-yellow-500 text-xs font-bold py-1">-</button><button onClick={() => updateWallet('honey', 1)} className="flex-1 bg-yellow-900/20 hover:bg-yellow-500 hover:text-black border border-yellow-600/50 text-yellow-500 text-xs font-bold py-1">+</button></div>
                 </div>
             </div>
+{/* GENESIS TECH: BATTERIES */}
+<div className="border border-cyan-900/50 bg-black p-3 mt-4 shadow-[inset_0_0_10px_rgba(6,182,212,0.05)]">
+    <div className="flex justify-between items-center mb-2">
+        <span className="text-[10px] text-cyan-500 font-black uppercase tracking-widest">Batteries</span>
+        <span className="text-lg font-black text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.8)]">
+            {character.consumables?.batteries || 0}
+        </span>
+    </div>
+    <div className="flex gap-2">
+        <button 
+            onClick={() => updateConsumable('batteries', -1)} 
+            className="flex-1 bg-black border border-cyan-900/50 text-cyan-600 py-1 font-black hover:bg-cyan-900/30 hover:text-cyan-400 transition-colors"
+        >
+            -
+        </button>
+        <button 
+            onClick={() => updateConsumable('batteries', 1)} 
+            className="flex-1 bg-black border border-cyan-900/50 text-cyan-600 py-1 font-black hover:bg-cyan-900/30 hover:text-cyan-400 transition-colors"
+        >
+            +
+        </button>
+    </div>
+</div>
 
             {/* VITALS */}
             <div className="space-y-2 mb-4">
