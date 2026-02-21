@@ -1,7 +1,8 @@
 // src/components/Tabs/SquadTab.jsx
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 export default function SquadTab({
+    claimGroundLoot,
     character,
     squadInput,
     setSquadInput,
@@ -11,32 +12,60 @@ export default function SquadTab({
     squadRoster,
     getMaxVital,
     renderCombatLog,
-    partyLoot, // Incoming from App.jsx
-    claimLoot,  // Incoming from App.jsx
-    claimGroundLoot
+    partyLoot, 
+    claimLoot  
 }) {
+  const [shouldShake, setShouldShake] = useState(false);
+  // Ref-Shield: Tracks the signal to prevent cascading render loops
+  const prevLootCount = useRef(partyLoot?.length || 0);
+
+  useEffect(() => {
+    const currentCount = partyLoot?.length || 0;
+    
+    // Trigger shake only if the inventory grows (new arrival)
+    if (currentCount > prevLootCount.current) {
+        // Move the state update to the next tick to satisfy React's performance check
+        const trigger = setTimeout(() => setShouldShake(true), 0);
+        const reset = setTimeout(() => setShouldShake(false), 500);
+        
+        prevLootCount.current = currentCount;
+        return () => { clearTimeout(trigger); clearTimeout(reset); };
+    }
+    
+    // Sync the count if it stays same or drops (items claimed)
+    prevLootCount.current = currentCount;
+  }, [partyLoot?.length]);
+
   return (
-    <div className="p-4 space-y-4 animate-in fade-in z-10 relative">
+    <div className={`p-4 space-y-4 animate-in fade-in z-10 relative ${shouldShake ? 'animate-impact' : ''}`}>
+      
+      {/* IMPACT ANIMATION CSS */}
+      <style>{`
+        @keyframes impact {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.02); filter: brightness(1.2); }
+          100% { transform: scale(1); }
+        }
+        .animate-impact { animation: impact 0.2s ease-out; border: 2px solid #06b6d4; }
+      `}</style>
+
       {!character.id ? (
           <div className="text-center py-20 opacity-50 border border-dashed border-white/20 p-8">
               <div className="text-4xl mb-4">⚠</div>
               <div className="text-sm font-bold uppercase tracking-widest text-white">No Unit Deployed</div>
-              <div className="text-[10px] text-gray-400 mt-2">Deploy a unit from the Barracks to access the Squad Network.</div>
           </div>
       ) : !character.squadId ? (
-          <div className="border border-cyan-900/50 p-6 bg-black/80 backdrop-blur-sm text-center shadow-[0_0_30px_rgba(6,182,212,0.1)]">
+          <div className="border border-cyan-900/50 p-6 bg-black/80 backdrop-blur-sm text-center">
              <div className="text-[10px] text-cyan-500 font-bold uppercase tracking-[0.3em] mb-6">Neural Link Offline</div>
              <input 
                  type="text" 
                  value={squadInput} 
                  onChange={e => setSquadInput(e.target.value)} 
                  placeholder="ENTER SQUAD CODE" 
-                 className="w-full bg-cyan-950/20 border-b-2 border-cyan-600 p-4 text-2xl font-black uppercase text-center text-white focus:outline-none mb-4 tracking-widest placeholder:text-gray-700" 
+                 className="w-full bg-cyan-950/20 border-b-2 border-cyan-600 p-4 text-2xl font-black uppercase text-center text-white" 
                  maxLength={6} 
              />
-             <button onClick={() => joinSquad(squadInput)} className="w-full bg-cyan-600 text-black py-4 font-bold uppercase hover:bg-white hover:text-cyan-600 transition-colors mb-6">Establish Link</button>
-             <div className="text-[8px] text-gray-500 uppercase tracking-widest mb-4">- OR -</div>
-             <button onClick={() => joinSquad(Math.random().toString(36).substring(2, 6).toUpperCase())} className="w-full border border-cyan-900 text-cyan-500 py-3 text-[10px] font-bold uppercase hover:bg-cyan-900/20 transition-colors">Generate Secure Code</button>
+             <button onClick={() => joinSquad(squadInput)} className="w-full bg-cyan-600 text-black py-4 font-bold uppercase mt-4">Establish Link</button>
           </div>
       ) : (
           <div className="space-y-4">
@@ -45,48 +74,53 @@ export default function SquadTab({
                       <div className="text-[8px] text-cyan-500 font-bold uppercase tracking-[0.3em] mb-1">Active Network Link</div>
                       <div className="text-3xl font-black text-white tracking-[0.2em] leading-none drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]">{character.squadId}</div>
                   </div>
-                  <button onClick={leaveSquad} className="border border-red-900/50 bg-red-900/20 text-red-500 px-3 py-1 text-[9px] font-bold uppercase hover:bg-red-600 hover:text-white transition-colors">Sever Link</button>
+                  <button onClick={leaveSquad} className="border border-red-900/50 bg-red-900/20 text-red-500 px-3 py-1 text-[9px] font-bold uppercase">Sever Link</button>
               </div>
 
               {/* NETWORK ACTIVITY LOG */}
               {renderCombatLog()}
 
-              {/* NEW: NETWORK DROP POD (Step 2 Implementation) */}
+              {/* NETWORK DROP POD (CYAN BOX) */}
               {partyLoot && partyLoot.length > 0 && (
-                <div className="border-2 border-cyan-500 bg-cyan-950/20 p-4 mb-6 animate-pulse shadow-[0_0_20px_rgba(6,182,212,0.3)]">
-                  <div className="text-cyan-400 text-[10px] font-black uppercase mb-2">Incoming Drop Pod Detected</div>
-                  {partyLoot.map((item) => (
-                    <div key={item.id} className="flex justify-between items-center bg-black/60 p-2 border border-cyan-900 mb-2">
-                      <span className="text-xs text-white">[{item.tier}] {item.name}</span>
-                      <button 
-                        onClick={() => claimLoot(item)} 
-                        className="bg-cyan-600 text-black px-3 py-1 text-[10px] font-bold uppercase hover:bg-white"
-                      >
-                        Secure Asset
-                      </button>
-                    </div>
-                  ))}
+                <div className="border-2 border-cyan-500 bg-cyan-950/40 p-4 mb-6 shadow-[0_0_20px_rgba(6,182,212,0.3)]">
+                  <div className="text-cyan-400 text-[10px] font-black uppercase mb-3 tracking-[0.2em] border-b border-cyan-900 pb-1 flex justify-between">
+                    <span>Incoming Drop Pod Detected</span>
+                    <span className="animate-ping">●</span>
+                  </div>
+                  <div className="space-y-2">
+                    {partyLoot.map((item) => (
+                      <div key={item.id} className="flex justify-between items-center bg-black/80 p-3 border border-cyan-900">
+                        <div className="flex flex-col">
+                          <span className="text-[9px] text-cyan-500 font-bold uppercase">{item.tier}</span>
+                          <span className="text-xs text-white font-black uppercase">{item.name}</span>
+                        </div>
+                        <button 
+                          onClick={() => claimLoot(item)} 
+                          className="bg-cyan-600 text-black px-4 py-2 text-[10px] font-black uppercase hover:bg-white transition-all active:scale-95"
+                        >
+                          Secure Asset
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
-              {/* SHARED ENCOUNTER TRACKER */}
+              {/* HOSTILE THREAT TRACKER */}
               {encounter && (
-                 <div className="border border-red-900 bg-red-950/20 p-4 mb-6 shadow-[0_0_20px_rgba(220,38,38,0.2)] animate-pulse">
+                 <div className="border border-red-900 bg-red-950/20 p-4 mb-6">
                      <div className="text-[8px] text-red-500 font-bold uppercase tracking-[0.3em] mb-2">Hostile Threat Detected</div>
-                     <div className="text-2xl font-black text-white uppercase italic tracking-tighter mb-2">{encounter.name}</div>
+                     <div className="text-2xl font-black text-white uppercase mb-2">{encounter.name}</div>
                      <div className="h-4 w-full bg-black border border-red-900/50 relative overflow-hidden">
                          <div style={{width: `${(encounter.hp / encounter.maxHp) * 100}%`}} className="h-full bg-red-600 transition-all duration-500"></div>
                      </div>
-                     <div className="text-right text-[10px] font-black text-red-400 mt-1">{encounter.hp} / {encounter.maxHp} HP</div>
                  </div>
               )}
 
-              {/* GROUND LOOT (BOSS DROPS) */}
+              {/* GROUND LOOT (YELLOW BOX) */}
               {encounter?.groundLoot?.length > 0 && (
-                  <div className="border-2 border-yellow-500 bg-yellow-900/20 p-4 mb-6 shadow-[0_0_30px_rgba(234,179,8,0.2)] animate-pulse">
-                      <div className="text-[10px] text-yellow-500 font-bold uppercase tracking-[0.3em] mb-3 border-b border-yellow-500/50 pb-2">
-                          ⚠️ ASSETS DETECTED IN SECTOR ⚠️
-                      </div>
+                  <div className="border-2 border-yellow-500 bg-yellow-900/20 p-4 mb-6 shadow-[0_0_30px_rgba(234,179,8,0.2)]">
+                      <div className="text-[10px] text-yellow-500 font-bold uppercase tracking-[0.3em] mb-3 border-b border-yellow-500/50 pb-2">⚠️ ASSETS DETECTED IN SECTOR ⚠️</div>
                       <div className="space-y-2">
                           {encounter.groundLoot.map((item, index) => (
                               <div key={index} className="flex justify-between items-center bg-black/80 border border-yellow-900/50 p-2">
@@ -100,31 +134,30 @@ export default function SquadTab({
               
               <div className="space-y-3">
                   {squadRoster.map(mate => (
-                      <div key={mate.id} className={`border p-3 flex flex-col gap-3 relative overflow-hidden transition-all ${mate.id === character.id ? 'border-cyan-500/50 bg-cyan-950/10' : 'border-white/10 bg-black/60'}`}>
+                      <div key={mate.id} className={`border p-3 flex flex-col gap-3 relative overflow-hidden ${mate.id === character.id ? 'border-cyan-500/50 bg-cyan-950/10' : 'border-white/10 bg-black/60'}`}>
                           <div className="flex justify-between items-start relative z-10">
                               <div className="flex items-center gap-3">
-                                  <div className="h-10 w-10 bg-gray-900 border border-white/20 shadow-md">
+                                  <div className="h-10 w-10 bg-gray-900 border border-white/20">
                                       {mate.avatarUrl ? <img src={mate.avatarUrl} alt="Avatar" className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center text-[8px] text-gray-600 font-bold uppercase">NO ID</div>}
                                   </div>
                                   <div>
-                                      <div className="text-lg font-black italic uppercase leading-none text-white">{mate.name} {mate.id === character.id && <span className="text-[8px] text-cyan-500 font-normal not-italic ml-2 tracking-widest">(YOU)</span>}</div>
-                                      <div className="text-[9px] text-gray-400 uppercase mt-1 tracking-widest">RK {mate.rank} • {mate.form?.name || 'UNKNOWN'}</div>
+                                      <div className="text-lg font-black italic uppercase text-white">{mate.name}</div>
+                                      <div className="text-[9px] text-gray-400 uppercase">RK {mate.rank} • {mate.form?.name || 'UNKNOWN'}</div>
                                   </div>
                               </div>
                           </div>
-
                           <div className="space-y-1 relative z-10 border-t border-white/10 pt-2">
                               {['life', 'sanity', 'aura'].map(v => {
-                                  const mMax = getMaxVital(v, mate); // <--- HERE IS THE USAGE
+                                  const mMax = getMaxVital(v, mate);
                                   const mCur = mate.currentVitals?.[v] ?? mMax;
                                   const mPct = (mCur / mMax) * 100;
                                   return (
                                       <div key={v} className="flex items-center gap-2">
                                          <div className="w-8 text-[8px] font-bold text-gray-600 uppercase text-right tracking-widest">{v.substring(0,3)}</div>
-                                         <div className="flex-1 h-1.5 bg-gray-900 relative overflow-hidden">
-                                             <div style={{width: `${mPct}%`}} className={`h-full transition-all duration-300 ${v === 'life' ? 'bg-green-600' : v === 'sanity' ? 'bg-blue-600' : 'bg-purple-600'}`}></div>
+                                         <div className="flex-1 h-1.5 bg-gray-900 relative">
+                                             <div style={{width: `${mPct}%`}} className={`h-full ${v === 'life' ? 'bg-green-600' : v === 'sanity' ? 'bg-blue-600' : 'bg-purple-600'}`}></div>
                                          </div>
-                                         <div className={`w-8 text-[9px] font-black text-right ${v === 'life' ? 'text-green-500' : v === 'sanity' ? 'text-blue-500' : 'text-purple-500'}`}>{mCur}</div>
+                                         <div className={`w-8 text-[9px] font-black text-right ${v === 'life' ? 'text-green-500' : 'text-blue-500'}`}>{mCur}</div>
                                       </div>
                                   );
                               })}
