@@ -44,7 +44,24 @@ export default function OverseerTab({
       setBossHpInput(0);
     }
   };
-
+// Add this logic to sync the 'isDefeated' state with the loot drop
+const handleLootGen = async () => {
+    try {
+        // triggerLootDrop handles the generation of items
+        await triggerLootDrop(3);
+        
+        // Ensure the encounter state is updated to 'defeated' 
+        // This allows SquadTab.jsx to pass the {encounter?.isDefeated} check
+        if (gmSquadId) {
+            const encounterRef = doc(db, "encounters", gmSquadId);
+            await updateDoc(encounterRef, {
+                isDefeated: true
+            });
+        }
+    } catch (error) {
+        console.error("Loot Generation Error:", error);
+    }
+};
   return (
     <div className="p-4 space-y-4 animate-in fade-in z-10 relative">
         {!gmSquadId ? (
@@ -141,7 +158,7 @@ export default function OverseerTab({
                             </div>
                             <button onClick={clearBoss} className="w-full border border-red-900 text-red-600 py-2 font-bold uppercase text-[9px] hover:bg-red-600 hover:text-white transition-colors">Terminate Threat</button> {/* NEW GM BUTTON */}
 <button 
-    onClick={() => triggerLootDrop(3)} 
+    onClick={handleLootGen}
     className="w-full bg-yellow-600 text-black py-2 mt-2 font-bold uppercase text-[9px] hover:bg-white transition-colors"
 >
     Execute Loot Drop (3 Items)
