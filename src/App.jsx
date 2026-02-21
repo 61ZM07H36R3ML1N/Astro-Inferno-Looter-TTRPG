@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react';
 
-// Data Imports
+// --- DATA INJECTION ---
 import { GEAR_STATS, WEAPON_TABLE, LOOT_PREFIXES, GRENADE_TIERS, GRENADE_JUICE, LOOT_SUFFIXES } from './data/gear'; 
 import { BEASTIARY } from './data/beastiary';
 import { generateProceduralLoot } from './utils/lootGenerator';
 
-// Firebase Imports 
+// --- FIREBASE CORE ---
 import { auth, googleProvider, db, requestNotificationPermission } from './firebase'; 
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { collection, addDoc, query, where, onSnapshot, deleteDoc, updateDoc, doc, setDoc } from "firebase/firestore";
 
-// Tab Components
+// --- TAB INTERFACES ---
 import RosterTab from './components/Tabs/RosterTab';
 import CreatorTab from './components/Tabs/CreatorTab';
 import SheetTab from './components/Tabs/SheetTab';
@@ -18,36 +18,37 @@ import SquadTab from './components/Tabs/SquadTab';
 import OverseerTab from './components/Tabs/OverseerTab';
 import Modals from './components/UI/Modals';
 
+// --- GLOBAL UTILS ---
 const rollD20 = () => Math.floor(Math.random() * 20) + 1;
 const XP_THRESHOLD = 100; 
 
 function App() {
-  // --- STATE ---
+  // --- STATE: AUTH & BARRACKS ---
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('ROSTER'); 
   const [roster, setRoster] = useState([]); 
   
-  // ROLLER & MODAL STATE
+  // --- STATE: TELEMETRY & MODALS ---
   const [rollResult, setRollResult] = useState(null);
   const [grenadeResult, setGrenadeResult] = useState(null); 
   const [viewData, setViewData] = useState(false); 
   const [viewPromotion, setViewPromotion] = useState(false); 
   const [isLogOpen, setIsLogOpen] = useState(false); 
 
-  // MULTIPLAYER SQUAD STATE
+  // --- STATE: MULTIPLAYER SQUAD ---
   const [squadRoster, setSquadRoster] = useState([]);
   const [squadInput, setSquadInput] = useState("");
   const [squadLogs, setSquadLogs] = useState([]); 
   const [partyLoot, setPartyLoot] = useState([]); 
   
-  // OVERSEER (GM) STATE
+  // --- STATE: OVERSEER PROTOCOLS ---
   const [gmSquadId, setGmSquadId] = useState(null);
   const [encounter, setEncounter] = useState(null);
   const [bossNameInput, setBossNameInput] = useState("");
   const [bossHpInput, setBossHpInput] = useState("");
 
-  // CREATOR STATE
+  // --- STATE: UNIT CREATOR ---
   const [step, setStep] = useState(1); 
   const initialCharacter = {
     name: "UNIT_UNNAMED", avatarUrl: "", rank: 1, xp: 0,           
@@ -58,7 +59,7 @@ function App() {
   };
   const [character, setCharacter] = useState(initialCharacter);
 
-  // --- AUTH & SYNC ---
+  // --- AUTH SYNC ---
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -77,8 +78,8 @@ function App() {
     return () => unsubscribeAuth();
   }, []);
 
-  // --- REAL-TIME SQUAD, ENCOUNTER & LOG LISTENER ---
-  const activeNetworkId = gmSquadId || character?.squadId;
+  // --- NEURAL LINK & SQUAD TELEMETRY ---
+  const activeNetworkId = (gmSquadId || character?.squadId || "").toUpperCase();
 
   useEffect(() => {
     if (!activeNetworkId) return;
@@ -110,7 +111,7 @@ function App() {
     return () => { unsubscribeSquad(); unsubscribeEncounter(); unsubscribeLogs(); unsubscribeLoot(); };
   }, [activeNetworkId]);
 
-  // --- BROADCAST TELEMETRY UTILITY ---
+  // --- ACTIONS: BROADCAST & LINK ---
   const broadcastEvent = async (targetSquadId, message, type = 'info') => {
       if (!targetSquadId) return;
       try {
@@ -120,19 +121,112 @@ function App() {
       } catch (e) { console.error("Broadcast failed", e); }
   };
 
-  // --- NEURAL LINK (PUSH NOTIFICATIONS) ---
   const testNeuralLink = async () => {
-    if (!user) { alert("ERROR: You must be logged in to link your device."); return; }
+    if (!user) { alert("ERROR: Identity required."); return; }
     try {
         const token = await requestNotificationPermission();
         if (token) {
             await setDoc(doc(db, "users", user.uid), { fcmToken: token, lastSynced: new Date().getTime() }, { merge: true });
-            alert("Neural Link Established! Your device is ready to receive Overseer telemetry.");
+            alert("Neural Link Established.");
         }
-    } catch (error) { console.error("CRITICAL FAILURE:", error); }
+    } catch (error) { console.error("Sync Failure:", error); }
   };
 
-  // --- HELPER METHODS ---
+  // --- PROCEDURAL FORGE & LOGISTICS ---
+  const broadcastLoot = async () => {
+    if (!gmSquadId) return;
+    const item = generateProceduralLoot();
+    try {
+        await addDoc(collection(db, "party_loot"), {
+            ...item,
+            squadId: gmSquadId,
+            createdAt: new Date().getTime()
+        });
+        broadcastEvent(gmSquadId, `NEURAL LINK: Asset deployed to Drop Pod.`, 'success');
+    } catch (e) { console.error("Broadcast Failed", e); }
+  };
+
+  const spawnBoss = async () => {
+    // 1. Safety check: Don't spawn a ghost
+    if (!gmSquadId || !bossNameInput || !bossHpInput) {
+      alert("COMMAND REJECTED: Overseer must provide Name and HP telemetry.");
+      return;
+    }
+    
+    try {
+      // 2. Deploy the threat to the database
+      const bossData = { 
+        name: bossNameInput.toUpperCase(), 
+        hp: parseInt(bossHpInput), 
+        maxHp: parseInt(bossHpInput) 
+      };
+      
+      await setDoc(doc(db, "encounters", gmSquadId), bossData);
+      
+      // 3. Announce the threat to the Neural Link
+      broadcastEvent(gmSquadId, `WARNING: Hostile Threat Detected - ${bossData.name}`, 'boss');
+      
+      // 4. Reset Overseer inputs
+      setBossNameInput(""); 
+      setBossHpInput("");
+    } catch (e) { 
+      console.error("Boss Deployment Failure:", e); 
+    }
+  };
+
+  const claimLoot = async (lootItem) => {
+      if (!character.id) return;
+      const fullName = `[${lootItem.condition}] ${lootItem.tier} ${lootItem.name}`;
+      const newEquip = [...(character.destiny?.equipment || []), fullName];
+      try {
+          await updateDoc(doc(db, "characters", character.id), { "destiny.equipment": newEquip });
+          setCharacter(prev => ({ ...prev, destiny: { ...prev.destiny, equipment: newEquip } }));
+          await deleteDoc(doc(db, "party_loot", lootItem.id));
+          broadcastEvent(character.squadId, `<<< ASSET SECURED: ${character.name} claimed ${fullName}`, 'success');
+      } catch (e) { console.error("Loot Claim Failed:", e); }
+  };
+
+  const generateLoot = async () => {
+    if (!character.id) return;
+    const generatedItem = generateProceduralLoot();
+    const fullName = `[${generatedItem.condition}] ${generatedItem.tier} ${generatedItem.name}`;
+    const newEquip = [...(character.destiny?.equipment || []), fullName];
+    try {
+        setCharacter(prev => ({ ...prev, destiny: { ...prev.destiny, equipment: newEquip } }));
+        await updateDoc(doc(db, "characters", character.id), { "destiny.equipment": newEquip });
+        if (character.squadId) broadcastEvent(character.squadId, `${character.name} extracted: ${fullName}`, 'success');
+    } catch (e) { console.error(e); }
+  };
+
+  const triggerLootDrop = async (numberOfItems = 3) => {
+    if (!gmSquadId || !encounter) return;
+    let droppedItems = [];
+    for(let i = 0; i < numberOfItems; i++) {
+        const item = generateProceduralLoot(); 
+        droppedItems.push(typeof item === 'string' ? item : `[${item.condition}] ${item.tier} ${item.name}`); 
+    }
+    try {
+        await updateDoc(doc(db, "encounters", gmSquadId), { 
+            groundLoot: [...(encounter.groundLoot || []), ...droppedItems] 
+        });
+        broadcastEvent(gmSquadId, `ASSETS DETECTED: ${numberOfItems} items dropped in local sector.`, 'success');
+    } catch (e) { console.error("Loot Drop Failed", e); }
+  };
+
+  const claimGroundLoot = async (itemString, index) => {
+      if (!character.id || !character.squadId || !encounter?.groundLoot) return;
+      const updatedGroundLoot = [...encounter.groundLoot];
+      updatedGroundLoot.splice(index, 1);
+      const newEquip = [...(character.destiny?.equipment || []), itemString];
+      try {
+          await updateDoc(doc(db, "encounters", character.squadId), { groundLoot: updatedGroundLoot });
+          await updateDoc(doc(db, "characters", character.id), { "destiny.equipment": newEquip });
+          setCharacter(prev => ({ ...prev, destiny: { ...prev.destiny, equipment: newEquip } }));
+          broadcastEvent(character.squadId, `ASSET SECURED: ${character.name} grabbed [${itemString}]!`, 'info');
+      } catch (e) { console.error("Claim Failed", e); }
+  };
+
+  // --- HELPERS: STATS & VITALS ---
   const getMaxVital = (type, charData = character) => {
     if (!charData || !charData.form) return 10;
     const statMap = { life: 'PHY', sanity: 'DRV', aura: 'SPR' };
@@ -157,10 +251,9 @@ function App() {
   };
 
   const getLootColor = (itemName) => {
-    if (itemName.includes("Void-Forged")) return "text-fuchsia-400 drop-shadow-[0_0_8px_rgba(232,121,249,0.8)] animate-pulse";
-    if (itemName.includes("Satanic")) return "text-red-600 drop-shadow-[0_0_3px_rgba(220,38,38,0.5)]";
-    if (itemName.includes("Genesis")) return "text-cyan-400 drop-shadow-[0_0_3px_rgba(34,211,238,0.5)]";
-    if (itemName.includes("Ancient")) return "text-amber-400 drop-shadow-[0_0_3px_rgba(251,191,36,0.5)]";
+    if (itemName.includes("Void-Forged")) return "text-fuchsia-400 drop-shadow-[0_0_8px_rgba(232,121,249,0.8)]";
+    if (itemName.includes("Satanic")) return "text-red-600";
+    if (itemName.includes("Genesis")) return "text-cyan-400";
     return "text-gray-300"; 
   };
 
@@ -174,9 +267,7 @@ function App() {
     const finalStats = { ...baseStats };
     if (archetype) {
         finalStats.att += archetype.stats.att + (suffix?.stats?.att || 0);
-        finalStats.agm += archetype.stats.agm + (suffix?.stats?.agm || 0);
         finalStats.dmg += archetype.stats.dmg + (suffix?.stats?.dmg || 0);
-        finalStats.tgt += archetype.stats.tgt + (suffix?.stats?.tgt || 0);
     }
     return { tier: tierKey, isArmor, stats: finalStats, name: itemString };
   };
@@ -192,51 +283,22 @@ function App() {
     return baseVal + bonus;
   };
 
-  // --- ACTIONS ---
+  // --- ACTIONS: UNIT MANAGEMENT ---
   const handleLogin = async () => { try { await signInWithPopup(auth, googleProvider); } catch (e) { console.error(e); } };
-  
-  const handleLogout = async () => {
-    setGmSquadId(null);
-    setCharacter(initialCharacter); 
-    setSquadRoster([]);
-    await signOut(auth); 
-    setActiveTab('ROSTER'); 
-  };
+  const handleLogout = async () => { setGmSquadId(null); setCharacter(initialCharacter); setSquadRoster([]); await signOut(auth); setActiveTab('ROSTER'); };
 
   const saveCharacter = async () => {
-    if (!user) { alert("ERROR: You must be logged in to save."); return; }
-    if (!character.form) { alert("ERROR: Form data missing. Please complete Phase 2."); return; }
+    if (!user || !character.form) return;
     try {
-      const maxLife = getMaxVital('life', character) || 10;
-      const maxSanity = getMaxVital('sanity', character) || 10;
-      const maxAura = getMaxVital('aura', character) || 10;
-      const { id, ...cleanCharacter } = character; 
-      const payload = { ...cleanCharacter, currentVitals: { life: maxLife, sanity: maxSanity, aura: maxAura }, uid: user.uid, createdAt: new Date() };
+      const { id: dummyId, ...cleanCharacter } = character; 
+      const payload = { ...cleanCharacter, currentVitals: { life: getMaxVital('life', character), sanity: getMaxVital('sanity', character), aura: getMaxVital('aura', character) }, uid: user.uid, createdAt: new Date() };
       await addDoc(collection(db, "characters"), payload);
-      alert(`UNIT ${character.name} DEPLOYED TO DATABASE`);
       setCharacter(initialCharacter); setStep(1); setActiveTab('ROSTER');
-    } catch (e) { console.error("Save Error:", e); alert(`SAVE FAILED: ${e.message}`); }
-  };
-
-  const deleteCharacter = async (charId, charName) => {
-    if (window.confirm(`CONFIRM TERMINATION: Permanently delete unit ${charName}?`)) {
-        try { await deleteDoc(doc(db, "characters", charId)); } catch (e) { console.error(e); }
-    }
+    } catch (e) { console.error(e); }
   };
 
   const loadCharacter = (charData) => {
     if (!charData.currentVitals) charData.currentVitals = { life: getMaxVital('life', charData), sanity: getMaxVital('sanity', charData), aura: getMaxVital('aura', charData) };
-    if (!charData.rank) charData.rank = 1;
-    if (!charData.xp) charData.xp = 0;
-    if (!charData.upgrades) charData.upgrades = {};
-    if (!charData.wallet) charData.wallet = { blood: 0, honey: 0 }; 
-    if (!charData.loadout) charData.loadout = []; 
-    if (!charData.statuses) charData.statuses = []; 
-    if (charData.avatarUrl === undefined) charData.avatarUrl = ""; 
-    if (!charData.consumables) charData.consumables = { grenades: 0, stims: 0 }; 
-    if (charData.notes === undefined) charData.notes = ""; 
-    if (charData.squadId === undefined) charData.squadId = null; 
-    
     setSquadRoster([]); 
     setCharacter(charData);
     setActiveTab('SHEET');
@@ -245,68 +307,31 @@ function App() {
   const updateVital = async (type, change) => {
     const maxVal = getMaxVital(type);
     const currentVal = character.currentVitals?.[type] ?? maxVal;
-    let newVal = currentVal + change;
-    if (newVal < 0) newVal = 0;
-    if (newVal > maxVal) newVal = maxVal;
+    let newVal = Math.max(0, Math.min(maxVal, currentVal + change));
     const updatedChar = { ...character, currentVitals: { ...(character.currentVitals || {}), [type]: newVal } };
     setCharacter(updatedChar);
-    if (character.id) { try { await updateDoc(doc(db, "characters", character.id), { [`currentVitals.${type}`]: newVal }); } catch (e) { console.error("Sync Failed:", e); } }
+    if (character.id) { try { await updateDoc(doc(db, "characters", character.id), { [`currentVitals.${type}`]: newVal }); } catch (e) { console.error(e); } }
   };
 
   const updateWallet = async (type, change) => {
-      const currentVal = character.wallet?.[type] || 0;
-      const newVal = Math.max(0, currentVal + change);
+      const newVal = Math.max(0, (character.wallet?.[type] || 0) + change);
       const updatedChar = { ...character, wallet: { ...character.wallet, [type]: newVal } };
       setCharacter(updatedChar);
-      if (character.id) { try { await updateDoc(doc(db, "characters", character.id), { [`wallet.${type}`]: newVal }); } catch(e) { console.error("Wallet Sync Failed", e); } }
+      if (character.id) { try { await updateDoc(doc(db, "characters", character.id), { [`wallet.${type}`]: newVal }); } catch(e) { console.error(e); } }
   };
 
   const toggleStatus = async (statusId) => {
       let newStatuses = [...(character.statuses || [])];
-      if (newStatuses.includes(statusId)) { 
-          newStatuses = newStatuses.filter(s => s !== statusId); 
-      } else { 
-          newStatuses.push(statusId); 
-      }
+      newStatuses = newStatuses.includes(statusId) ? newStatuses.filter(s => s !== statusId) : [...newStatuses, statusId];
       setCharacter(prev => ({ ...prev, statuses: newStatuses }));
-      if (character.id) {
-          try { await updateDoc(doc(db, "characters", character.id), { statuses: newStatuses }); } catch(e) { console.error("Status Sync Failed", e); }
-      }
+      if (character.id) { try { await updateDoc(doc(db, "characters", character.id), { statuses: newStatuses }); } catch(e) { console.error(e); } }
   };
 
   const addXp = async (amount) => {
       if (!character.id) return;
-      const currentXp = character.xp || 0;
-      const newXp = Math.min(XP_THRESHOLD, currentXp + amount); 
-      const updatedChar = { ...character, xp: newXp };
-      setCharacter(updatedChar);
-      try { await updateDoc(doc(db, "characters", character.id), { xp: newXp }); } catch(e) { console.error("XP Sync Failed", e); }
-  };
-
-  const updateConsumable = async (type, change) => {
-      if (!character.id) return;
-      const currentVal = character.consumables?.[type] || 0;
-      const newVal = Math.max(0, currentVal + change);
-      const updatedChar = { ...character, consumables: { ...character.consumables, [type]: newVal } };
-      setCharacter(updatedChar);
-      try { await updateDoc(doc(db, "characters", character.id), { [`consumables.${type}`]: newVal }); } catch(e) { console.error("Consumable Sync Failed", e); }
-  };
-
-  const pullPin = async () => {
-      if (!character.id) return;
-      if (!character.consumables?.grenades || character.consumables.grenades <= 0) {
-          alert("OUT OF ORDNANCE: No grenades available in backpack."); return;
-      }
-      updateConsumable('grenades', -1);
-      const tierRoll = Math.floor(Math.random() * GRENADE_TIERS.length);
-      const juiceRoll = Math.floor(Math.random() * GRENADE_JUICE.length);
-      const t = GRENADE_TIERS[tierRoll];
-      const j = GRENADE_JUICE[juiceRoll];
-      setGrenadeResult({ tier: t, juice: j });
-      
-      if (character.squadId) {
-          broadcastEvent(character.squadId, `${character.name} pulled a pin... [${t.name} - ${j.type} Payload]`, 'warning');
-      }
+      const newXp = Math.min(XP_THRESHOLD, (character.xp || 0) + amount);
+      setCharacter(p => ({ ...p, xp: newXp }));
+      try { await updateDoc(doc(db, "characters", character.id), { xp: newXp }); } catch(e) { console.error(e); }
   };
 
   const promoteUnit = async (upgradeType, upgradeKey) => {
@@ -320,292 +345,103 @@ function App() {
       setCharacter(updatedChar);
       setViewPromotion(false); 
       try {
-          await updateDoc(doc(db, "characters", character.id), {
-              rank: newRank, xp: 0, upgrades: newUpgrades,
-              [`currentVitals.${upgradeKey}`]: upgradeType === 'vital' ? updatedChar.currentVitals[upgradeKey] : character.currentVitals[upgradeKey] || 0
-          });
-          alert(`PROMOTION SUCCESSFUL. UNIT RANK: ${newRank}`);
-      } catch(e) { console.error("Promotion Failed", e); }
-  };
-
-  const getCritRange = (charData, equippedWeaponString) => {
-      let range = 1; 
-      if (equippedWeaponString) {
-          if (equippedWeaponString.includes("Ancient")) range += 2; 
-          if (equippedWeaponString.includes("Void-Forged")) range += 4; 
-      }
-      if (charData.master && charData.master.includes("The Ancients")) { range += 1; }
-      return range;
+          await updateDoc(doc(db, "characters", character.id), { rank: newRank, xp: 0, upgrades: newUpgrades, [`currentVitals.${upgradeKey}`]: upgradeType === 'vital' ? updatedChar.currentVitals[upgradeKey] : character.currentVitals[upgradeKey] || 0 });
+          alert(`PROMOTION SUCCESSFUL. RANK: ${newRank}`);
+      } catch(e) { console.error(e); }
   };
 
   const performRoll = (skillName, baseTarget) => {
     const roll = rollD20(); 
     let type = 'FAIL';
-    const activeWeaponString = (character.loadout || []).find(item => { const stats = getGearStats(item); return stats && !stats.isArmor; });
-    const critWindow = getCritRange(character, activeWeaponString);
-    let weaponBonus = 0;
-    let weaponName = 'UNARMED';
-    
-    if (activeWeaponString) {
-        const stats = getGearStats(activeWeaponString);
-        if (stats) { weaponBonus = stats.stats.att || 0; weaponName = stats.name; }
-    }
-
-    const finalTarget = baseTarget + weaponBonus;
-    if (roll <= critWindow) {
-        type = 'CRIT';
-        if (character.squadId) broadcastEvent(character.squadId, `HOT STREAK! ${character.name} rolled a ${roll} on ${skillName}!`, 'success');
-    } else if (roll === 20) {
-        type = 'JAM';
-        if (character.squadId) broadcastEvent(character.squadId, `FATAL ERROR: ${character.name} jammed their weapon (${weaponName})!`, 'danger');
-    } else if (roll <= finalTarget) {
-        type = 'SUCCESS';
-    }
-    setRollResult({ roll, baseTarget, finalTarget, weaponBonus, critWindow, type, skill: skillName, weaponName: weaponName });
-  };
-
-  const generateLoot = async () => {
-    if (!character.id) { alert("COMMAND REJECTED: Unit must be synced to database."); return; }
-    const generatedItem = generateProceduralLoot();
-    const fullName = `[${generatedItem.condition}] ${generatedItem.tier} ${generatedItem.name}`;
-    const currentEquip = character.destiny?.equipment || [];
-    const newEquip = [...currentEquip, fullName];
-    
-    try {
-        const charRef = doc(db, "characters", character.id);
-        setCharacter(prev => ({ ...prev, destiny: { ...prev.destiny, equipment: newEquip } }));
-        await updateDoc(charRef, { "destiny.equipment": newEquip });
-        
-        if (character.squadId) {
-            let logType = 'info';
-            if (generatedItem.tier.includes('Legendary') || generatedItem.tier.includes('Masterful')) {
-                logType = 'loot-legendary';
-            } else if (generatedItem.tier.includes('Excellent')) {
-                logType = 'success';
-            }
-            broadcastEvent(character.squadId, `${character.name} extracted gear: ${fullName}`, logType);
-        }
-    } catch (e) { console.error("Loot Gen Failed:", e); }
-  };
-
-  const claimLoot = async (lootItem) => {
-      if (!character.id) return;
-      const fullName = `[${lootItem.condition}] ${lootItem.tier} ${lootItem.name}`;
-      const currentEquip = character.destiny?.equipment || [];
-      const newEquip = [...currentEquip, fullName];
-      
-      try {
-          await updateDoc(doc(db, "characters", character.id), { "destiny.equipment": newEquip });
-          setCharacter(prev => ({ ...prev, destiny: { ...prev.destiny, equipment: newEquip } }));
-          await deleteDoc(doc(db, "party_loot", lootItem.id));
-          broadcastEvent(character.squadId, `<<< ASSET SECURED: ${character.name} claimed ${fullName}`, 'success');
-      } catch (e) { console.error("Loot Claim Failed:", e); }
+    const activeWeapon = (character.loadout || []).find(item => { const stats = getGearStats(item); return stats && !stats.isArmor; });
+    const finalTarget = baseTarget + (activeWeapon ? (getGearStats(activeWeapon)?.stats.att || 0) : 0);
+    if (roll === 1) type = 'CRIT';
+    else if (roll === 20) type = 'JAM';
+    else if (roll <= finalTarget) type = 'SUCCESS';
+    setRollResult({ roll, finalTarget, type, skill: skillName });
+    if (character.squadId && type === 'CRIT') broadcastEvent(character.squadId, `CRITICAL HIT: ${character.name} on ${skillName}!`, 'success');
   };
 
   const toggleEquip = async (itemIndex, isCurrentlyEquipped) => {
     if (!character.id) return;
     let newLoadout = [...(character.loadout || [])];
     let newEquip = [...(character.destiny?.equipment || [])];
-
     if (isCurrentlyEquipped) {
         const item = newLoadout.splice(itemIndex, 1)[0];
         newEquip.push(item);
     } else {
-        const item = newEquip[itemIndex];
-        const stats = getGearStats(item);
-        const isArmor = stats ? stats.isArmor : false;
-        if (isArmor) {
-            const armorCount = newLoadout.filter(i => getGearStats(i)?.isArmor).length;
-            if (armorCount >= 1) { alert("LOADOUT FULL: Maximum 1 Armor module allowed."); return; }
-        } else {
-            const wpnCount = newLoadout.filter(i => !getGearStats(i)?.isArmor).length;
-            if (wpnCount >= 4) { alert("LOADOUT FULL: Maximum 4 Weapons allowed."); return; }
-        }
-        newEquip.splice(itemIndex, 1);
+        const item = newEquip.splice(itemIndex, 1)[0];
         newLoadout.push(item);
     }
-
     try {
-        const charRef = doc(db, "characters", character.id);
         setCharacter(prev => ({ ...prev, loadout: newLoadout, destiny: { ...prev.destiny, equipment: newEquip } }));
-        await updateDoc(charRef, { "loadout": newLoadout, "destiny.equipment": newEquip });
-    } catch (e) { console.error("Equip Toggle Failed:", e); }
+        await updateDoc(doc(db, "characters", character.id), { "loadout": newLoadout, "destiny.equipment": newEquip });
+    } catch (e) { console.error(e); }
   };
 
-  const removeLoot = async (indexToRemove, isEquipped) => {
-    if (!character.id) return;
-    const targetArray = isEquipped ? (character.loadout || []) : (character.destiny?.equipment || []);
-    const itemToRemove = targetArray[indexToRemove];
-    if (!window.confirm(`CONFIRM DELETION: Drop ${itemToRemove}?`)) return;
-
-    let newLoadout = [...(character.loadout || [])];
-    let newEquip = [...(character.destiny?.equipment || [])];
-    if (isEquipped) newLoadout.splice(indexToRemove, 1);
-    else newEquip.splice(indexToRemove, 1);
-
-    try {
-        const charRef = doc(db, "characters", character.id);
-        setCharacter(prev => ({ ...prev, loadout: newLoadout, destiny: { ...prev.destiny, equipment: newEquip } }));
-        await updateDoc(charRef, { "loadout": newLoadout, "destiny.equipment": newEquip });
-    } catch (e) { console.error("Loot Removal Failed:", e); }
+  const removeLoot = async (index, isEquipped) => {
+      let l = [...(isEquipped ? character.loadout : character.destiny.equipment)];
+      l.splice(index, 1);
+      setCharacter(p => ({ ...p, [isEquipped ? "loadout" : "destiny.equipment"]: l }));
+      if (character.id) await updateDoc(doc(db, "characters", character.id), { [isEquipped ? "loadout" : "destiny.equipment"]: l });
   };
 
-  const syncNotes = async () => {
-      if (!character.id) return;
-      try { await updateDoc(doc(db, "characters", character.id), { notes: character.notes }); } catch (e) { console.error("Notes Sync Sync Failed", e); }
-  };
-
+  // --- ACTIONS: SQUAD HANDLERS ---
   const joinSquad = async (code) => {
-      if (!character.id) return;
-      if (!code || code.trim() === "") return;
+      if (!character.id || !code) return;
       const upperCode = code.toUpperCase().trim();
       setCharacter(prev => ({ ...prev, squadId: upperCode }));
       try { 
           await updateDoc(doc(db, "characters", character.id), { squadId: upperCode }); 
-          broadcastEvent(upperCode, `>>> UNIT DEPLOYED: ${character.name} has linked to the network.`, 'info');
-      } catch(e) { console.error("Squad Join Failed", e); }
+          broadcastEvent(upperCode, `>>> UNIT DEPLOYED: ${character.name}`, 'info');
+      } catch(e) { console.error(e); }
   };
 
-  const leaveSquad = async () => {
-      if (!character.id) return;
-      if (character.squadId) broadcastEvent(character.squadId, `<<< UNIT EXTRACTED: ${character.name} severed the link.`, 'info');
-      setCharacter(prev => ({ ...prev, squadId: null }));
-      setSquadRoster([]); 
-      try { await updateDoc(doc(db, "characters", character.id), { squadId: null }); } catch(e) { console.error("Squad Leave Failed", e); }
-  };
-
-  const joinAsGm = (code) => {
-      if (!code || code.trim() === "") return;
-      setGmSquadId(code.toUpperCase().trim());
-      broadcastEvent(code.toUpperCase().trim(), `OVERSEER PROTOCOL: A Game Master has locked onto the network.`, 'boss');
-  };
-
-  const leaveGm = () => { setGmSquadId(null); setSquadRoster([]); setEncounter(null); };
-
-  const spawnBoss = async () => {
-      if (!gmSquadId || !bossNameInput || !bossHpInput) return;
-      try {
-          await setDoc(doc(db, "encounters", gmSquadId), { name: bossNameInput.toUpperCase(), hp: parseInt(bossHpInput), maxHp: parseInt(bossHpInput) });
-          broadcastEvent(gmSquadId, `WARNING: Hostile Threat Detected - ${bossNameInput.toUpperCase()}`, 'boss');
-          setBossNameInput(""); setBossHpInput("");
-      } catch (e) { console.error("Spawn Boss Failed", e); }
-  };
-
-  const updateBossHp = async (change) => {
-      if (!gmSquadId || !encounter) return;
-      const newHp = Math.max(0, encounter.hp + change);
-      try { await updateDoc(doc(db, "encounters", gmSquadId), { hp: newHp }); } catch (e) { console.error("Update Boss Failed", e); }
-  };
-
-  const clearBoss = async () => {
-      if (!gmSquadId) return;
-      if (window.confirm("TERMINATE THREAT: Clear the current encounter?")) {
-          try { 
-              await deleteDoc(doc(db, "encounters", gmSquadId)); 
-              broadcastEvent(gmSquadId, `TARGET ELIMINATED: Encounter cleared by Overseer.`, 'success');
-          } catch (e) { console.error("Clear Boss Failed", e); }
-      }
-  };
-const triggerLootDrop = async (numberOfItems = 3) => {
-      if (!gmSquadId || !encounter) return;
-
-      let droppedItems = [];
-      for(let i = 0; i < numberOfItems; i++) {
-          // Uses your new imported generator!
-          const item = generateProceduralLoot(); 
-          droppedItems.push(typeof item === 'string' ? item : item.name); 
-      }
-
-      try {
-          // Pushes the loot to the shared Firebase document
-          await updateDoc(doc(db, "encounters", gmSquadId), { 
-              groundLoot: [...(encounter.groundLoot || []), ...droppedItems] 
-          });
-          broadcastEvent(gmSquadId, `ASSETS DETECTED: ${numberOfItems} items dropped on the network.`, 'success');
-      } catch (e) { console.error("Loot Drop Failed", e); }
-  };
-
-  const claimGroundLoot = async (itemString, index) => {
-      if (!character.id || !character.squadId || !encounter?.groundLoot) return;
-
-      const updatedGroundLoot = [...encounter.groundLoot];
-      updatedGroundLoot.splice(index, 1); // Remove from ground
-
-      const newEquip = [...(character.destiny?.equipment || []), itemString]; // Add to stash
-
-      try {
-          await updateDoc(doc(db, "encounters", character.squadId), { groundLoot: updatedGroundLoot });
-          await updateDoc(doc(db, "characters", character.id), { "destiny.equipment": newEquip });
-          setCharacter(prev => ({ ...prev, destiny: { ...prev.destiny, equipment: newEquip } }));
-          broadcastEvent(character.squadId, `ASSET SECURED: ${character.name} snatched [${itemString}]!`, 'info');
-      } catch (e) { console.error("Claim Failed", e); }
-  };
   const renderCombatLog = () => (
-      <div className="border border-white/10 bg-black/60 p-2 mb-4 flex flex-col h-40 shadow-[inset_0_0_10px_rgba(0,0,0,0.8)] relative">
-          <div className="text-[8px] text-gray-500 font-bold uppercase tracking-widest mb-2 border-b border-white/10 pb-1 sticky top-0 bg-black/80 z-10 backdrop-blur-sm">Network Activity Log</div>
-          {squadLogs.length === 0 ? (
-              <div className="flex-1 flex items-center justify-center text-[9px] text-gray-700 italic">Awaiting telemetry...</div>
-          ) : (
-              <div className="flex-1 overflow-y-auto custom-scrollbar space-y-1 flex flex-col-reverse">
-                  {[...squadLogs].reverse().map(log => (
-                      <div key={log.id} className="text-[9px] font-mono leading-snug break-words">
-                          <span className="text-gray-600 opacity-50 mr-2">[{new Date(log.createdAt).toLocaleTimeString([], {hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit'})}]</span>
-                          <span className={`${log.type === 'success' ? 'text-green-400 font-bold' : log.type === 'danger' ? 'text-red-500 font-bold animate-pulse' : log.type === 'warning' ? 'text-orange-400' : log.type === 'loot-legendary' ? 'text-fuchsia-400 font-bold drop-shadow-[0_0_3px_currentColor]' : log.type === 'boss' ? 'text-red-600 font-black uppercase tracking-widest' : 'text-gray-300'}`}>{log.message}</span>
-                      </div>
-                  ))}
-              </div>
-          )}
+      <div className="border border-white/10 bg-black/60 p-2 mb-4 flex flex-col h-40 shadow-inner relative">
+          <div className="text-[8px] text-gray-500 font-bold uppercase mb-2 border-b border-white/10 pb-1">Network Activity Log</div>
+          <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col-reverse">
+              {[...squadLogs].reverse().map(log => (
+                  <div key={log.id} className="text-[9px] font-mono leading-snug">
+                      <span className="text-gray-600 mr-2">[{new Date(log.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}]</span>
+                      <span className={`${log.type === 'success' ? 'text-green-400 font-bold' : log.type === 'danger' ? 'text-red-500' : 'text-gray-300'}`}>{log.message}</span>
+                  </div>
+              ))}
+          </div>
       </div>
   );
 
   // --- RENDER ---
-  if (loading) return <div className="h-screen bg-black text-red-600 flex items-center justify-center font-mono">INITIALIZING...</div>;
+  if (loading) return <div className="h-screen bg-black text-red-600 flex items-center justify-center font-mono">LOADING BARRACKS...</div>;
   if (!user) return (
       <div className="h-screen w-full bg-black text-white font-mono flex flex-col items-center justify-center p-6 scanlines">
-        <div className="border border-red-900/50 p-8 bg-red-950/10 max-w-sm w-full text-center">
-          <h1 className="text-3xl font-black italic text-red-600 uppercase tracking-tighter mb-2">ASTRO INFERNO</h1>
-          <button onClick={handleLogin} className="w-full bg-red-600 text-white py-4 font-bold uppercase tracking-widest hover:bg-white hover:text-red-600 transition-colors mt-8">Identify With Google</button>
-        </div>
+          <h1 className="text-3xl font-black italic text-red-600 uppercase mb-8">ASTRO INFERNO</h1>
+          <button onClick={handleLogin} className="w-full bg-red-600 text-white py-4 font-bold uppercase hover:bg-white hover:text-red-600 transition-all">Identify With Google</button>
       </div>
   );
 
   return (
     <div className="flex flex-col h-screen w-full bg-black text-white font-mono overflow-hidden relative">
-      
-      {/* HEADER */}
       <div className="h-14 border-b border-red-900/50 flex items-center px-4 justify-between bg-red-950/20 shrink-0 z-50">
         <div className="flex items-center gap-3">
-          <img 
-            src={user.photoURL} 
-            onError={(e) => { e.target.onerror = null; e.target.src = `https://ui-avatars.com/api/?name=${user.displayName}&background=7f1d1d&color=f87171`; }}
-            alt="User" 
-            className="h-8 w-8 rounded-full border border-red-600" 
-          />
-          <div>
-            <h1 className="text-sm font-black italic text-red-600 uppercase tracking-tighter leading-none">ASTRO INFERNO</h1>
-            <div className="text-[8px] text-gray-500 font-bold uppercase">CMD: {user.displayName.split(' ')[0]}</div>
-          </div>
+          <img src={user.photoURL} onError={(e) => { e.target.onerror = null; e.target.src = `https://ui-avatars.com/api/?name=${user.displayName}&background=7f1d1d&color=f87171`; }} alt="User" className="h-8 w-8 rounded-full border border-red-600 shadow-lg" />
+          <div className="text-sm font-black italic text-red-600 uppercase tracking-tighter">ASTRO INFERNO</div>
         </div>
         <div className="flex gap-2">
-            <button onClick={testNeuralLink} className="text-[10px] text-cyan-400 border border-cyan-900 px-2 py-1 uppercase hover:bg-cyan-900 hover:text-white transition-colors animate-pulse">Link Device</button>
-            {activeTab === 'ROSTER' && (
-                <button onClick={() => { setActiveTab('CREATOR'); setStep(1); setCharacter(initialCharacter); }} className="text-[10px] bg-red-600 text-white px-3 py-1 font-bold uppercase">+ New Unit</button>
-            )}
-            <button onClick={handleLogout} className="text-[10px] text-red-500 border border-red-900 px-2 py-1 uppercase hover:bg-red-900 hover:text-white">Log Out</button>
+            <button onClick={testNeuralLink} className="text-[9px] text-cyan-400 border border-cyan-900 px-2 py-1 uppercase animate-pulse">Link Device</button>
+            <button onClick={handleLogout} className="text-[9px] text-red-500 border border-red-900 px-2 py-1 uppercase">Log Out</button>
         </div>
       </div>
 
-      {/* CONTENT AREA */}
       <div className="flex-1 overflow-y-auto pb-20 custom-scrollbar relative">
-        {activeTab === 'ROSTER' && <RosterTab roster={roster} loadCharacter={loadCharacter} deleteCharacter={deleteCharacter} />}
+        {activeTab === 'ROSTER' && <RosterTab roster={roster} loadCharacter={loadCharacter} deleteCharacter={(id, name) => { if(window.confirm(`TERMINATE ${name}?`)) deleteDoc(doc(db, "characters", id)); }} />}
         {activeTab === 'CREATOR' && <CreatorTab step={step} setStep={setStep} character={character} setCharacter={setCharacter} saveCharacter={saveCharacter} rollD20={rollD20} />}
-        {activeTab === 'SHEET' && <SheetTab character={character} setCharacter={setCharacter} addXp={addXp} setViewPromotion={setViewPromotion} setViewData={setViewData} updateWallet={updateWallet} updateVital={updateVital} getMaxVital={getMaxVital} toggleStatus={toggleStatus} getStat={getStat} getSkillTotal={getSkillTotal} performRoll={performRoll} updateConsumable={updateConsumable} pullPin={pullPin} getGearStats={getGearStats} getLootColor={getLootColor} toRoman={toRoman} toggleEquip={toggleEquip} removeLoot={removeLoot} generateLoot={generateLoot} isLogOpen={isLogOpen} setIsLogOpen={setIsLogOpen} syncNotes={syncNotes} />}
-        {activeTab === 'SQUAD' && <SquadTab character={character} squadInput={squadInput} setSquadInput={setSquadInput} joinSquad={joinSquad} leaveSquad={leaveSquad} encounter={encounter} squadRoster={squadRoster} getMaxVital={getMaxVital} renderCombatLog={renderCombatLog} partyLoot={partyLoot} claimLoot={claimLoot} claimGroundLoot={claimGroundLoot} />}
-        {activeTab === 'OVERSEER' && <OverseerTab gmSquadId={gmSquadId} squadInput={squadInput} setSquadInput={setSquadInput} joinAsGm={joinAsGm} leaveGm={leaveGm} renderCombatLog={renderCombatLog} encounter={encounter} bossNameInput={bossNameInput} setBossNameInput={setBossNameInput} bossHpInput={bossHpInput} setBossHpInput={setBossHpInput} spawnBoss={spawnBoss} updateBossHp={updateBossHp} clearBoss={clearBoss} squadRoster={squadRoster} getMaxVital={getMaxVital} triggerLootDrop={triggerLootDrop} />}
+        {activeTab === 'SHEET' && <SheetTab character={character} setCharacter={setCharacter} updateVital={updateVital} getMaxVital={getMaxVital} toggleStatus={toggleStatus} addXp={addXp} updateWallet={updateWallet} getStat={getStat} getSkillTotal={getSkillTotal} performRoll={performRoll} getGearStats={getGearStats} generateLoot={generateLoot} toggleEquip={toggleEquip} removeLoot={removeLoot} syncNotes={async () => { if(character.id) await updateDoc(doc(db, "characters", character.id), { notes: character.notes }); }} setViewData={setViewData} setViewPromotion={setViewPromotion} toRoman={toRoman} getLootColor={getLootColor} isLogOpen={isLogOpen} setIsLogOpen={setIsLogOpen} />}
+        {activeTab === 'SQUAD' && <SquadTab character={character} squadInput={squadInput} setSquadInput={setSquadInput} joinSquad={joinSquad} leaveSquad={async () => { if(character.id) await updateDoc(doc(db, "characters", character.id), { squadId: null }); setCharacter(p => ({...p, squadId: null})); }} encounter={encounter} squadRoster={squadRoster} getMaxVital={getMaxVital} renderCombatLog={renderCombatLog} partyLoot={partyLoot} claimLoot={claimLoot} claimGroundLoot={claimGroundLoot} />}
+        {activeTab === 'OVERSEER' && <OverseerTab gmSquadId={gmSquadId} squadInput={squadInput} setSquadInput={setSquadInput} joinAsGm={(c) => setGmSquadId(c.toUpperCase())} leaveGm={() => setGmSquadId(null)} renderCombatLog={renderCombatLog} encounter={encounter} bossNameInput={bossNameInput} setBossNameInput={setBossNameInput} bossHpInput={bossHpInput} setBossHpInput={setBossHpInput} spawnBoss={spawnBoss} updateBossHp={(c) => updateDoc(doc(db, "encounters", gmSquadId), { hp: Math.max(0, encounter.hp + c) })} clearBoss={() => deleteDoc(doc(db, "encounters", gmSquadId))} squadRoster={squadRoster} getMaxVital={getMaxVital} triggerLootDrop={triggerLootDrop} broadcastLoot={broadcastLoot} />}
       </div>
 
-      {/* MOBILE NAV BAR */}
-      <div className="h-16 border-t border-red-900/50 bg-black flex items-center justify-around px-1 shrink-0 z-50 relative">
+      <div className="h-16 border-t border-red-900/50 bg-black flex items-center justify-around shrink-0 z-50">
         {['ROSTER', 'SHEET', 'SQUAD', 'OVERSEER'].map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)} className={`flex flex-col items-center justify-center w-1/4 h-full transition-all ${activeTab === tab ? `bg-${tab==='SQUAD'?'cyan':tab==='OVERSEER'?'purple':'red'}-950/30 border-t-2 border-${tab==='SQUAD'?'cyan-500':tab==='OVERSEER'?'purple-500':'red-600'} text-${tab==='SQUAD'?'cyan-400':tab==='OVERSEER'?'purple-400':'red-500'}` : 'text-gray-600 border-t-2 border-transparent'}`}>
               <span className="text-[9px] font-black uppercase tracking-widest">{tab === 'ROSTER' ? 'Barracks' : tab === 'SHEET' ? 'Unit' : tab}</span>
@@ -613,13 +449,7 @@ const triggerLootDrop = async (numberOfItems = 3) => {
         ))}
       </div>
 
-      {/* RENDER MODALS */}
-      <Modals 
-          grenadeResult={grenadeResult} setGrenadeResult={setGrenadeResult}
-          rollResult={rollResult} setRollResult={setRollResult}
-          viewData={viewData} setViewData={setViewData} character={character}
-          viewPromotion={viewPromotion} setViewPromotion={setViewPromotion} promoteUnit={promoteUnit}
-      />
+      <Modals rollResult={rollResult} setRollResult={setRollResult} grenadeResult={grenadeResult} setGrenadeResult={setGrenadeResult} viewData={viewData} setViewData={setViewData} character={character} viewPromotion={viewPromotion} setViewPromotion={setViewPromotion} promoteUnit={promoteUnit} />
     </div>
   );
 }
