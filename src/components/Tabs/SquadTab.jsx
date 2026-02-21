@@ -2,7 +2,6 @@
 import React from 'react';
 
 export default function SquadTab({
-       claimGroundLoot,
     character,
     squadInput,
     setSquadInput,
@@ -11,7 +10,10 @@ export default function SquadTab({
     encounter,
     squadRoster,
     getMaxVital,
-    renderCombatLog
+    renderCombatLog,
+    partyLoot, // Incoming from App.jsx
+    claimLoot,  // Incoming from App.jsx
+    claimGroundLoot
 }) {
   return (
     <div className="p-4 space-y-4 animate-in fade-in z-10 relative">
@@ -49,7 +51,25 @@ export default function SquadTab({
               {/* NETWORK ACTIVITY LOG */}
               {renderCombatLog()}
 
-              {/* PLAYER VIEW: SHARED ENCOUNTER TRACKER */}
+              {/* NEW: NETWORK DROP POD (Step 2 Implementation) */}
+              {partyLoot && partyLoot.length > 0 && (
+                <div className="border-2 border-cyan-500 bg-cyan-950/20 p-4 mb-6 animate-pulse shadow-[0_0_20px_rgba(6,182,212,0.3)]">
+                  <div className="text-cyan-400 text-[10px] font-black uppercase mb-2">Incoming Drop Pod Detected</div>
+                  {partyLoot.map((item) => (
+                    <div key={item.id} className="flex justify-between items-center bg-black/60 p-2 border border-cyan-900 mb-2">
+                      <span className="text-xs text-white">[{item.tier}] {item.name}</span>
+                      <button 
+                        onClick={() => claimLoot(item)} 
+                        className="bg-cyan-600 text-black px-3 py-1 text-[10px] font-bold uppercase hover:bg-white"
+                      >
+                        Secure Asset
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* SHARED ENCOUNTER TRACKER */}
               {encounter && (
                  <div className="border border-red-900 bg-red-950/20 p-4 mb-6 shadow-[0_0_20px_rgba(220,38,38,0.2)] animate-pulse">
                      <div className="text-[8px] text-red-500 font-bold uppercase tracking-[0.3em] mb-2">Hostile Threat Detected</div>
@@ -60,37 +80,30 @@ export default function SquadTab({
                      <div className="text-right text-[10px] font-black text-red-400 mt-1">{encounter.hp} / {encounter.maxHp} HP</div>
                  </div>
               )}
-{/* PLAYER VIEW: THE LOOT PILE (FIRST COME, FIRST SERVE) */}
-        {encounter?.isDefeated && encounter.groundLoot?.length > 0 && (
-            <div className="border-2 border-yellow-500 bg-yellow-900/20 p-4 mb-6 shadow-[0_0_30px_rgba(234,179,8,0.2)] animate-pulse">
-                <div className="text-[10px] text-yellow-500 font-bold uppercase tracking-[0.3em] mb-3 border-b border-yellow-500/50 pb-2">
-                    ⚠️ ASSETS DETECTED IN SECTOR ⚠️
-                </div>
-                <div className="space-y-2">
-                    {encounter.groundLoot.map((item, index) => (
-                        <div key={index} className="flex justify-between items-center bg-black/80 border border-yellow-900/50 p-2">
-                            <span className="text-xs font-black uppercase text-yellow-400 drop-shadow-md">{item}</span>
-                            <button 
-                                onClick={() => claimGroundLoot(item, index)} 
-                                className="bg-yellow-600 text-black px-4 py-2 text-[10px] font-black uppercase hover:bg-white transition-colors tracking-widest"
-                            >
-                                Claim
-                            </button>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        )}
+
+              {/* GROUND LOOT (BOSS DROPS) */}
+              {encounter?.groundLoot?.length > 0 && (
+                  <div className="border-2 border-yellow-500 bg-yellow-900/20 p-4 mb-6 shadow-[0_0_30px_rgba(234,179,8,0.2)] animate-pulse">
+                      <div className="text-[10px] text-yellow-500 font-bold uppercase tracking-[0.3em] mb-3 border-b border-yellow-500/50 pb-2">
+                          ⚠️ ASSETS DETECTED IN SECTOR ⚠️
+                      </div>
+                      <div className="space-y-2">
+                          {encounter.groundLoot.map((item, index) => (
+                              <div key={index} className="flex justify-between items-center bg-black/80 border border-yellow-900/50 p-2">
+                                  <span className="text-xs font-black uppercase text-yellow-400">{item}</span>
+                                  <button onClick={() => claimGroundLoot(item, index)} className="bg-yellow-600 text-black px-4 py-2 text-[10px] font-black uppercase">Claim</button>
+                              </div>
+                          ))}
+                      </div>
+                  </div>
+              )}
               
               <div className="space-y-3">
                   {squadRoster.map(mate => (
                       <div key={mate.id} className={`border p-3 flex flex-col gap-3 relative overflow-hidden transition-all ${mate.id === character.id ? 'border-cyan-500/50 bg-cyan-950/10' : 'border-white/10 bg-black/60'}`}>
-                          {(mate.statuses || []).includes('BLEEDING') && <div className="pointer-events-none absolute inset-0 z-0 border-2 border-red-900/60"></div>}
-                          {(mate.statuses || []).includes('BURNING') && <div className="pointer-events-none absolute inset-0 z-0 shadow-[inset_0_0_30px_rgba(234,88,12,0.2)]"></div>}
-
                           <div className="flex justify-between items-start relative z-10">
                               <div className="flex items-center gap-3">
-                                  <div className="h-10 w-10 bg-gray-900 border border-white/20 overflow-hidden shrink-0 shadow-md">
+                                  <div className="h-10 w-10 bg-gray-900 border border-white/20 shadow-md">
                                       {mate.avatarUrl ? <img src={mate.avatarUrl} alt="Avatar" className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center text-[8px] text-gray-600 font-bold uppercase">NO ID</div>}
                                   </div>
                                   <div>
@@ -98,16 +111,11 @@ export default function SquadTab({
                                       <div className="text-[9px] text-gray-400 uppercase mt-1 tracking-widest">RK {mate.rank} • {mate.form?.name || 'UNKNOWN'}</div>
                                   </div>
                               </div>
-                              <div className="flex gap-1">
-                                  {(mate.statuses || []).map(s => (
-                                     <div key={s} className={`h-2 w-2 rounded-full shadow-[0_0_5px_currentColor] ${s === 'BURNING' ? 'bg-orange-500 text-orange-500' : s === 'BLEEDING' ? 'bg-red-600 text-red-600' : s === 'POISONED' ? 'bg-green-500 text-green-500' : s === 'STUNNED' ? 'bg-yellow-500 text-yellow-500' : 'bg-purple-500 text-purple-500'}`}></div>
-                                  ))}
-                              </div>
                           </div>
 
                           <div className="space-y-1 relative z-10 border-t border-white/10 pt-2">
                               {['life', 'sanity', 'aura'].map(v => {
-                                  const mMax = getMaxVital(v, mate);
+                                  const mMax = getMaxVital(v, mate); // <--- HERE IS THE USAGE
                                   const mCur = mate.currentVitals?.[v] ?? mMax;
                                   const mPct = (mCur / mMax) * 100;
                                   return (
