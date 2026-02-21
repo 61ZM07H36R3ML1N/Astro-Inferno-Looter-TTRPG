@@ -7,6 +7,7 @@ import { BEASTIARY } from '../../data/beastiary';
 import LootTerminal from '../UI/LootTerminal';
 
 export default function OverseerTab({
+    triggerLootDrop,
     gmSquadId,
     squadInput,
     setSquadInput,
@@ -138,7 +139,13 @@ export default function OverseerTab({
                                     <button onClick={() => updateBossHp(10)} className="bg-red-900/30 text-red-400 border border-red-900/50 px-2 py-1 text-[9px] hover:bg-red-600 hover:text-white">+10</button>
                                 </div>
                             </div>
-                            <button onClick={clearBoss} className="w-full border border-red-900 text-red-600 py-2 font-bold uppercase text-[9px] hover:bg-red-600 hover:text-white transition-colors">Terminate Threat</button>
+                            <button onClick={clearBoss} className="w-full border border-red-900 text-red-600 py-2 font-bold uppercase text-[9px] hover:bg-red-600 hover:text-white transition-colors">Terminate Threat</button> {/* NEW GM BUTTON */}
+<button 
+    onClick={() => triggerLootDrop(3)} 
+    className="w-full bg-yellow-600 text-black py-2 mt-2 font-bold uppercase text-[9px] hover:bg-white transition-colors"
+>
+    Execute Loot Drop (3 Items)
+</button>
                         </div>
                     )}
                 </div>
