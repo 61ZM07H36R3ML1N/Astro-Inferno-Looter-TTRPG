@@ -3,9 +3,9 @@ import { useState, useEffect } from 'react';
 // Data Imports
 import { GEAR_STATS, WEAPON_TABLE, LOOT_PREFIXES, GRENADE_TIERS, GRENADE_JUICE, LOOT_SUFFIXES } from './data/gear'; 
 import { BEASTIARY } from './data/beastiary';
-import { generateProceduralLoot} from './utils/lootGenerator';
+import { generateProceduralLoot } from './utils/lootGenerator';
+
 // Firebase Imports 
-// Added requestNotificationPermission here!
 import { auth, googleProvider, db, requestNotificationPermission } from './firebase'; 
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { collection, addDoc, query, where, onSnapshot, deleteDoc, updateDoc, doc, setDoc } from "firebase/firestore";
@@ -18,7 +18,6 @@ import SquadTab from './components/Tabs/SquadTab';
 import OverseerTab from './components/Tabs/OverseerTab';
 import Modals from './components/UI/Modals';
 
-// --- UTILS (Outside Component) ---
 const rollD20 = () => Math.floor(Math.random() * 20) + 1;
 const XP_THRESHOLD = 100; 
 
@@ -40,6 +39,7 @@ function App() {
   const [squadRoster, setSquadRoster] = useState([]);
   const [squadInput, setSquadInput] = useState("");
   const [squadLogs, setSquadLogs] = useState([]); 
+  const [partyLoot, setPartyLoot] = useState([]); // <-- NEW: Drop Pod State
   
   // OVERSEER (GM) STATE
   const [gmSquadId, setGmSquadId] = useState(null);
@@ -101,7 +101,13 @@ function App() {
         setSquadLogs(fetchedLogs.slice(-40)); 
     });
 
-    return () => { unsubscribeSquad(); unsubscribeEncounter(); unsubscribeLogs(); };
+    const qLoot = query(collection(db, "party_loot"), where("squadId", "==", activeNetworkId));
+    const unsubscribeLoot = onSnapshot(qLoot, (snapshot) => {
+        const fetchedLoot = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+        setPartyLoot(fetchedLoot);
+    });
+
+    return () => { unsubscribeSquad(); unsubscribeEncounter(); unsubscribeLogs(); unsubscribeLoot(); };
   }, [activeNetworkId]);
 
   // --- BROADCAST TELEMETRY UTILITY ---
@@ -116,29 +122,14 @@ function App() {
 
   // --- NEURAL LINK (PUSH NOTIFICATIONS) ---
   const testNeuralLink = async () => {
-    if (!user) {
-        alert("ERROR: You must be logged in to link your device.");
-        return;
-    }
-
-    console.log("--- SECURING NEURAL LINK ---");
-    
+    if (!user) { alert("ERROR: You must be logged in to link your device."); return; }
     try {
         const token = await requestNotificationPermission();
-        console.log("TOKEN SECURED:", token);
-        
         if (token) {
-            // Send the token to your database so the Cloud Function can find it
-            await setDoc(doc(db, "users", user.uid), {
-                fcmToken: token,
-                lastSynced: new Date().getTime()
-            }, { merge: true });
-            
+            await setDoc(doc(db, "users", user.uid), { fcmToken: token, lastSynced: new Date().getTime() }, { merge: true });
             alert("Neural Link Established! Your device is ready to receive Overseer telemetry.");
         }
-    } catch (error) {
-        console.error("CRITICAL FAILURE:", error);
-    }
+    } catch (error) { console.error("CRITICAL FAILURE:", error); }
   };
 
   // --- HELPER METHODS ---
@@ -264,24 +255,15 @@ function App() {
   };
 
   const toggleStatus = async (statusId) => {
-      // 1. Calculate the new statuses
       let newStatuses = [...(character.statuses || [])];
       if (newStatuses.includes(statusId)) { 
           newStatuses = newStatuses.filter(s => s !== statusId); 
       } else { 
           newStatuses.push(statusId); 
       }
-      
-      // 2. ALWAYS update the local screen instantly so the buttons change color
       setCharacter(prev => ({ ...prev, statuses: newStatuses }));
-      
-      // 3. Only attempt to sync to the Neural Link if the character is saved in the database
       if (character.id) {
-          try { 
-              await updateDoc(doc(db, "characters", character.id), { statuses: newStatuses }); 
-          } catch(e) { 
-              console.error("Status Sync Failed", e); 
-          }
+          try { await updateDoc(doc(db, "characters", character.id), { statuses: newStatuses }); } catch(e) { console.error("Status Sync Failed", e); }
       }
   };
 
@@ -376,34 +358,19 @@ function App() {
   };
 
   const generateLoot = async () => {
-    if (!character.id) { 
-        alert("COMMAND REJECTED: Unit must be synced to database."); 
-        return; 
-    }
-    
-    // 1. Fire the new v2.5.0 Procedural Forge!
+    if (!character.id) { alert("COMMAND REJECTED: Unit must be synced to database."); return; }
     const generatedItem = generateProceduralLoot();
-
-    // 2. Format the string so your existing inventory logic (getGearStats) can still read it.
-    // Example output: "[Pulsating] Masterful IV Ancient Combat Shotgun of Euphoria"
     const fullName = `[${generatedItem.condition}] ${generatedItem.tier} ${generatedItem.name}`;
-    
     const currentEquip = character.destiny?.equipment || [];
     const newEquip = [...currentEquip, fullName];
     
     try {
         const charRef = doc(db, "characters", character.id);
-        
-        // 3. Update the local UI instantly
         setCharacter(prev => ({ ...prev, destiny: { ...prev.destiny, equipment: newEquip } }));
-        
-        // 4. Sync to the Firebase Database
         await updateDoc(charRef, { "destiny.equipment": newEquip });
         
-        // 5. Broadcast the extraction to the Neural Link with dynamic colors!
         if (character.squadId) {
             let logType = 'info';
-            // Make high-tier drops light up the party's combat log in special colors
             if (generatedItem.tier.includes('Legendary') || generatedItem.tier.includes('Masterful')) {
                 logType = 'loot-legendary';
             } else if (generatedItem.tier.includes('Excellent')) {
@@ -411,9 +378,21 @@ function App() {
             }
             broadcastEvent(character.squadId, `${character.name} extracted gear: ${fullName}`, logType);
         }
-    } catch (e) { 
-        console.error("Loot Gen Failed:", e); 
-    }
+    } catch (e) { console.error("Loot Gen Failed:", e); }
+  };
+
+  const claimLoot = async (lootItem) => {
+      if (!character.id) return;
+      const fullName = `[${lootItem.condition}] ${lootItem.tier} ${lootItem.name}`;
+      const currentEquip = character.destiny?.equipment || [];
+      const newEquip = [...currentEquip, fullName];
+      
+      try {
+          await updateDoc(doc(db, "characters", character.id), { "destiny.equipment": newEquip });
+          setCharacter(prev => ({ ...prev, destiny: { ...prev.destiny, equipment: newEquip } }));
+          await deleteDoc(doc(db, "party_loot", lootItem.id));
+          broadcastEvent(character.squadId, `<<< ASSET SECURED: ${character.name} claimed ${fullName}`, 'success');
+      } catch (e) { console.error("Loot Claim Failed:", e); }
   };
 
   const toggleEquip = async (itemIndex, isCurrentlyEquipped) => {
@@ -563,11 +542,7 @@ function App() {
           </div>
         </div>
         <div className="flex gap-2">
-            {/* NEW NEURAL LINK BUTTON */}
-            <button onClick={testNeuralLink} className="text-[10px] text-cyan-400 border border-cyan-900 px-2 py-1 uppercase hover:bg-cyan-900 hover:text-white transition-colors animate-pulse">
-                Link Device
-            </button>
-            
+            <button onClick={testNeuralLink} className="text-[10px] text-cyan-400 border border-cyan-900 px-2 py-1 uppercase hover:bg-cyan-900 hover:text-white transition-colors animate-pulse">Link Device</button>
             {activeTab === 'ROSTER' && (
                 <button onClick={() => { setActiveTab('CREATOR'); setStep(1); setCharacter(initialCharacter); }} className="text-[10px] bg-red-600 text-white px-3 py-1 font-bold uppercase">+ New Unit</button>
             )}
@@ -580,7 +555,7 @@ function App() {
         {activeTab === 'ROSTER' && <RosterTab roster={roster} loadCharacter={loadCharacter} deleteCharacter={deleteCharacter} />}
         {activeTab === 'CREATOR' && <CreatorTab step={step} setStep={setStep} character={character} setCharacter={setCharacter} saveCharacter={saveCharacter} rollD20={rollD20} />}
         {activeTab === 'SHEET' && <SheetTab character={character} setCharacter={setCharacter} addXp={addXp} setViewPromotion={setViewPromotion} setViewData={setViewData} updateWallet={updateWallet} updateVital={updateVital} getMaxVital={getMaxVital} toggleStatus={toggleStatus} getStat={getStat} getSkillTotal={getSkillTotal} performRoll={performRoll} updateConsumable={updateConsumable} pullPin={pullPin} getGearStats={getGearStats} getLootColor={getLootColor} toRoman={toRoman} toggleEquip={toggleEquip} removeLoot={removeLoot} generateLoot={generateLoot} isLogOpen={isLogOpen} setIsLogOpen={setIsLogOpen} syncNotes={syncNotes} />}
-        {activeTab === 'SQUAD' && <SquadTab character={character} squadInput={squadInput} setSquadInput={setSquadInput} joinSquad={joinSquad} leaveSquad={leaveSquad} encounter={encounter} squadRoster={squadRoster} getMaxVital={getMaxVital} renderCombatLog={renderCombatLog} />}
+        {activeTab === 'SQUAD' && <SquadTab character={character} squadInput={squadInput} setSquadInput={setSquadInput} joinSquad={joinSquad} leaveSquad={leaveSquad} encounter={encounter} squadRoster={squadRoster} getMaxVital={getMaxVital} renderCombatLog={renderCombatLog} partyLoot={partyLoot} claimLoot={claimLoot} />}
         {activeTab === 'OVERSEER' && <OverseerTab gmSquadId={gmSquadId} squadInput={squadInput} setSquadInput={setSquadInput} joinAsGm={joinAsGm} leaveGm={leaveGm} renderCombatLog={renderCombatLog} encounter={encounter} bossNameInput={bossNameInput} setBossNameInput={setBossNameInput} bossHpInput={bossHpInput} setBossHpInput={setBossHpInput} spawnBoss={spawnBoss} updateBossHp={updateBossHp} clearBoss={clearBoss} squadRoster={squadRoster} getMaxVital={getMaxVital} />}
       </div>
 
