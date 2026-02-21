@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { generateProceduralLoot } from '../../utils/lootGenerator';
-// Import your Firebase database and the Firestore functions
-import { db } from '../../firebase'; // Adjust this path if your firebase.js is somewhere else!
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../../firebase';
+import { collection, addDoc } from 'firebase/firestore'; 
 
-const LootTerminal = () => {
+// 1. ADDED THE networkId PROP!
+const LootTerminal = ({ networkId }) => {
   const [currentLoot, setCurrentLoot] = useState(null);
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [broadcastSuccess, setBroadcastSuccess] = useState(false);
@@ -12,19 +12,36 @@ const LootTerminal = () => {
   const handleExtractLoot = () => {
     const newLoot = generateProceduralLoot();
     setCurrentLoot(newLoot);
-    setBroadcastSuccess(false); // Reset the success state for the new item
+    setBroadcastSuccess(false); 
   };
 
   const handleBroadcast = async () => {
     if (!currentLoot) return;
+
+    // Failsafe: Prevent broadcasting to the void if no squad is active
+    if (!networkId) {
+        alert("UPLINK FAILED: You must connect to a Squad Network first.");
+        return;
+    }
     
     setIsBroadcasting(true);
     try {
-      // Push the item to the Neural Link (Firestore)
+      const formattedName = `[${currentLoot.condition}] ${currentLoot.tier} ${currentLoot.name}`;
+
+      // Push to the visual Neural Loot Feed
       await addDoc(collection(db, 'party_loot'), {
         ...currentLoot,
-        extractedBy: "Player 1", // You can swap this with the actual logged-in user later
-        timestamp: serverTimestamp()
+        squadId: networkId, 
+        extractedBy: "OVERSEER", 
+        createdAt: new Date().getTime() 
+      });
+
+      // Push to the Global Combat Log
+      await addDoc(collection(db, "logs"), {
+          squadId: networkId, 
+          message: `>>> OVERSEER ASSET DEPLOYED: ${formattedName}`, 
+          type: 'loot-legendary', 
+          createdAt: new Date().getTime() 
       });
       
       setBroadcastSuccess(true);
