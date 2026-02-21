@@ -150,7 +150,7 @@ export default function OverseerTab({
                     <h3 className="text-[10px] text-green-500 font-bold uppercase tracking-[0.3em] mb-4 border-b border-green-900/50 pb-2">
                         Network Asset Forge
                     </h3>
-                    <LootTerminal />
+                    <LootTerminal  networkId={gmSquadId} />
                 </div>
 
                 {/* GM SQUAD GRID */}
