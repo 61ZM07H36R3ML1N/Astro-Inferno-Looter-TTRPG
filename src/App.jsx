@@ -499,7 +499,40 @@ function App() {
           } catch (e) { console.error("Clear Boss Failed", e); }
       }
   };
+const triggerLootDrop = async (numberOfItems = 3) => {
+      if (!gmSquadId || !encounter) return;
 
+      let droppedItems = [];
+      for(let i = 0; i < numberOfItems; i++) {
+          // Uses your new imported generator!
+          const item = generateProceduralLoot(); 
+          droppedItems.push(typeof item === 'string' ? item : item.name); 
+      }
+
+      try {
+          // Pushes the loot to the shared Firebase document
+          await updateDoc(doc(db, "encounters", gmSquadId), { 
+              groundLoot: [...(encounter.groundLoot || []), ...droppedItems] 
+          });
+          broadcastEvent(gmSquadId, `ASSETS DETECTED: ${numberOfItems} items dropped on the network.`, 'success');
+      } catch (e) { console.error("Loot Drop Failed", e); }
+  };
+
+  const claimGroundLoot = async (itemString, index) => {
+      if (!character.id || !character.squadId || !encounter?.groundLoot) return;
+
+      const updatedGroundLoot = [...encounter.groundLoot];
+      updatedGroundLoot.splice(index, 1); // Remove from ground
+
+      const newEquip = [...(character.destiny?.equipment || []), itemString]; // Add to stash
+
+      try {
+          await updateDoc(doc(db, "encounters", character.squadId), { groundLoot: updatedGroundLoot });
+          await updateDoc(doc(db, "characters", character.id), { "destiny.equipment": newEquip });
+          setCharacter(prev => ({ ...prev, destiny: { ...prev.destiny, equipment: newEquip } }));
+          broadcastEvent(character.squadId, `ASSET SECURED: ${character.name} snatched [${itemString}]!`, 'info');
+      } catch (e) { console.error("Claim Failed", e); }
+  };
   const renderCombatLog = () => (
       <div className="border border-white/10 bg-black/60 p-2 mb-4 flex flex-col h-40 shadow-[inset_0_0_10px_rgba(0,0,0,0.8)] relative">
           <div className="text-[8px] text-gray-500 font-bold uppercase tracking-widest mb-2 border-b border-white/10 pb-1 sticky top-0 bg-black/80 z-10 backdrop-blur-sm">Network Activity Log</div>
@@ -555,8 +588,8 @@ function App() {
         {activeTab === 'ROSTER' && <RosterTab roster={roster} loadCharacter={loadCharacter} deleteCharacter={deleteCharacter} />}
         {activeTab === 'CREATOR' && <CreatorTab step={step} setStep={setStep} character={character} setCharacter={setCharacter} saveCharacter={saveCharacter} rollD20={rollD20} />}
         {activeTab === 'SHEET' && <SheetTab character={character} setCharacter={setCharacter} addXp={addXp} setViewPromotion={setViewPromotion} setViewData={setViewData} updateWallet={updateWallet} updateVital={updateVital} getMaxVital={getMaxVital} toggleStatus={toggleStatus} getStat={getStat} getSkillTotal={getSkillTotal} performRoll={performRoll} updateConsumable={updateConsumable} pullPin={pullPin} getGearStats={getGearStats} getLootColor={getLootColor} toRoman={toRoman} toggleEquip={toggleEquip} removeLoot={removeLoot} generateLoot={generateLoot} isLogOpen={isLogOpen} setIsLogOpen={setIsLogOpen} syncNotes={syncNotes} />}
-        {activeTab === 'SQUAD' && <SquadTab character={character} squadInput={squadInput} setSquadInput={setSquadInput} joinSquad={joinSquad} leaveSquad={leaveSquad} encounter={encounter} squadRoster={squadRoster} getMaxVital={getMaxVital} renderCombatLog={renderCombatLog} partyLoot={partyLoot} claimLoot={claimLoot} />}
-        {activeTab === 'OVERSEER' && <OverseerTab gmSquadId={gmSquadId} squadInput={squadInput} setSquadInput={setSquadInput} joinAsGm={joinAsGm} leaveGm={leaveGm} renderCombatLog={renderCombatLog} encounter={encounter} bossNameInput={bossNameInput} setBossNameInput={setBossNameInput} bossHpInput={bossHpInput} setBossHpInput={setBossHpInput} spawnBoss={spawnBoss} updateBossHp={updateBossHp} clearBoss={clearBoss} squadRoster={squadRoster} getMaxVital={getMaxVital} />}
+        {activeTab === 'SQUAD' && <SquadTab character={character} squadInput={squadInput} setSquadInput={setSquadInput} joinSquad={joinSquad} leaveSquad={leaveSquad} encounter={encounter} squadRoster={squadRoster} getMaxVital={getMaxVital} renderCombatLog={renderCombatLog} partyLoot={partyLoot} claimLoot={claimLoot} claimGroundLoot={claimGroundLoot} />}
+        {activeTab === 'OVERSEER' && <OverseerTab gmSquadId={gmSquadId} squadInput={squadInput} setSquadInput={setSquadInput} joinAsGm={joinAsGm} leaveGm={leaveGm} renderCombatLog={renderCombatLog} encounter={encounter} bossNameInput={bossNameInput} setBossNameInput={setBossNameInput} bossHpInput={bossHpInput} setBossHpInput={setBossHpInput} spawnBoss={spawnBoss} updateBossHp={updateBossHp} clearBoss={clearBoss} squadRoster={squadRoster} getMaxVital={getMaxVital} triggerLootDrop={triggerLootDrop} />}
       </div>
 
       {/* MOBILE NAV BAR */}
