@@ -1,6 +1,9 @@
 // src/components/Tabs/OverseerTab.jsx
 import React from 'react';
+import { doc, updateDoc } from "firebase/firestore"; 
+import { db } from "../../firebase";                
 import { BEASTIARY } from '../../data/beastiary';
+
 
 // Init extraction sequence for Overseer Tab
 // (Note: double check if your folder is named "ui" or "UI". Vite is case-sensitive!)
