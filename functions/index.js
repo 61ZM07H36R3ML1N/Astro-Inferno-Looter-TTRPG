@@ -1,75 +1,63 @@
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const admin = require("firebase-admin");
 
+// Boot up the Overseer Backend
 admin.initializeApp();
 
-exports.sendSquadTelemetryAlert = onDocumentCreated("logs/{logId}", async (event) => {
-    // In v2, the snapshot is tucked inside event.data
-    const snap = event.data;
-    if (!snap) return null;
+exports.broadcastJamAlert = onDocumentCreated("logs/{logId}", async (event) => {
+  const logData = event.data.data();
+
+  // 1. FILTER: Only trigger for FATAL ERRORS (Weapon Jams)
+  if (logData.type !== 'danger') return;
+
+  const squadId = logData.squadId;
+  const db = admin.firestore();
+
+  try {
+    // 2. QUERY: Find all characters linked to this squad
+    const charsSnapshot = await db.collection("characters").where("squadId", "==", squadId).get();
     
-    const logData = snap.data();
-
-    // 1. FILTER: Only trigger lock-screen alerts for major events
-    const criticalTypes = ['danger', 'boss', 'success']; 
-    if (!criticalTypes.includes(logData.type)) {
-        return null; 
+    if (charsSnapshot.empty) {
+        console.log("Abort: No active units found in sector.");
+        return;
     }
 
-    const squadId = logData.squadId;
-    let alertTitle = "SQUAD UPDATE";
-    if (logData.type === 'danger') alertTitle = "⚠ FATAL ERROR";
-    if (logData.type === 'boss') alertTitle = "🚨 THREAT DETECTED";
-    if (logData.type === 'success') alertTitle = "🔥 HOT STREAK";
+    // Extract unique user IDs (UIDs) for the squad members
+    const uids = new Set();
+    charsSnapshot.forEach(doc => uids.add(doc.data().uid));
 
-    try {
-        // 2. IDENTIFY: Find all characters currently in this squad
-        const rosterSnapshot = await admin.firestore()
-            .collection('characters')
-            .where('squadId', '==', squadId)
-            .get();
-
-        if (rosterSnapshot.empty) {
-            console.log(`No operatives found in network: ${squadId}`);
-            return null;
-        }
-
-        // Extract the unique User IDs of the players in this squad
-        const playerUids = new Set();
-        rosterSnapshot.forEach(doc => {
-            if (doc.data().uid) playerUids.add(doc.data().uid);
-        });
-
-        // 3. ACQUIRE TOKENS: Look up the FCM tokens for those players
-        const tokens = [];
-        for (const uid of playerUids) {
-            const userDoc = await admin.firestore().collection('users').doc(uid).get();
-            if (userDoc.exists && userDoc.data().fcmToken) {
-                tokens.push(userDoc.data().fcmToken);
-            }
-        }
-
-        if (tokens.length === 0) {
-            console.log('No devices registered for Neural Link in this squad.');
-            return null;
-        }
-
-        // 4. FIRE THE ORBITAL STRIKE (Send the Push Notification)
-        const payload = {
-            notification: {
-                title: alertTitle,
-                body: logData.message,
-            },
-            tokens: tokens
-        };
-
-        const response = await admin.messaging().sendMulticast(payload);
-        console.log(`Telemetry sent. Success: ${response.successCount}, Failed: ${response.failureCount}`);
-        
-        return null;
-
-    } catch (error) {
-        console.error('Error broadcasting lock-screen telemetry:', error);
-        return null;
+    // 3. TELEMETRY: Retrieve the Neural Link (FCM) tokens for those users
+    const tokens = [];
+    for (const uid of uids) {
+      const userDoc = await db.collection("users").doc(uid).get();
+      if (userDoc.exists && userDoc.data().fcmToken) {
+        tokens.push(userDoc.data().fcmToken);
+      }
     }
+
+    if (tokens.length === 0) {
+        console.log("Abort: No linked devices found for this squad.");
+        return;
+    }
+
+    // 4. PAYLOAD: Construct the Lock-Screen Notification
+    const payload = {
+      tokens: tokens,
+      notification: {
+        title: "⚠️ CRITICAL JAM DETECTED",
+        body: logData.message, // Example: "FATAL ERROR: UNIT_UNNAMED jammed their weapon!"
+      },
+      data: {
+        squadId: squadId,
+        alertType: "weapon_jam"
+      }
+    };
+
+    // 5. DEPLOY: Fire the Push Notifications via Google/Apple servers
+    const response = await admin.messaging().sendEachForMulticast(payload);
+    console.log(`Neural Link Broadcast Complete: ${response.successCount} delivered, ${response.failureCount} failed.`);
+    
+  } catch (error) {
+    console.error("CRITICAL FAILURE in Neural Link routing:", error);
+  }
 });
