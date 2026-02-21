@@ -264,12 +264,25 @@ function App() {
   };
 
   const toggleStatus = async (statusId) => {
-      if (!character.id) return;
+      // 1. Calculate the new statuses
       let newStatuses = [...(character.statuses || [])];
-      if (newStatuses.includes(statusId)) { newStatuses = newStatuses.filter(s => s !== statusId); } 
-      else { newStatuses.push(statusId); }
+      if (newStatuses.includes(statusId)) { 
+          newStatuses = newStatuses.filter(s => s !== statusId); 
+      } else { 
+          newStatuses.push(statusId); 
+      }
+      
+      // 2. ALWAYS update the local screen instantly so the buttons change color
       setCharacter(prev => ({ ...prev, statuses: newStatuses }));
-      try { await updateDoc(doc(db, "characters", character.id), { statuses: newStatuses }); } catch(e) { console.error("Status Sync Failed", e); }
+      
+      // 3. Only attempt to sync to the Neural Link if the character is saved in the database
+      if (character.id) {
+          try { 
+              await updateDoc(doc(db, "characters", character.id), { statuses: newStatuses }); 
+          } catch(e) { 
+              console.error("Status Sync Failed", e); 
+          }
+      }
   };
 
   const addXp = async (amount) => {
