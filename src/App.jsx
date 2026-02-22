@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 // --- DATA INJECTION ---
-import { GEAR_STATS, WEAPON_TABLE, LOOT_PREFIXES, GRENADE_TIERS, GRENADE_JUICE, LOOT_SUFFIXES } from './data/gear'; 
+import { GEAR_STATS, WEAPON_TABLE, LOOT_PREFIXES, GRENADE_TIERS, GRENADE_JUICE, LOOT_SUFFIXES, ARMOR_STATS } from './data/gear'; 
 import { BEASTIARY } from './data/beastiary';
 import { generateProceduralLoot } from './utils/lootGenerator';
 
