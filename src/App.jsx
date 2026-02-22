@@ -648,6 +648,25 @@ const getGearStats = (itemString) => {
       } catch (e) { console.error("Overseer Strike Failed", e); }
   };
 
+  const playerStrikeBoss = async (damage) => {
+      if (!character.squadId || !encounter) return;
+      
+      const newHp = Math.max(0, encounter.hp - damage);
+      
+      try {
+          // Update the boss HP in Firebase
+          await updateDoc(doc(db, "squads", character.squadId), {
+              "encounter.hp": newHp
+          });
+          
+          // Blast the hit to the entire network
+          broadcastEvent(character.squadId, `💥 ${character.name} STRUCK ${encounter.name} FOR ${damage} DMG!`, 'warning');
+          
+      } catch (e) {
+          console.error("Failed to strike threat", e);
+      }
+  };
+
   const renderCombatLog = () => (
       <div className="border border-white/10 bg-black/60 p-2 mb-4 flex flex-col h-40 shadow-[inset_0_0_10px_rgba(0,0,0,0.8)] relative">
           <div className="text-[8px] text-gray-500 font-bold uppercase tracking-widest mb-2 border-b border-white/10 pb-1 sticky top-0 bg-black/80 z-10 backdrop-blur-sm">Network Activity Log</div>
@@ -766,7 +785,8 @@ const getGearStats = (itemString) => {
                 renderCombatLog={renderCombatLog} 
                 partyLoot={partyLoot} 
                 claimLoot={claimLoot} 
-                claimGroundLoot={claimGroundLoot} 
+                claimGroundLoot={claimGroundLoot}
+                playerStrikeBoss={playerStrikeBoss}
             />
         )}
         
