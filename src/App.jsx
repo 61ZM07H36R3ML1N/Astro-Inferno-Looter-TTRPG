@@ -790,6 +790,7 @@ const getGearStats = (itemString) => {
                 getMaxVital={getMaxVital} 
                 triggerLootDrop={triggerLootDrop} 
                 broadcastLoot={broadcastLoot}
+                beastiary={BEASTIARY}
                 adjustUnitVital={adjustUnitVital}
             />
         )}
