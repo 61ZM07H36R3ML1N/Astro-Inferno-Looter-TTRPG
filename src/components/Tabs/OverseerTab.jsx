@@ -158,9 +158,26 @@ const handleLootGen = async () => {
                     ) : (
                         <div>
                             <div className="text-xl font-black text-white uppercase italic tracking-tighter mb-2">{encounter.name}</div>
-                            <div className="h-4 w-full bg-black border border-red-900/50 relative overflow-hidden mb-2">
-                                <div style={{width: `${(encounter.hp / encounter.maxHp) * 100}%`}} className="h-full bg-red-600 transition-all duration-500"></div>
-                            </div>
+                         <div className="flex w-full h-4 gap-1">
+  {(() => {
+    const segmentsCount = encounter.segments || 1;
+    const hpPerSegment = encounter.maxHp / segmentsCount;
+
+    return Array.from({ length: segmentsCount }).map((_, i) => {
+      const segmentStart = i * hpPerSegment;
+      const segmentFill = Math.min(Math.max((encounter.hp - segmentStart) / hpPerSegment, 0), 1) * 100;
+
+      return (
+        <div key={i} className="flex-1 bg-black border border-red-900/50 relative overflow-hidden">
+          <div 
+            style={{ width: `${segmentFill}%` }} 
+            className="h-full bg-red-600 transition-all duration-500 shadow-[0_0_8px_rgba(220,38,38,0.4)]"
+          />
+        </div>
+      );
+    });
+  })()}
+</div>
                             <div className="flex justify-between items-center mb-4">
                                 <div className="text-[12px] font-black text-red-500">{encounter.hp} <span className="text-red-900 text-[10px]">/ {encounter.maxHp} HP</span></div>
                                 <div className="flex gap-1">
