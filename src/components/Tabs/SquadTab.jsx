@@ -113,9 +113,30 @@ export default function SquadTab({
                  <div className="border border-red-900 bg-red-950/20 p-4 mb-6">
                      <div className="text-[8px] text-red-500 font-bold uppercase tracking-[0.3em] mb-2">Hostile Threat Detected</div>
                      <div className="text-2xl font-black text-white uppercase mb-2">{encounter.name}</div>
-                     <div className="h-4 w-full bg-black border border-red-900/50 relative overflow-hidden">
-                         <div style={{width: `${(encounter.hp / encounter.maxHp) * 100}%`}} className="h-full bg-red-600 transition-all duration-500"></div>
-                     </div>
+<div className="flex w-full h-4 gap-1 bg-black/40">
+  {(() => {
+    // Calculate constants once per render
+    const segmentsCount = encounter.segments || 1;
+    const hpPerSegment = encounter.maxHp / segmentsCount;
+
+    return Array.from({ length: segmentsCount }).map((_, i) => {
+      const segmentStart = i * hpPerSegment;
+      const segmentFill = Math.min(
+        Math.max((encounter.hp - segmentStart) / hpPerSegment, 0),
+        1
+      ) * 100;
+
+      return (
+        <div key={i} className="flex-1 bg-gray-900/80 border border-red-900/30 relative overflow-hidden">
+          <div 
+            className="h-full bg-red-600 transition-all duration-500 shadow-[0_0_8px_rgba(220,38,38,0.4)]"
+            style={{ width: `${segmentFill}%` }}
+          />
+        </div>
+      );
+    });
+  })()}
+</div>
                  </div>
               )}
 
