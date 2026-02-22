@@ -22,6 +22,20 @@ import Modals from './components/UI/Modals';
 const rollD20 = () => Math.floor(Math.random() * 20) + 1;
 const XP_THRESHOLD = 100; 
 
+// --- DATA SCHEMA: BOSS ENCOUNTER ---
+// --- BOSS TELEMETRY SCHEMA ---
+/**
+ * BossPart: { id: string, name: string, hp: number, maxHp: number, isBroken: boolean, effect: string }
+ * BossEncounter: { name: string, maxHp: number, currentHp: number, isStaggered: boolean, parts: BossPart[] }
+ */
+const INITIAL_BOSS_STATE = {
+  name: "PENDING_CONTACT...",
+  maxHp: 0,
+  currentHp: 0,
+  isStaggered: false,
+  parts: []
+};
+
 function App() {
   // --- STATE: AUTH & BARRACKS ---
   const [user, setUser] = useState(null);
@@ -44,7 +58,7 @@ function App() {
   
   // --- STATE: OVERSEER PROTOCOLS ---
   const [gmSquadId, setGmSquadId] = useState(null);
-  const [encounter, setEncounter] = useState(null);
+  const [encounter, setEncounter] = useState(INITIAL_BOSS_STATE);
   const [bossNameInput, setBossNameInput] = useState("");
   const [bossHpInput, setBossHpInput] = useState("");
 
