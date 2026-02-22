@@ -628,6 +628,26 @@ const getGearStats = (itemString) => {
       }
   };
 
+  const adjustUnitVital = async (unitId, unitName, vitalType, change) => {
+      if (!gmSquadId) return;
+      const target = squadRoster.find(m => m.id === unitId);
+      if (!target) return;
+
+      const maxVal = getMaxVital(vitalType, target);
+      const currentVal = target.currentVitals?.[vitalType] ?? maxVal;
+      const newVal = Math.max(0, Math.min(maxVal, currentVal + change));
+
+      try {
+          await updateDoc(doc(db, "characters", unitId), { [`currentVitals.${vitalType}`]: newVal });
+          
+          // If it's damage (a negative change), broadcast the strike to the network
+          if (change < 0) {
+              const bossName = encounter?.name || "HOSTILE THREAT";
+              broadcastEvent(gmSquadId, `⚠️ ${bossName} STRUCK ${unitName} FOR ${Math.abs(change)} ${vitalType.toUpperCase()} DAMAGE!`, 'danger');
+          }
+      } catch (e) { console.error("Overseer Strike Failed", e); }
+  };
+
   const renderCombatLog = () => (
       <div className="border border-white/10 bg-black/60 p-2 mb-4 flex flex-col h-40 shadow-[inset_0_0_10px_rgba(0,0,0,0.8)] relative">
           <div className="text-[8px] text-gray-500 font-bold uppercase tracking-widest mb-2 border-b border-white/10 pb-1 sticky top-0 bg-black/80 z-10 backdrop-blur-sm">Network Activity Log</div>
@@ -769,7 +789,8 @@ const getGearStats = (itemString) => {
                 squadRoster={squadRoster} 
                 getMaxVital={getMaxVital} 
                 triggerLootDrop={triggerLootDrop} 
-                broadcastLoot={broadcastLoot} 
+                broadcastLoot={broadcastLoot}
+                adjustUnitVital={adjustUnitVital}
             />
         )}
       </div>
