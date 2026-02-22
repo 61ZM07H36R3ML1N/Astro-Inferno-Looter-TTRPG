@@ -5,10 +5,13 @@ export default function OverseerTab({
     gmSquadId, squadInput, setSquadInput, joinAsGm, leaveGm,
     renderCombatLog, encounter, bossNameInput, setBossNameInput,
     bossHpInput, setBossHpInput, spawnBoss, updateBossHp, clearBoss,
-    squadRoster, getMaxVital, triggerLootDrop, broadcastLoot, adjustUnitVital
+    squadRoster, getMaxVital, triggerLootDrop, broadcastLoot, adjustUnitVital,
+    beastiary
 }) {
   return (
-    <div className="p-4 space-y-6 animate-in fade-in">
+    <div className="p-4 space-y-6 animate-in fade-in pb-24">
+      
+      {/* OFFLINE STATE */}
       {!gmSquadId ? (
           <div className="border border-purple-900/50 p-6 bg-black/80 text-center shadow-[0_0_15px_rgba(147,51,234,0.2)]">
              <div className="text-[10px] text-purple-500 font-bold uppercase tracking-[0.3em] mb-6 animate-pulse">Overseer Protocol Standby</div>
@@ -24,6 +27,8 @@ export default function OverseerTab({
           </div>
       ) : (
           <div className="space-y-6">
+              
+              {/* HEADER */}
               <div className="flex justify-between items-end border-b border-purple-500/50 pb-2">
                   <div>
                       <div className="text-[8px] text-purple-500 font-bold uppercase tracking-[0.3em] mb-1">Active Overseer Link</div>
@@ -32,6 +37,7 @@ export default function OverseerTab({
                   <button onClick={leaveGm} className="border border-red-900/50 bg-red-900/20 text-red-500 px-3 py-1 text-[9px] font-bold uppercase hover:bg-red-900 hover:text-white transition-colors">Relinquish</button>
               </div>
 
+              {/* NETWORK ACTIVITY LOG */}
               {renderCombatLog()}
 
               {/* LOGISTICS & SUPPLY */}
@@ -44,29 +50,56 @@ export default function OverseerTab({
                   </button>
               </div>
 
-              {/* HOSTILE THREAT SPAWNER */}
-              <div className="border border-red-900/50 bg-black p-4 relative overflow-hidden">
+              {/* HOSTILE THREAT MANAGEMENT */}
+              <div className="border border-red-900/50 bg-black p-4 relative overflow-hidden shadow-[inset_0_0_20px_rgba(220,38,38,0.05)]">
                  <div className="text-[10px] text-red-500 font-black uppercase tracking-[0.2em] mb-4 border-b border-red-900/50 pb-2">Hostile Threat Management</div>
+                 
                  {!encounter ? (
                      <div className="space-y-3 relative z-10">
-                         <input type="text" value={bossNameInput} onChange={e => setBossNameInput(e.target.value)} placeholder="THREAT DESIGNATION" className="w-full bg-red-950/20 border border-red-900/50 p-3 text-white font-black uppercase" />
-                         <input type="number" value={bossHpInput} onChange={e => setBossHpInput(e.target.value)} placeholder="MAXIMUM HP" className="w-full bg-red-950/20 border border-red-900/50 p-3 text-white font-black uppercase" />
+                         {/* RESTORED BEASTIARY DROPDOWN */}
+                         <select 
+                             className="w-full bg-red-950/40 border border-red-900/50 p-3 text-white font-black uppercase cursor-pointer"
+                             onChange={(e) => {
+                                 const selected = beastiary?.find(b => b.name === e.target.value);
+                                 if (selected) {
+                                     setBossNameInput(selected.name);
+                                     setBossHpInput(selected.hp);
+                                 }
+                             }}
+                         >
+                             <option value="">-- DEPLOY FROM BEASTIARY --</option>
+                             {beastiary?.map((creature, idx) => (
+                                 <option key={idx} value={creature.name}>
+                                     {creature.name} (HP: {creature.hp})
+                                 </option>
+                             ))}
+                         </select>
+
+                         {/* CUSTOM INPUTS */}
+                         <div className="flex gap-2">
+                             <input type="text" value={bossNameInput} onChange={e => setBossNameInput(e.target.value)} placeholder="CUSTOM DESIGNATION" className="flex-1 bg-red-950/20 border border-red-900/50 p-3 text-white font-black uppercase min-w-0" />
+                             <input type="number" value={bossHpInput} onChange={e => setBossHpInput(e.target.value)} placeholder="HP" className="w-24 bg-red-950/20 border border-red-900/50 p-3 text-white font-black uppercase shrink-0 text-center" />
+                         </div>
+                         
                          <button onClick={spawnBoss} className="w-full bg-red-900 text-white font-black uppercase py-3 tracking-widest hover:bg-red-600 transition-colors">Manifest Threat</button>
                      </div>
                  ) : (
                      <div className="relative z-10">
+                         {/* ACTIVE ENCOUNTER */}
                          <div className="flex justify-between items-end mb-2">
-                             <div className="text-2xl font-black text-white uppercase tracking-widest">{encounter.name}</div>
+                             <div className="text-2xl font-black text-white uppercase tracking-widest leading-none">{encounter.name}</div>
                              <div className="text-red-500 font-black">{encounter.hp} / {encounter.maxHp} HP</div>
                          </div>
                          <div className="h-6 w-full bg-black border border-red-900/50 mb-4 relative overflow-hidden">
                              <div style={{width: `${(encounter.hp / encounter.maxHp) * 100}%`}} className="h-full bg-red-600 transition-all duration-500"></div>
                          </div>
+                         
+                         {/* HP CONTROLS */}
                          <div className="grid grid-cols-4 gap-2 mb-4">
-                             <button onClick={() => updateBossHp(-10)} className="bg-red-950 border border-red-900 text-red-500 font-black py-2 hover:bg-red-900 hover:text-white">-10</button>
-                             <button onClick={() => updateBossHp(-1)} className="bg-red-950 border border-red-900 text-red-500 font-black py-2 hover:bg-red-900 hover:text-white">-1</button>
-                             <button onClick={() => updateBossHp(1)} className="bg-green-950 border border-green-900 text-green-500 font-black py-2 hover:bg-green-900 hover:text-white">+1</button>
-                             <button onClick={() => updateBossHp(10)} className="bg-green-950 border border-green-900 text-green-500 font-black py-2 hover:bg-green-900 hover:text-white">+10</button>
+                             <button onClick={() => updateBossHp(-10)} className="bg-red-950 border border-red-900 text-red-500 font-black py-2 hover:bg-red-900 hover:text-white transition-colors">-10</button>
+                             <button onClick={() => updateBossHp(-1)} className="bg-red-950 border border-red-900 text-red-500 font-black py-2 hover:bg-red-900 hover:text-white transition-colors">-1</button>
+                             <button onClick={() => updateBossHp(1)} className="bg-green-950 border border-green-900 text-green-500 font-black py-2 hover:bg-green-900 hover:text-white transition-colors">+1</button>
+                             <button onClick={() => updateBossHp(10)} className="bg-green-950 border border-green-900 text-green-500 font-black py-2 hover:bg-green-900 hover:text-white transition-colors">+10</button>
                          </div>
                          <button onClick={clearBoss} className="w-full border border-red-900 text-red-600 py-2 text-[10px] font-black uppercase tracking-widest hover:bg-red-900 hover:text-white transition-colors">Terminate Encounter</button>
                      </div>
@@ -74,8 +107,9 @@ export default function OverseerTab({
               </div>
 
               {/* TARGET ACQUISITION GRID */}
-              <div className="border border-purple-900/50 bg-black p-4">
+              <div className="border border-purple-900/50 bg-black p-4 shadow-[inset_0_0_20px_rgba(147,51,234,0.05)]">
                   <div className="text-[10px] text-purple-500 font-black uppercase tracking-[0.2em] mb-4 border-b border-purple-900/50 pb-2">Target Acquisition</div>
+                  
                   {squadRoster.length === 0 ? (
                       <div className="text-center text-purple-900 text-xs font-black uppercase py-4">No Targets on Radar</div>
                   ) : (
