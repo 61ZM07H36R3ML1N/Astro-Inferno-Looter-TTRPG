@@ -83,3 +83,78 @@ export const LOOT_SUFFIXES = [
     { name: "of the Void", stats: { dmg: +1, att: +1, agm: -1, tgt: 0 } },
     { name: "of the Leech", stats: { dmg: 0, att: +1, agm: 0, tgt: 0 } } 
 ];
+
+// --- ARMOR DATA ---
+
+// Weighted 1-20 Roll Table for Loot Generation
+export const ARMOR_DROP_TABLE = [
+  // 1-3
+  { name: "Undying Explorer Armor of True Death", type: "armor" },
+  { name: "Undying Explorer Armor of True Death", type: "armor" },
+  { name: "Undying Explorer Armor of True Death", type: "armor" },
+  // 4-5
+  { name: "Haxan Dark Cloak of the Mother", type: "armor" },
+  { name: "Haxan Dark Cloak of the Mother", type: "armor" },
+  // 6-8
+  { name: "Ghost Gravity Armor of Baldir", type: "armor" },
+  { name: "Ghost Gravity Armor of Baldir", type: "armor" },
+  { name: "Ghost Gravity Armor of Baldir", type: "armor" },
+  // 9-10
+  { name: "Anubian Feathered Armor of the True Light", type: "armor" },
+  { name: "Anubian Feathered Armor of the True Light", type: "armor" },
+  // 11-13
+  { name: "Red Ceremonial Armor of the Black Legion", type: "armor" },
+  { name: "Red Ceremonial Armor of the Black Legion", type: "armor" },
+  { name: "Red Ceremonial Armor of the Black Legion", type: "armor" },
+  // 14-15
+  { name: "Satanic Operator Armor of Mimir", type: "armor" },
+  { name: "Satanic Operator Armor of Mimir", type: "armor" },
+  // 16-17
+  { name: "Abyssal Laminar Armor of the Mare", type: "armor" },
+  { name: "Abyssal Laminar Armor of the Mare", type: "armor" },
+  // 18-19
+  { name: "REGENESIS Plate Armor of Sacrifice", type: "armor" },
+  { name: "REGENESIS Plate Armor of Sacrifice", type: "armor" },
+  // 20
+  { name: "Asgardian Assault Armor of Secrets", type: "armor" }
+];
+
+// Stat Definitions for the Sheet Tab
+export const ARMOR_STATS = {
+  "Undying Explorer Armor of True Death": { 
+      arm: 0, grade: 0, 
+      bonuses: { maneuver: 5, sixthSense: 5, psychology: 2 } 
+  },
+  "Haxan Dark Cloak of the Mother": { 
+      arm: 0, grade: 0, 
+      bonuses: { maneuver: 5, abyssalRituals: 5 } 
+  },
+  "Ghost Gravity Armor of Baldir": { 
+      arm: 0, grade: 0, 
+      bonuses: { maneuver: 5, jump: 5, stealth: 2 } 
+  },
+  "Anubian Feathered Armor of the True Light": { 
+      arm: 1, grade: 4, 
+      bonuses: { jump: 4, divineRituals: 1, medicine: 2 } 
+  },
+  "Red Ceremonial Armor of the Black Legion": { 
+      arm: 1, grade: 4, 
+      bonuses: { psychology: 4, disguise: 2 } 
+  },
+  "Satanic Operator Armor of Mimir": { 
+      arm: 2, grade: 0, 
+      bonuses: { maneuver: 3, stealth: 3, dominions: 2 } 
+  },
+  "Abyssal Laminar Armor of the Mare": { 
+      arm: 3, grade: 0, 
+      bonuses: { stealth: 3, abyssalRituals: 2 } 
+  },
+  "REGENESIS Plate Armor of Sacrifice": { 
+      arm: 3, grade: 1, 
+      bonuses: { maneuver: 2 } 
+  },
+  "Asgardian Assault Armor of Secrets": { 
+      arm: 4, grade: 0, 
+      bonuses: { stealth: 1 } 
+  }
+};
