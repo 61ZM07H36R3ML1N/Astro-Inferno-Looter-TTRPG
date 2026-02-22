@@ -239,13 +239,22 @@ function App() {
     return "text-gray-300"; 
   };
 
-  const getGearStats = (itemString) => {
+const getGearStats = (itemString) => {
+    // 1. Check if it's one of our new Relic Armors
+    const armorKey = Object.keys(ARMOR_STATS).find(a => itemString.includes(a));
+    if (armorKey) {
+        return { isArmor: true, stats: ARMOR_STATS[armorKey], name: armorKey };
+    }
+
+    // 2. Otherwise, process it as a Weapon
     const tierKey = Object.keys(GEAR_STATS.weapons).find(t => itemString.includes(t));
     if (!tierKey) return null; 
-    const isArmor = itemString.toLowerCase().includes("armor");
-    const baseStats = isArmor ? GEAR_STATS.armor[tierKey] : GEAR_STATS.weapons[tierKey];
-    const archetype = !isArmor ? WEAPON_TABLE.find(w => itemString.includes(w.name)) : null;
-    const suffix = (!isArmor && LOOT_SUFFIXES) ? LOOT_SUFFIXES.find(s => itemString.includes(s.name)) : null;
+    
+    // (Your existing weapon logic stays intact here)
+    const baseStats = GEAR_STATS.weapons[tierKey];
+    const archetype = WEAPON_TABLE.find(w => itemString.includes(w.name));
+    const suffix = LOOT_SUFFIXES ? LOOT_SUFFIXES.find(s => itemString.includes(s.name)) : null;
+    
     const finalStats = { ...baseStats };
     if (archetype) {
         finalStats.att += archetype.stats.att + (suffix?.stats?.att || 0);
@@ -253,17 +262,34 @@ function App() {
         finalStats.dmg += archetype.stats.dmg + (suffix?.stats?.dmg || 0);
         finalStats.tgt += archetype.stats.tgt + (suffix?.stats?.tgt || 0);
     }
-    return { tier: tierKey, isArmor, stats: finalStats, name: itemString };
+    return { tier: tierKey, isArmor: false, stats: finalStats, name: itemString };
   };
 
   const getSkillTotal = (skillId, statName, categoryId) => {
     if (!character.form) return 0;
     const baseVal = getStat(statName); 
     let bonus = 0;
+    
+    // A. Apply Destiny / Form Bonuses
     if (character.destiny?.bonuses) {
         if (character.destiny.bonuses[skillId]) bonus += character.destiny.bonuses[skillId];
         if (character.destiny.bonuses[categoryId]) bonus += character.destiny.bonuses[categoryId];
     }
+
+    // B. Apply Equipped Armor Bonuses
+    const equippedArmorString = (character.loadout || []).find(item => {
+        const stats = getGearStats(item);
+        return stats && stats.isArmor;
+    });
+
+    if (equippedArmorString) {
+        const armorData = getGearStats(equippedArmorString);
+        // Ensure the armor has bonuses, and check if it buffs the current skill being rolled
+        if (armorData && armorData.stats.bonuses && armorData.stats.bonuses[skillId]) {
+            bonus += armorData.stats.bonuses[skillId];
+        }
+    }
+
     return baseVal + bonus;
   };
 
