@@ -60,18 +60,34 @@ export default function OverseerTab({
                          <select 
                              className="w-full bg-red-950/40 border border-red-900/50 p-3 text-white font-black uppercase cursor-pointer"
                              onChange={(e) => {
-                                 const selected = beastiary?.find(b => b.name === e.target.value);
-                                 if (selected) {
-                                     setBossNameInput(selected.name);
-                                     setBossHpInput(selected.hp);
+                                 const selectedName = e.target.value;
+                                 if (!selectedName) return;
+
+                                 // Search through all categories and their threats arrays
+                                 let selectedThreat = null;
+                                 for (const group of beastiary) {
+                                     const found = group.threats?.find(t => t.name === selectedName);
+                                     if (found) {
+                                         selectedThreat = found;
+                                         break;
+                                     }
+                                 }
+
+                                 if (selectedThreat) {
+                                     setBossNameInput(selectedThreat.name);
+                                     setBossHpInput(selectedThreat.maxHp || selectedThreat.hp);
                                  }
                              }}
                          >
                              <option value="">-- DEPLOY FROM BEASTIARY --</option>
-                             {beastiary?.map((creature, idx) => (
-                                 <option key={idx} value={creature.name}>
-                                     {creature.name} (HP: {creature.hp})
-                                 </option>
+                             {beastiary?.map((group, groupIdx) => (
+                                 <optgroup key={groupIdx} label={group.category} className="bg-red-950 text-red-500 font-bold">
+                                     {group.threats?.map((threat, threatIdx) => (
+                                         <option key={`${groupIdx}-${threatIdx}`} value={threat.name} className="text-white">
+                                             {threat.name} (HP: {threat.maxHp || threat.hp})
+                                         </option>
+                                     ))}
+                                 </optgroup>
                              ))}
                          </select>
 
