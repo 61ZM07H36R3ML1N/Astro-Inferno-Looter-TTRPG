@@ -13,7 +13,8 @@ export default function SquadTab({
     getMaxVital,
     renderCombatLog,
     partyLoot, 
-    claimLoot  
+    claimLoot,
+    playerStrikeBoss 
 }) {
   const [shouldShake, setShouldShake] = useState(false);
   const prevLootCount = useRef(partyLoot?.length || 0);
@@ -108,35 +109,28 @@ export default function SquadTab({
                 </div>
               )}
 
-              {/* HOSTILE THREAT TRACKER */}
+              {/* HOSTILE THREAT TRACKER (ARMED) */}
               {encounter && (
-                 <div className="border border-red-900 bg-red-950/20 p-4 mb-6">
-                     <div className="text-[8px] text-red-500 font-bold uppercase tracking-[0.3em] mb-2">Hostile Threat Detected</div>
-                     <div className="text-2xl font-black text-white uppercase mb-2">{encounter.name}</div>
-<div className="flex w-full h-4 gap-1 bg-black/40">
-  {(() => {
-    // Calculate constants once per render
-    const segmentsCount = encounter.segments || 1;
-    const hpPerSegment = encounter.maxHp / segmentsCount;
-
-    return Array.from({ length: segmentsCount }).map((_, i) => {
-      const segmentStart = i * hpPerSegment;
-      const segmentFill = Math.min(
-        Math.max((encounter.hp - segmentStart) / hpPerSegment, 0),
-        1
-      ) * 100;
-
-      return (
-        <div key={i} className="flex-1 bg-gray-900/80 border border-red-900/30 relative overflow-hidden">
-          <div 
-            className="h-full bg-red-600 transition-all duration-500 shadow-[0_0_8px_rgba(220,38,38,0.4)]"
-            style={{ width: `${segmentFill}%` }}
-          />
-        </div>
-      );
-    });
-  })()}
-</div>
+                 <div className="border border-red-900 bg-red-950/20 p-4 mb-6 shadow-[0_0_15px_rgba(220,38,38,0.1)]">
+                     <div className="text-[8px] text-red-500 font-bold uppercase tracking-[0.3em] mb-2 flex justify-between">
+                         <span>Hostile Threat Detected</span>
+                         <span className="animate-pulse text-red-400">Weapons Free</span>
+                     </div>
+                     <div className="flex justify-between items-end mb-2">
+                         <div className="text-2xl font-black text-white uppercase">{encounter.name}</div>
+                         <div className="text-red-500 font-black">{encounter.hp} / {encounter.maxHp} HP</div>
+                     </div>
+                     <div className="h-4 w-full bg-black border border-red-900/50 mb-4 relative overflow-hidden">
+                         <div style={{width: `${(encounter.hp / encounter.maxHp) * 100}%`}} className="h-full bg-red-600 transition-all duration-500"></div>
+                     </div>
+                     
+                     {/* PLAYER WEAPON STRIKE CONTROLS */}
+                     <div className="grid grid-cols-4 gap-2 border-t border-red-900/30 pt-3 mt-2">
+                         <button onClick={() => playerStrikeBoss(1)} className="bg-red-950/40 border border-red-900/50 text-red-500 py-2 text-[10px] font-black uppercase hover:bg-red-900 hover:text-white transition-all active:scale-95">1 DMG</button>
+                         <button onClick={() => playerStrikeBoss(2)} className="bg-red-950/60 border border-red-900/80 text-red-500 py-2 text-[10px] font-black uppercase hover:bg-red-900 hover:text-white transition-all active:scale-95">2 DMG</button>
+                         <button onClick={() => playerStrikeBoss(5)} className="bg-red-900/60 border border-red-600 text-white py-2 text-[10px] font-black uppercase hover:bg-red-600 transition-all active:scale-95">5 DMG</button>
+                         <button onClick={() => playerStrikeBoss(10)} className="bg-red-600 border border-red-500 text-black py-2 text-[10px] font-black uppercase hover:bg-white transition-all active:scale-95">10 DMG</button>
+                     </div>
                  </div>
               )}
 
@@ -155,6 +149,7 @@ export default function SquadTab({
                   </div>
               )}
               
+              {/* SQUAD ROSTER */}
               <div className="space-y-3">
                   {squadRoster.map(mate => (
                       <div key={mate.id} className={`border p-3 flex flex-col gap-3 relative overflow-hidden ${mate.id === character.id ? 'border-cyan-500/50 bg-cyan-950/10' : 'border-white/10 bg-black/60'}`}>
