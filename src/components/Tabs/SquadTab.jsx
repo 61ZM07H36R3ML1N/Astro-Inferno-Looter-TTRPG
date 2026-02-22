@@ -16,30 +16,22 @@ export default function SquadTab({
     claimLoot  
 }) {
   const [shouldShake, setShouldShake] = useState(false);
-  // Ref-Shield: Tracks the signal to prevent cascading render loops
   const prevLootCount = useRef(partyLoot?.length || 0);
 
   useEffect(() => {
     const currentCount = partyLoot?.length || 0;
-    
-    // Trigger shake only if the inventory grows (new arrival)
     if (currentCount > prevLootCount.current) {
-        // Move the state update to the next tick to satisfy React's performance check
         const trigger = setTimeout(() => setShouldShake(true), 0);
         const reset = setTimeout(() => setShouldShake(false), 500);
-        
         prevLootCount.current = currentCount;
         return () => { clearTimeout(trigger); clearTimeout(reset); };
     }
-    
-    // Sync the count if it stays same or drops (items claimed)
     prevLootCount.current = currentCount;
   }, [partyLoot?.length]);
 
   return (
     <div className={`p-4 space-y-4 animate-in fade-in z-10 relative ${shouldShake ? 'animate-impact' : ''}`}>
       
-      {/* IMPACT ANIMATION CSS */}
       <style>{`
         @keyframes impact {
           0% { transform: scale(1); }
@@ -57,15 +49,30 @@ export default function SquadTab({
       ) : !character.squadId ? (
           <div className="border border-cyan-900/50 p-6 bg-black/80 backdrop-blur-sm text-center">
              <div className="text-[10px] text-cyan-500 font-bold uppercase tracking-[0.3em] mb-6">Neural Link Offline</div>
-             <input 
-                 type="text" 
-                 value={squadInput} 
-                 onChange={e => setSquadInput(e.target.value)} 
-                 placeholder="ENTER SQUAD CODE" 
-                 className="w-full bg-cyan-950/20 border-b-2 border-cyan-600 p-4 text-2xl font-black uppercase text-center text-white" 
-                 maxLength={6} 
-             />
-             <button onClick={() => joinSquad(squadInput)} className="w-full bg-cyan-600 text-black py-4 font-bold uppercase mt-4">Establish Link</button>
+             
+             <div className="flex gap-2 mb-4">
+                 <input 
+                     type="text" 
+                     value={squadInput} 
+                     onChange={e => setSquadInput(e.target.value.toUpperCase())} 
+                     placeholder="SQUAD CODE" 
+                     className="flex-1 bg-cyan-950/20 border-b-2 border-cyan-600 p-4 text-2xl font-black uppercase text-center text-white" 
+                     maxLength={6} 
+                 />
+                 <button 
+                     onClick={() => setSquadInput(Math.random().toString(36).substring(2, 8).toUpperCase())} 
+                     className="bg-cyan-950 border-b-2 border-cyan-900 text-cyan-500 px-4 font-black uppercase text-[10px] hover:bg-cyan-900 hover:text-cyan-300 transition-colors"
+                 >
+                     Generate
+                 </button>
+             </div>
+
+             <button 
+                 onClick={() => joinSquad(squadInput)} 
+                 className="w-full bg-cyan-600 text-black py-4 font-bold uppercase hover:bg-white transition-colors"
+             >
+                 Establish Link
+             </button>
           </div>
       ) : (
           <div className="space-y-4">
@@ -94,12 +101,7 @@ export default function SquadTab({
                           <span className="text-[9px] text-cyan-500 font-bold uppercase">{item.tier}</span>
                           <span className="text-xs text-white font-black uppercase">{item.name}</span>
                         </div>
-                        <button 
-                          onClick={() => claimLoot(item)} 
-                          className="bg-cyan-600 text-black px-4 py-2 text-[10px] font-black uppercase hover:bg-white transition-all active:scale-95"
-                        >
-                          Secure Asset
-                        </button>
+                        <button onClick={() => claimLoot(item)} className="bg-cyan-600 text-black px-4 py-2 text-[10px] font-black uppercase hover:bg-white transition-all active:scale-95">Secure Asset</button>
                       </div>
                     ))}
                   </div>
