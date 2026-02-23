@@ -181,14 +181,23 @@ function App() {
 
   const claimLoot = async (lootItem) => {
       if (!character.id) return;
-      const fullName = `[${lootItem.condition}] ${lootItem.tier} ${lootItem.name}`;
-      const newEquip = [...(character.destiny?.equipment || []), fullName];
+      
+      // We just need the raw name now (e.g., "Babylonian Katana of Death")
+      // The Blackjack engine parses the stats directly from this string
+      const itemName = lootItem.name; 
+      const newEquip = [...(character.destiny?.equipment || []), itemName];
+      
       try {
           await updateDoc(doc(db, "characters", character.id), { "destiny.equipment": newEquip });
           setCharacter(prev => ({ ...prev, destiny: { ...prev.destiny, equipment: newEquip } }));
+          
+          // Wipe it from the network so nobody else can grab it
           await deleteDoc(doc(db, "party_loot", lootItem.id));
-          broadcastEvent(character.squadId, `<<< ASSET SECURED: ${character.name} claimed ${fullName}`, 'success');
-      } catch (e) { console.error("Loot Claim Failed:", e); }
+          
+          broadcastEvent(character.squadId, `<<< ASSET SECURED: ${character.name} claimed ${itemName}`, 'success');
+      } catch (e) { 
+          console.error("Loot Claim Failed:", e); 
+      }
   };
 
   const generateLoot = async () => {
