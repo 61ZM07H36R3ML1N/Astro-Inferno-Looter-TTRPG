@@ -728,8 +728,11 @@ const getGearStats = (itemString) => {
             className="h-8 w-8 rounded-full border border-red-600 shadow-[0_0_8px_rgba(220,38,38,0.5)]" 
           />
           <div>
-            <h1 className="text-sm font-black italic text-red-600 uppercase tracking-tighter leading-none">ASTRO INFERNO</h1>
-            <div className="text-[8px] text-gray-500 font-bold uppercase">CMD: {user.displayName.split(' ')[0]}</div>
+            <h1 className="text-sm font-black italic text-red-600 uppercase tracking-tighter leading-none flex items-center gap-2">
+              ASTRO INFERNO
+              <span className="text-[8px] bg-red-900/40 text-red-400 border border-red-700/50 px-1.5 py-0.5 rounded tracking-widest not-italic">V4.0.0</span>
+            </h1>
+            <div className="text-[8px] text-gray-500 font-bold uppercase mt-0.5">CMD: {user.displayName.split(' ')[0]}</div>
           </div>
         </div>
         <div className="flex gap-2">
