@@ -296,3 +296,126 @@ export const meleeHeritages = [
     featureDesc: "Spend 2 Sanity to reduce your attack dice roll by 1 (reaching 1 counts as a natural roll)" 
   }
 ];
+
+export const rangedHeritages = [
+  { 
+    id: "rh_forgotten", 
+    heritage: "Of the Forgotten", 
+    featureName: "Angelic", 
+    featureDesc: "Get damage +1 when using an augmentation" 
+  },
+  { 
+    id: "rh_raven", 
+    heritage: "Of the Raven", 
+    featureName: "Beyond Insanity", 
+    featureDesc: "Spend Sanity after rolling to increase damage for this attack by +1 for every 4 Sanity spent" 
+  },
+  { 
+    id: "rh_2d6_knights", 
+    heritage: "Of 2D6 Knights", 
+    featureName: "Brutal", 
+    featureDesc: "Gain +1 damage (up to 3) for each adversary you’ve defeated in the previous verse" 
+  },
+  { 
+    id: "rh_leviathan", 
+    heritage: "Of Leviathan", 
+    featureName: "Carnage", 
+    featureDesc: "Target 3 adversaries with a successful attack check, without spending any Story Point" 
+  },
+  { 
+    id: "rh_maelstrom", 
+    heritage: "Of the Maelstrom", 
+    featureName: "Chaotic", 
+    featureDesc: "Gain damage +2 if all adversaries in the conflict are in hordes" 
+  },
+  { 
+    id: "rh_death", 
+    heritage: "Of Death", 
+    featureName: "Covert", 
+    featureDesc: "Gain damage +2 if your target(s) are unaware of the attack" 
+  },
+  { 
+    id: "rh_execution", 
+    heritage: "Of Execution", 
+    featureName: "Deadly", 
+    featureDesc: "Increase the damage increment per Story Point by 1" 
+  },
+  { 
+    id: "rh_aura", 
+    heritage: "Of Aura", 
+    featureName: "Death Blessing", 
+    featureDesc: "Halve the aura loss in death dreams" 
+  },
+  { 
+    id: "rh_punishment", 
+    heritage: "Of Punishment", 
+    featureName: "Death Driven", 
+    featureDesc: "Recover 1 life for each adversary you defeat" 
+  },
+  { 
+    id: "rh_rotten", 
+    heritage: "Of the Rotten", 
+    featureName: "Extreme Power", 
+    featureDesc: "Charged shots deal +1 damage but produce extremely loud noises" 
+  },
+  { 
+    id: "rh_satan", 
+    heritage: "Of Satan", 
+    featureName: "Ferocious", 
+    featureDesc: "Spend life after rolling to increase damage for this attack by +1 for every 4 life spent" 
+  },
+  { 
+    id: "rh_goat", 
+    heritage: "Of the Goat", 
+    featureName: "Great Aim", 
+    featureDesc: "Spend 1 Sanity before an attack check to achieve a perfect roll on a 1 or 2" 
+  },
+  { 
+    id: "rh_blood", 
+    heritage: "Of Blood", 
+    featureName: "Hungry for More", 
+    featureDesc: "Gain AGM +1 (up to +10) for each adversary you’ve defeated in the previous verse" 
+  },
+  { 
+    id: "rh_thousand", 
+    heritage: "Of a Thousand", 
+    featureName: "Long Range", 
+    featureDesc: "Attack from any range provided you have a clear line of sight" 
+  },
+  { 
+    id: "rh_horse", 
+    heritage: "Of the Horse", 
+    featureName: "Loyal", 
+    featureDesc: "If you somehow lose the weapon, have the GM make it return to you eventually" 
+  },
+  { 
+    id: "rh_chaos", 
+    heritage: "Of Chaos", 
+    featureName: "Oracle", 
+    featureDesc: "Perform one extra action at the beginning of each conflict" 
+  },
+  { 
+    id: "rh_great_one", 
+    heritage: "Of the Great One", 
+    featureName: "Prepared", 
+    featureDesc: "Gain +1 damage for each verse you refrained from attacking in this conflict" 
+  },
+  { 
+    id: "rh_light", 
+    heritage: "Of Light", 
+    featureName: "Quick", 
+    featureDesc: "Double the number of targets hit per Story Point (quadruple if the weapon has Quick twice), disregard the TGT limit if it still permits at least 1 more target" 
+  },
+  { 
+    id: "rh_void", 
+    heritage: "Of the Void", 
+    featureName: "Silenced", 
+    featureDesc: "Muffle any sound you make" 
+  },
+  { 
+    id: "rh_hell", 
+    heritage: "From Hell", 
+    featureName: "Witch Marked", 
+    featureDesc: "Spend 2 Sanity to reduce your attack dice roll by 1 (reaching 1 counts as a natural roll)" 
+  }
+];
