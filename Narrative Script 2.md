@@ -1,7 +1,3 @@
-To create a narrative script for your **Astro Inferno** session, I’ve analyzed your "Soul-Forge Awakening Script" and the core themes of the game found in your Google Drive. This script is designed for a **Session 0/1 transition**, moving players from character creation into their first "shooter-looter" style combat encounter.
-
----
-
 # **🌑 ASTRO INFERNO: Narrative GM Script**
 
 **Mission 01: The Soul-Forge Breach**
@@ -47,10 +43,3 @@ The air is thick with the smell of burnt copper and stale oxygen. In this world,
 
 * **If they win the combat:** "The last Husk falls, its body dissolving into black static. You stand over the pile of scrap. A faint blue glow emanates from a fallen chest—loot is yours for the taking, but the **Entropy** of the ship has just increased."  
 * **If they flee:** "You seal the door, but the scratching on the other side doesn't stop. You’ve saved your lives, but you’ve lost the sector's resources. The dark just got a little bit hungrier."
-
----
-
-### **Next Step for Development**
-
-Since we have these outcomes, would you like me to write the **React component code** to handle these choices (e.g., a "Choice Card" that updates the player's Aether Economy or Jam Risk in real-time)?
-
