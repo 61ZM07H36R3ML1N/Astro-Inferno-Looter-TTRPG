@@ -173,3 +173,126 @@ export const rangedWeapons = [
   { id: "wpn_rail_gun", skill: "Heavy", name: "Rail Gun", att: 0, agm: 5, dmg: 2, tgt: -2, grade: 0 },
   { id: "wpn_hesperian_cannon", skill: "Heavy", name: "Hesperian Cannon", att: 5, agm: 0, dmg: 2, tgt: -2, grade: 0 }
 ];
+
+export const meleeHeritages = [
+  { 
+    id: "mh_asmodeus", 
+    heritage: "Of Asmodeus", 
+    featureName: "Adrenaline Surge", 
+    featureDesc: "Gain damage +1 while bleeding" 
+  },
+  { 
+    id: "mh_meridian", 
+    heritage: "Of the Meridian", 
+    featureName: "Aerial", 
+    featureDesc: "Gain damage +2 when weapon is thrown" 
+  },
+  { 
+    id: "mh_hate", 
+    heritage: "Of Hate", 
+    featureName: "Angelic", 
+    featureDesc: "Gain damage +1 when using an augmentation" 
+  },
+  { 
+    id: "mh_agartha", 
+    heritage: "Of Agartha", 
+    featureName: "Brutal", 
+    featureDesc: "Gain damage +1 (up to 3) for each adversary you’ve defeated in the previous verse" 
+  },
+  { 
+    id: "mh_tiamat", 
+    heritage: "Of Tiamat", 
+    featureName: "Carnage", 
+    featureDesc: "Target 3 adversaries with a successful attack check, without spending any Story Point" 
+  },
+  { 
+    id: "mh_samael", 
+    heritage: "Of Samael", 
+    featureName: "Chaotic", 
+    featureDesc: "Gain damage +2 if all adversaries in the conflict are in hordes" 
+  },
+  { 
+    id: "mh_astaroth", 
+    heritage: "Of Astaroth", 
+    featureName: "Deadly", 
+    featureDesc: "Increase the damage increment per Story Point by 1" 
+  },
+  { 
+    id: "mh_hades", 
+    heritage: "Of Hades", 
+    featureName: "Death Blessing", 
+    featureDesc: "Halve the aura loss in death dreams" 
+  },
+  { 
+    id: "mh_cain", 
+    heritage: "Of Cain", 
+    featureName: "Death Driven", 
+    featureDesc: "Recover 1 Life for each adversary you defeat" 
+  },
+  { 
+    id: "mh_mephistopheles", 
+    heritage: "Of Mephistopheles", 
+    featureName: "Demon Satiator", 
+    featureDesc: "Recover 1 Sanity for each adversary you defeat" 
+  },
+  { 
+    id: "mh_heaven", 
+    heritage: "Of Heaven", 
+    featureName: "Heaven Forged", 
+    featureDesc: "Ignore bones on champions and bosses of harrowed origin" 
+  },
+  { 
+    id: "mh_beyond", 
+    heritage: "Of the Beyond", 
+    featureName: "Hell Forged", 
+    featureDesc: "Ignore bones on champions and bosses of ancient origin" 
+  },
+  { 
+    id: "mh_fenrir", 
+    heritage: "Of Fenrir", 
+    featureName: "Hungry for More", 
+    featureDesc: "Gain AGM +1 (up to +10) for each adversary you’ve defeated in the last verse" 
+  },
+  { 
+    id: "mh_horned_god", 
+    heritage: "Of the Horned God", 
+    featureName: "Impaling", 
+    featureDesc: "Incapacitate your target for one verse if it is your only target in this attack" 
+  },
+  { 
+    id: "mh_achilles", 
+    heritage: "Of Achilles", 
+    featureName: "Invulnerable", 
+    featureDesc: "Ignore all damage from one defense roll (once per conflict)" 
+  },
+  { 
+    id: "mh_sacrifice", 
+    heritage: "Of Sacrifice", 
+    featureName: "Pound of Flesh", 
+    featureDesc: "Gain damage +2 if you have lost a body part this conflict" 
+  },
+  { 
+    id: "mh_day_star", 
+    heritage: "Of the Day Star", 
+    featureName: "Prepared", 
+    featureDesc: "Gain +1 damage for each verse you refrained from attacking in this conflict" 
+  },
+  { 
+    id: "mh_hermes", 
+    heritage: "Of Hermes", 
+    featureName: "Quick", 
+    featureDesc: "Double the number of targets hit per Story Point (quadruple if the weapon has Quick twice), disregard the TGT limit if it still permits at least 1 more target" 
+  },
+  { 
+    id: "mh_sea", 
+    heritage: "Of the Sea", 
+    featureName: "Silenced", 
+    featureDesc: "Muffle any sound you make" 
+  },
+  { 
+    id: "mh_behemoth", 
+    heritage: "Of Behemoth", 
+    featureName: "Witch Marked", 
+    featureDesc: "Spend 2 Sanity to reduce your attack dice roll by 1 (reaching 1 counts as a natural roll)" 
+  }
+];
