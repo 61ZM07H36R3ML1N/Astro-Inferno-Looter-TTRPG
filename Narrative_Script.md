@@ -30,9 +30,3 @@ This script is designed to be read aloud when a player clicks the **"Etch Into T
 
 * **The Voice:** "Scanning... No divine signature found. You are a ghost in the system, a {Truth} surviving on grit and scavenged luck. You find what others miss, but your gear is as broken as the world you inhabit. Keep it together, scavenger."  
 * **The Mechanical Cue:** "GM Note: Boost their Scavenge Luck rolls, but remind them their gear has the 'Fragile' tag."
-
----
-
-### **🛠️ How to use this with your code**
-
-When your friend merges the **BackstoryPicker.jsx**, you can actually have the app display these "Voice" lines on the screen right after they finish.
