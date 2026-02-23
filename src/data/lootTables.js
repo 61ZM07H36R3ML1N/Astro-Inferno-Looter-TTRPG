@@ -419,3 +419,81 @@ export const rangedHeritages = [
     featureDesc: "Spend 2 Sanity to reduce your attack dice roll by 1 (reaching 1 counts as a natural roll)" 
   }
 ];
+
+export const armorSources = [
+  // CREATION
+  { id: "as_undying", category: "Creation", name: "Undying", bonus: "Psychology +2" },
+  { id: "as_babylonian", category: "Creation", name: "Babylonian", bonus: "Read Situation +2" },
+  { id: "as_knights", category: "Creation", name: "Knights", bonus: "One Melee skill +2" },
+  { id: "as_citadel", category: "Creation", name: "Citadel", bonus: "Satisfy +2" },
+  // MYTH
+  { id: "as_ravenghost", category: "Myth", name: "Ravenghost", bonus: "Alchemy Tech +2" },
+  { id: "as_asgardian", category: "Myth", name: "Asgardian", bonus: "Ancient Tech +2" },
+  { id: "as_elysian", category: "Myth", name: "Elysian", bonus: "Dark Connections +2" },
+  { id: "as_olympian", category: "Myth", name: "Olympian", bonus: "Fable +2" },
+  // HEAVEN
+  { id: "as_myrkheim", category: "Heaven", name: "Myrkheim", bonus: "Melee Crushing +2" },
+  { id: "as_anubian", category: "Heaven", name: "Anubian", bonus: "Medicine +2" },
+  { id: "as_regenesis", category: "Heaven", name: "Regenesis", bonus: "Apothecary +2" },
+  { id: "as_ghost", category: "Heaven", name: "Ghost", bonus: "Stealth +2" },
+  // HELL
+  { id: "as_nano", category: "Hell", name: "Nano", bonus: "Genesis Tech +2" },
+  { id: "as_red", category: "Hell", name: "Red", bonus: "Disguise +2" },
+  { id: "as_angelic", category: "Hell", name: "Angelic", bonus: "Pantheon +2" },
+  { id: "as_rotten", category: "Hell", name: "Rotten", bonus: "Harrowed Tech +2" },
+  { id: "as_haxan", category: "Hell", name: "Haxan", bonus: "Witchcraft +2" },
+  { id: "as_harbinger", category: "Hell", name: "Harbinger", bonus: "Jump +2" },
+  { id: "as_abyssal", category: "Hell", name: "Abyssal", bonus: "Abyssal Rituals +2" },
+  { id: "as_satanic", category: "Hell", name: "Satanic", bonus: "Dominions +2" }
+];
+
+export const armorTypes = [
+  // LIGHT
+  { id: "at_ritual_robes", category: "Light", name: "Ritual robes", armorValue: 0, grade: 1, bonuses: "Arcane Arts +3" },
+  { id: "at_dark_cloak", category: "Light", name: "Dark cloak", armorValue: 0, grade: 0, bonuses: "Maneuver +5, Abyssal Rituals +5" },
+  { id: "at_explorer", category: "Light", name: "Explorer", armorValue: 0, grade: 0, bonuses: "Maneuver +5, Sixth Sense +5" },
+  { id: "at_gravity", category: "Light", name: "Gravity", armorValue: 0, grade: 0, bonuses: "Maneuver +5, Jump +5" },
+  // VERSATILE
+  { id: "at_structured", category: "Versatile", name: "Structured", armorValue: 1, grade: 3, bonuses: "Jump +4, Divine Rituals +1" },
+  { id: "at_feathered", category: "Versatile", name: "Feathered", armorValue: 1, grade: 0, bonuses: "Conduct +4" },
+  { id: "at_elemental", category: "Versatile", name: "Elemental", armorValue: 1, grade: 4, bonuses: "Psychology +4" },
+  { id: "at_ceremonial", category: "Versatile", name: "Ceremonial", armorValue: 1, grade: 4, bonuses: "Fable +4" },
+  // TACTICAL
+  { id: "at_ornamented", category: "Tactical", name: "Ornamented", armorValue: 1, grade: 4, bonuses: "Fable +4" },
+  { id: "at_stealth", category: "Tactical", name: "Stealth", armorValue: 2, grade: 0, bonuses: "Stealth +6" },
+  { id: "at_operator", category: "Tactical", name: "Operator", armorValue: 2, grade: 0, bonuses: "Stealth +3, Maneuver +3" },
+  { id: "at_adaptive", category: "Tactical", name: "Adaptive", armorValue: 2, grade: 0, bonuses: "Stealth +3, Sixth Sense +3" },
+  // WAR
+  { id: "at_trooper", category: "War", name: "Trooper", armorValue: 2, grade: 1, bonuses: "Stealth +2, Force +3" },
+  { id: "at_laminar", category: "War", name: "Laminar", armorValue: 3, grade: 0, bonuses: "Stealth +3" },
+  { id: "at_brigandine", category: "War", name: "Brigandine", armorValue: 3, grade: 0, bonuses: "Scrounge +3" },
+  { id: "at_composite", category: "War", name: "Composite", armorValue: 3, grade: 0, bonuses: "Listen +3" },
+  // SIEGE
+  { id: "at_plate", category: "Siege", name: "Plate", armorValue: 3, grade: 1, bonuses: "Maneuver +2" },
+  { id: "at_heavy", category: "Siege", name: "Heavy", armorValue: 4, grade: 0, bonuses: "Throw +1" },
+  { id: "at_assault", category: "Siege", name: "Assault", armorValue: 4, grade: 0, bonuses: "Stealth +1" },
+  { id: "at_exo_armor", category: "Siege", name: "Exo-armor", armorValue: 4, grade: 1, bonuses: "Maneuver +1" }
+];
+
+export const armorHeritages = [
+  { id: "arh_death", heritage: "of Death", featureName: "Death Blessing", featureDesc: "Halve the Aura loss in death dreams" },
+  { id: "arh_asmodeus", heritage: "of Asmodeus", featureName: "Desire", featureDesc: "Get +2 bonus when succeeding at any Satisfy roll (once per session)" },
+  { id: "arh_dionysos", heritage: "of Dionysos", featureName: "Endurance", featureDesc: "Ignore exhaustion going weeks without sleep" },
+  { id: "arh_mimir", heritage: "of Mimir", featureName: "Hidden Knowledge", featureDesc: "Get +2 bonus when succeeding at any Literacy roll (once per session)" },
+  { id: "arh_mare", heritage: "of the Mare", featureName: "Horrific", featureDesc: "Get +2 bonus when intimidating or scaring souls using Affinity or Warfare skills" },
+  { id: "arh_baldr", heritage: "of Baldr", featureName: "Invulnerable", featureDesc: "Ignore all damage from one attack (once per session)" },
+  { id: "arh_snake", heritage: "of the Snake", featureName: "Immune", featureDesc: "Ignore poison effects" },
+  { id: "arh_secrets", heritage: "of Secrets", featureName: "Lying Omen", featureDesc: "Find out if someone is telling the truth (once per session)" },
+  { id: "arh_lamb", heritage: "of the Lamb", featureName: "Nanofriendly", featureDesc: "Communicate with hotfields" },
+  { id: "arh_witches", heritage: "of the Five Witches", featureName: "Power Speak", featureDesc: "Speak to any being in the vicinity regardless of distance and barriers" },
+  { id: "arh_pandemonium", heritage: "of Pandemonium", featureName: "Royals", featureDesc: "Be treated as nobility by those unaware of your true status" },
+  { id: "arh_black_legion", heritage: "of Black Legion", featureName: "Rugged", featureDesc: "Get +2 bonus when succeeding at any Disguise roll (once per session)" },
+  { id: "arh_raven", heritage: "of the Raven", featureName: "Silenced", featureDesc: "Muffle any sound you make" },
+  { id: "arh_mother", heritage: "of the Mother", featureName: "Sixth Sense", featureDesc: "Strain sanity on a defense roll" },
+  { id: "arh_true_death", heritage: "of True Death", featureName: "Spare Soul", featureDesc: "Return from True Death once, rerolling the heritage afterwards" },
+  { id: "arh_tiamat", heritage: "of Tiamat", featureName: "Storm Dragon", featureDesc: "Recover 1 Life if you are soaking wet (once per verse or second)" },
+  { id: "arh_sacrifice", heritage: "of Sacrifice", featureName: "The Sacrifice", featureDesc: "Switch results with another player on the defense roll (once per session)" },
+  { id: "arh_beyond", heritage: "of the Beyond", featureName: "Unholy Diver", featureDesc: "When gaining a corruption, roll twice on the corruption table and choose one result" },
+  { id: "arh_true_light", heritage: "of the True Light", featureName: "Unlight Protection", featureDesc: "Triple the time it takes for unlight radiation to affect you" },
+  { id: "arh_cernunnos", heritage: "of Cernunnos", featureName: "Wild Sense", featureDesc: "Notice all beings within hell II range (once per session)" }
+];
