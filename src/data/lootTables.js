@@ -94,3 +94,82 @@ export const GRENADE_PARTS = {
   part2: ["Blinding", "Corroding", "Collateral", "Dazzling", "Deafening", "Distant", "Electric", "Entangling", "Gravity", "Impaling", "Lingering", "Magnetizing", "Paralyzing", "Penetrating", "Shattering", "Silencing", "Slumbering", "Steaming", "Sticking", "Triggered"],
   part3: ["Blast", "Blood", "Death", "Dirt", "Fire", "Flesh", "Gas", "Gate", "Holtzfield", "Infection", "Light", "Poison", "Radiation", "Slime", "Smoke", "Tar", "Tendrils", "Trap", "Venom", "Water"]
 };
+
+export const weaponPrefixes = [
+  { id: "pfx_limbonian", name: "Limbonian", att: 0, agm: 0, dmg: 1, tgt: 0, grade: -2 },
+  { id: "pfx_babylonian", name: "Babylonian", att: 4, agm: 0, dmg: 0, tgt: 0, grade: 2 },
+  { id: "pfx_legion", name: "Legion", att: -3, agm: -3, dmg: 1, tgt: 0, grade: 0 },
+  { id: "pfx_sinful", name: "Sinful", att: 0, agm: 0, dmg: 0, tgt: 1, grade: 1 },
+  { id: "pfx_conquistador", name: "Conquistador", att: 2, agm: 3, dmg: 0, tgt: 0, grade: 2 },
+  { id: "pfx_myrkheim", name: "Myrkheim", att: 0, agm: 0, dmg: 0, tgt: 2, grade: 1 },
+  { id: "pfx_elysian", name: "Elysian", att: 0, agm: 3, dmg: 0, tgt: 1, grade: 0 },
+  { id: "pfx_asgardian", name: "Asgardian", att: 2, agm: 0, dmg: 0, tgt: 1, grade: 0 },
+  { id: "pfx_cerberus", name: "Cerberus", att: 0, agm: 0, dmg: 1, tgt: 1, grade: 1 },
+  { id: "pfx_titan", name: "Titan", att: 3, agm: 3, dmg: 0, tgt: 0, grade: 0 },
+  { id: "pfx_eden", name: "Eden", att: 5, agm: 5, dmg: 0, tgt: -1, grade: 0 },
+  { id: "pfx_ghost", name: "Ghost", att: 2, agm: 2, dmg: 0, tgt: 1, grade: 0 },
+  { id: "pfx_bloodyarn", name: "Blood yarn", att: 6, agm: 6, dmg: -1, tgt: 0, grade: 0 },
+  { id: "pfx_evolving", name: "Evolving", att: 4, agm: 0, dmg: 0, tgt: 0, grade: 1 },
+  { id: "pfx_divine", name: "Divine", att: 4, agm: 4, dmg: 0, tgt: 0, grade: 0 },
+  { id: "pfx_flesh", name: "Flesh", att: -4, agm: 0, dmg: 1, tgt: 0, grade: 0 },
+  { id: "pfx_haxan", name: "Haxan", att: 0, agm: -5, dmg: 1, tgt: 0, grade: 1 },
+  { id: "pfx_inquisition", name: "Inquisition", att: 0, agm: -5, dmg: 1, tgt: 0, grade: 0 },
+  { id: "pfx_blackened", name: "Blackened", att: 0, agm: 0, dmg: 2, tgt: -3, grade: 0 },
+  { id: "pfx_abyssal", name: "Abyssal", att: 0, agm: 0, dmg: 1, tgt: -1, grade: 0 }
+];
+
+export const meleeWeapons = [
+  // FINESSE
+  { id: "wpn_dagger", skill: "Finesse", name: "Dagger", att: 1, agm: 5, dmg: 0, tgt: 0, grade: -2 },
+  { id: "wpn_spear", skill: "Finesse", name: "Spear", att: 3, agm: 0, dmg: 0, tgt: 0, grade: -1 },
+  { id: "wpn_whip", skill: "Finesse", name: "Whip", att: 5, agm: 0, dmg: -1, tgt: 2, grade: 0 },
+  { id: "wpn_flail", skill: "Finesse", name: "Flail", att: 5, agm: -5, dmg: 0, tgt: 1, grade: 0 },
+  { id: "wpn_scimitar", skill: "Finesse", name: "Scimitar", att: 1, agm: 0, dmg: 0, tgt: 0, grade: 0 },
+  { id: "wpn_trident", skill: "Finesse", name: "Trident", att: 0, agm: 5, dmg: 0, tgt: 0, grade: 3 },
+
+  // SLASHING
+  { id: "wpn_crowbar", skill: "Slashing", name: "Crowbar", att: 3, agm: 0, dmg: 0, tgt: -1, grade: -1 },
+  { id: "wpn_sword", skill: "Slashing", name: "Sword", att: -4, agm: 0, dmg: 0, tgt: "*2", grade: 0 },
+  { id: "wpn_blade", skill: "Slashing", name: "Blade", att: 0, agm: 3, dmg: -1, tgt: "*2", grade: 0 },
+  { id: "wpn_katana", skill: "Slashing", name: "Katana", att: 0, agm: 0, dmg: -1, tgt: "*2.5", grade: 0 },
+  { id: "wpn_cleaver", skill: "Slashing", name: "Cleaver", att: 3, agm: 0, dmg: -1, tgt: "*2", grade: 0 },
+  { id: "wpn_scythe", skill: "Slashing", name: "Scythe", att: 0, agm: 0, dmg: -1, tgt: "*2", grade: 3 },
+  { id: "wpn_axe", skill: "Slashing", name: "Axe", att: 0, agm: 0, dmg: 0, tgt: "*1.5**", grade: 0 },
+  { id: "wpn_saw", skill: "Slashing", name: "Saw", att: -4, agm: -4, dmg: 0, tgt: "*2", grade: 0 },
+
+  // CRUSHING
+  { id: "wpn_great_flail", skill: "Crushing", name: "Great flail", att: -6, agm: -6, dmg: 1, tgt: 1, grade: 0 },
+  { id: "wpn_great_spear", skill: "Crushing", name: "Great spear", att: -9, agm: 4, dmg: 1, tgt: 1, grade: 1 },
+  { id: "wpn_great_sword", skill: "Crushing", name: "Great sword", att: 0, agm: 0, dmg: 2, tgt: -1, grade: 1 },
+  { id: "wpn_great_hammer", skill: "Crushing", name: "Great hammer", att: 3, agm: 0, dmg: 2, tgt: -2, grade: 1 },
+  { id: "wpn_great_axe", skill: "Crushing", name: "Great axe", att: 0, agm: 5, dmg: 2, tgt: -2, grade: 1 },
+  { id: "wpn_great_lance", skill: "Crushing", name: "Great lance", att: -10, agm: 0, dmg: 3, tgt: -1, grade: 2 }
+];
+
+export const rangedWeapons = [
+  // PRECISION
+  { id: "wpn_hand_cannon", skill: "Precision", name: "Hand cannon", att: 4, agm: -3, dmg: 0, tgt: 0, grade: 1 },
+  { id: "wpn_revolver", skill: "Precision", name: "Revolver", att: 0, agm: 0, dmg: 0, tgt: 1, grade: 0 },
+  { id: "wpn_long_rifle", skill: "Precision", name: "Long rifle", att: 6, agm: 0, dmg: 0, tgt: -1, grade: 0 },
+  { id: "wpn_dmr", skill: "Precision", name: "DMR", att: 7, agm: -5, dmg: 0, tgt: 0, grade: 0 },
+  { id: "wpn_stalker_rifle", skill: "Precision", name: "Stalker Rifle", att: 3, agm: 0, dmg: 0, tgt: 0, grade: 0 },
+  { id: "wpn_strike_rifle", skill: "Precision", name: "Strike Rifle", att: -3, agm: -6, dmg: 0, tgt: 3, grade: 0 },
+  { id: "wpn_bow", skill: "Precision", name: "Bow", att: -3, agm: 6, dmg: 0, tgt: 2, grade: -1 },
+
+  // AUTOMATIC
+  { id: "wpn_shotgun", skill: "Automatic", name: "Shotgun", att: -4, agm: 0, dmg: 0, tgt: "*2", grade: -1 },
+  { id: "wpn_assault_rifle", skill: "Automatic", name: "Assault Rifle", att: 0, agm: 3, dmg: -1, tgt: "*2", grade: 0 },
+  { id: "wpn_flamethrower", skill: "Automatic", name: "Flamethrower", att: 0, agm: 0, dmg: -1, tgt: "*2.5**", grade: 0 },
+  { id: "wpn_machine_gun", skill: "Automatic", name: "Machine gun", att: 3, agm: 0, dmg: -1, tgt: "*2", grade: 1 },
+  { id: "wpn_auto_cannon", skill: "Automatic", name: "Auto cannon", att: 0, agm: 0, dmg: -1, tgt: "*2", grade: 1 },
+  { id: "wpn_vulcan_cannon", skill: "Automatic", name: "Vulcan Cannon", att: 0, agm: 0, dmg: 0, tgt: "*1.5**", grade: 1 },
+  { id: "wpn_assault_cannon", skill: "Automatic", name: "Assault Cannon", att: -5, agm: -5, dmg: 0, tgt: "*2", grade: 1 },
+
+  // HEAVY
+  { id: "wpn_grenade_launcher", skill: "Heavy", name: "Grenade Launcher", att: -9, agm: 4, dmg: 1, tgt: 1, grade: 0 },
+  { id: "wpn_rocket_launcher", skill: "Heavy", name: "Rocket Launcher", att: -6, agm: -6, dmg: 1, tgt: 1, grade: 0 },
+  { id: "wpn_harquebus", skill: "Heavy", name: "Harquebus", att: 0, agm: 0, dmg: 2, tgt: -1, grade: 0 },
+  { id: "wpn_siege_rifle", skill: "Heavy", name: "Siege Rifle", att: 3, agm: 0, dmg: 2, tgt: -2, grade: 0 },
+  { id: "wpn_rail_gun", skill: "Heavy", name: "Rail Gun", att: 0, agm: 5, dmg: 2, tgt: -2, grade: 0 },
+  { id: "wpn_hesperian_cannon", skill: "Heavy", name: "Hesperian Cannon", att: 5, agm: 0, dmg: 2, tgt: -2, grade: 0 }
+];
