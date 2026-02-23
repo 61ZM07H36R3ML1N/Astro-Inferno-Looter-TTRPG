@@ -5,7 +5,8 @@ export default function OverseerTab({
     gmSquadId, squadInput, setSquadInput, joinAsGm, leaveGm,
     renderCombatLog, encounter, bossNameInput, setBossNameInput,
     bossHpInput, setBossHpInput, spawnBoss, updateBossHp, clearBoss,
-    squadRoster, getMaxVital, triggerLootDrop, broadcastLoot, adjustUnitVital,
+    squadRoster, getMaxVital, triggerLootDrop, deployDropPod,
+    adjustUnitVital,
     beastiary
 }) {
   return (
@@ -42,7 +43,7 @@ export default function OverseerTab({
 
               {/* LOGISTICS & SUPPLY */}
               <div className="grid grid-cols-2 gap-2">
-                  <button onClick={broadcastLoot} className="border border-cyan-900 bg-cyan-950/30 text-cyan-400 p-3 text-[10px] font-black uppercase tracking-widest hover:bg-cyan-900 hover:text-white transition-all active:scale-95 flex flex-col items-center">
+                  <button onClick={() => deployDropPod(gmSquadId, 3)} className="border border-cyan-900 bg-cyan-950/30 text-cyan-400 p-3 text-[10px] font-black uppercase tracking-widest hover:bg-cyan-900 hover:text-white transition-all active:scale-95 flex flex-col items-center">
                       <span className="text-lg mb-1">🛸</span> Beam Drop Pod
                   </button>
                   <button onClick={() => triggerLootDrop(3)} className="border border-yellow-900 bg-yellow-950/30 text-yellow-400 p-3 text-[10px] font-black uppercase tracking-widest hover:bg-yellow-900 hover:text-white transition-all active:scale-95 flex flex-col items-center">
