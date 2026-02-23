@@ -36,5 +36,3 @@ This script is designed to be read aloud when a player clicks the **"Etch Into T
 ### **🛠️ How to use this with your code**
 
 When your friend merges the **BackstoryPicker.jsx**, you can actually have the app display these "Voice" lines on the screen right after they finish.
-
-**Would you like me to add these voice-over lines directly into the BackstoryPicker.jsx file so they pop up as a "Narrative Success" message?**
