@@ -8,7 +8,7 @@ import { generateProceduralLoot } from './utils/lootGenerator';
 // --- FIREBASE CORE ---
 import { auth, googleProvider, db, requestNotificationPermission } from './firebase'; 
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
-import { collection, addDoc, query, where, onSnapshot, deleteDoc, updateDoc, doc, setDoc } from "firebase/firestore";
+import { collection, addDoc, query, where, onSnapshot, deleteDoc, updateDoc, doc, setDoc,arrayUnion } from "firebase/firestore";
 
 // --- TAB INTERFACES ---
 import RosterTab from './components/Tabs/RosterTab';
@@ -156,17 +156,27 @@ function App() {
 
   // --- PROCEDURAL FORGE & LOGISTICS ---
   
-  const broadcastLoot = async () => {
-    if (!gmSquadId) return;
-    const item = generateProceduralLoot();
+  // Fires when the Overseer hits the "Deploy Drop Pod" button
+  const deployDropPod = async (squadId, quantity = 3) => {
+    if (!squadId) return;
     try {
-        await addDoc(collection(db, "party_loot"), {
-            ...item,
-            squadId: gmSquadId,
-            createdAt: new Date().getTime()
-        });
-        broadcastEvent(gmSquadId, `NEURAL LINK: Asset deployed to Drop Pod.`, 'success');
-    } catch (e) { console.error("Broadcast Failed", e); }
+      // Loop to generate and push the requested number of items
+      for (let i = 0; i < quantity; i++) {
+          const item = generateProceduralLoot();
+          
+          // Push each generated item to your party_loot collection
+          await addDoc(collection(db, "party_loot"), {
+              ...item,
+              squadId: squadId,
+              createdAt: new Date().getTime()
+          });
+      }
+      // Blast the announcement to the network log
+      broadcastEvent(squadId, `NEURAL LINK: ${quantity} Relics deployed to Drop Pod.`, 'success');
+      
+    } catch (e) { 
+      console.error("Firebase Error - Failed to deploy Drop Pod:", e); 
+    }
   };
 
   const claimLoot = async (lootItem) => {
@@ -808,8 +818,8 @@ const getGearStats = (itemString) => {
                 clearBoss={clearBoss} 
                 squadRoster={squadRoster} 
                 getMaxVital={getMaxVital} 
-                triggerLootDrop={triggerLootDrop} 
-                broadcastLoot={broadcastLoot}
+                triggerLootDrop={triggerLootDrop}
+                deployDropPod={deployDropPod}
                 beastiary={BEASTIARY}
                 adjustUnitVital={adjustUnitVital}
             />
