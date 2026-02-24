@@ -1,6 +1,4 @@
 # 💀 ASTRO INFERNO: LOOTER COMPANION
-
-![Status](https://img.shields.io/badge/Status-Pre--Alpha-red?style=for-the-badge)
 ![Tech](https://img.shields.io/badge/Built_With-React_|_Firebase-blue?style=for-the-badge&logo=react)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
