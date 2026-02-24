@@ -183,7 +183,7 @@ function App() {
   const claimLoot = async (lootItem) => {
       if (!character.id) return;
       
-      // We just need the raw name now (e.g., "Babylonian Katana of Death")
+      
       // The Blackjack engine parses the stats directly from this string
       const itemName = lootItem.name; 
       const newEquip = [...(character.destiny?.equipment || []), itemName];
