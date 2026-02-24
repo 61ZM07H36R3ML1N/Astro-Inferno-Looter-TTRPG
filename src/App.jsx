@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 
 // --- DATA INJECTION ---
 import { GEAR_STATS, WEAPON_TABLE, LOOT_PREFIXES, GRENADE_TIERS, GRENADE_JUICE, LOOT_SUFFIXES, ARMOR_STATS } from './data/gear'; 
@@ -8,7 +9,7 @@ import { generateProceduralLoot } from './utils/lootGenerator';
 // --- FIREBASE CORE ---
 import { auth, googleProvider, db, requestNotificationPermission } from './firebase'; 
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
-import { collection, addDoc, query, where, onSnapshot, deleteDoc, updateDoc, doc, setDoc,arrayUnion } from "firebase/firestore";
+import { collection, addDoc, query, where, onSnapshot, deleteDoc, updateDoc, doc, setDoc } from "firebase/firestore";
 
 // --- TAB INTERFACES ---
 import RosterTab from './components/Tabs/RosterTab';
@@ -860,6 +861,9 @@ const getGearStats = (itemString) => {
           setViewPromotion={setViewPromotion} 
           promoteUnit={promoteUnit}
       />
+      
+      {/* VERCEL WEB ANALYTICS */}
+      <Analytics />
     </div>
   );
 }
