@@ -72,7 +72,7 @@ const handleVacuumPull = () => {
   };
 
   return (
-    <div className="flex flex-col items-center p-4 bg-black min-h-screen text-white">
+    <div className="flex flex-col items-center p-4 bg-black text-white">
       <h2 className="text-2xl font-bold mb-4 text-orange-500 tracking-tighter">TACTICAL HUD: SECTOR 7-B</h2>
       
       <div className="border-2 border-slate-800 mb-4 shadow-2xl">
