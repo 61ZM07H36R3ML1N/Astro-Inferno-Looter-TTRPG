@@ -448,9 +448,20 @@ const getGearStats = (itemString) => {
 
   const addXp = async (amount) => {
       if (!character.id) return;
-      const newXp = Math.min(XP_THRESHOLD, (character.xp || 0) + amount);
+
+      // Calculate the new XP, but FORCE it to stop at 0 if they subtract too much
+      const currentXp = character.xp || 0;
+      const newXp = Math.max(0, currentXp + amount);
+
+      // Instantly update the UI so the player feels the click
       setCharacter(p => ({ ...p, xp: newXp }));
-      try { await updateDoc(doc(db, "characters", character.id), { xp: newXp }); } catch(e) { console.error(e); }
+
+      // Push the fix to the Firebase network
+      try {
+          await updateDoc(doc(db, "characters", character.id), { xp: newXp });
+      } catch(e) {
+          console.error("XP Sync Failed:", e);
+      }
   };
 
   const updateConsumable = async (type, change) => {
