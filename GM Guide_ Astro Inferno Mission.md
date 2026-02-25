@@ -1,19 +1,8 @@
-Since this is your first time, I’ve designed this script to act as a **teleprompter**. I’ve included **Environmental Cues** (what to tell the players they see/smell), **Mechanical Prompts** (when to tell players to roll), and **CuJo Interjections** (tactical/snarky flavor).
-
-**Setup:** \* **GM1 (The World):** You describe the horror, the NPCs, and the "feel" of the ship.
-
-* **GM2 (The System):** You handle the map, the stats, and the dice results.  
-* **CuJo (The UI):** Either GM can read CuJo, but use a "robotic/glitched" voice.
-
-# ---
-
 **🌑 ASTRO INFERNO: MISSION 01 \- THE SOUL-FORGE BREACH**
 
 ## **ACT 1: THE NEURALINK INITIALIZATION (Session 0 Intro)**
 
-*Goal: Establish the tone and introduce the Player Assistant, CuJo.*
-
-Implementing the atmospheric descriptions and technical integration we discussed, here is the rewritten opening sequence for **Astro Inferno**:
+*Goal: Establish the tone and introduce the Player Assistant, CuJo*
 
 **GM1 (The World):** "Everyone, close your eyes. Imagine the sound of a heartbeat—not yours, but the ship’s. It’s a rhythmic, wet thumping echoing through the bulkheads, as if the metal itself has developed a pulse. You are drifting in the *Bleed*, where space isn't black, but a bruised, swirling purple-and-red nebula that feels like it's pressing against the hull. The air inside your pods smells like burnt hair and old ozone—the scent of the Soul-Tech active-cooling systems struggling to keep your physical bodies from cooking while your consciousness was archived."
 
@@ -47,7 +36,7 @@ Integrating the bio-mechanical horror and the glitchy technical aesthetic we've 
 
 *Goal: Introduce loot and the "High Risk / High Reward" mechanic.*
 
-ntegrating the gritty, bio-mechanical atmosphere and the glitchy technical aesthetic of **Astro Inferno**, here is the expanded version of [Act 3: The Loot & The Trap](https://docs.google.com/document/d/10tHyHtLQEym2mAAfkWo-YvmvzEdtQwxisCi1xiLpaxs/edit?tab=t.0).
+Integrating the gritty, bio-mechanical atmosphere and the glitchy technical aesthetic of **Astro Inferno**, here is the expanded version of [Act 3: The Loot & The Trap](https://docs.google.com/document/d/10tHyHtLQEym2mAAfkWo-YvmvzEdtQwxisCi1xiLpaxs/edit?tab=t.0).
 
 ### **ACT 3: THE LOOT & THE TRAP (The Shooter-Looter Loop)**
 
@@ -118,17 +107,3 @@ The Post-Mission Summary Template
 **CuJo (The UI): "Analyzing your post-mission vitals. It looks like some of you brought back 'souvenirs' from the *Bleed*. Your brainwaves are currently spiking in patterns that usually indicate 'extreme terror' or 'impending possession.' I’ve scheduled a de-frag for your Neuralinks, but honestly? I’d sleep with one eye open. If you still have eyes by morning."**
 
 **GM1 (The World): "As the escape pod's life support settles into a low, hypnotic hum, the violet glow of the Vile Essence Core reflects off the metal walls. You close your eyes, but the sound of that rhythmic, wet thumping from the ship follows you into the dark. The mission is over, but the *Icarus-9* isn't finished with you yet."**
-
----
-
-**Next Step: Build the Neuralink Stability Check UI component for the VTT that triggers automatically during the "Rest" phase based on the player's stored Entropy value.**
-
-### ---
-
-**Advice for your first time:**
-
-* **Don't worry about being perfect.** If you forget a rule, just make a fair "GM call" and look it up later.  
-* **Lean on CuJo.** If the players are stuck and don't know what to do, have CuJo "ping" a door or a crate to give them a hint.  
-* **Music helps.** Play some "Dark Ambient Space" or "Industrial Horror" music in the background to do 50% of the atmospheric work for you.
-
-**Would you like me to create a "Cheat Sheet" for GM2 that lists the stats for the Void-Husks and the Difficulty Numbers (DCs) for the door-opening task?**
