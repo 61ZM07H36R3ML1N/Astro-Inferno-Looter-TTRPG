@@ -758,7 +758,9 @@ const saveCharacter = async () => {
 
   return (
     <div className="flex flex-col h-screen w-full bg-black text-white font-mono overflow-hidden relative">
-      <Map />
+   <div className="h-1/2 shrink-0 border-b border-red-900/30 overflow-hidden">
+  <Map />
+</div>
       {/* HEADER */}
       <div className="h-14 border-b border-red-900/50 flex items-center px-4 justify-between bg-red-950/20 shrink-0 z-50">
         <div className="flex items-center gap-3">
