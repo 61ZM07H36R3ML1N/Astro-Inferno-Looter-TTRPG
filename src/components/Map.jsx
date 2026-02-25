@@ -1,83 +1,87 @@
 import React, { useState, useEffect } from 'react';
-    
-    const GRID_SIZE = 12;
-    const hazardZones = [
-      { x: 2, y: 2 },
-      { x: 2, y: 3 },
-      { x: 3, y: 2 },
-      { x: 3, y: 3 },
-      { x: 8, y: 8 },
-      { x: 9, y: 8 },
-      { x: 8, y: 9 },
-      { x: 9, y: 9 },
-    ];
-    
-    const isHazardZone = (x, y) => {
-      return hazardZones.some(zone => zone.x === x && zone.y === y);
-    };
-    
-    const Map = () => {
-      const [playerPosition, setPlayerPosition] = useState({ x: 0, y: 0 });
-    
-      useEffect(() => {
-        if (isHazardZone(playerPosition.x, playerPosition.y)) {
-          console.log('Atmospheric Pull detected! Player at:', playerPosition);
-        }
-      }, [playerPosition]);
-    
-      const movePlayer = (dx, dy) => {
-        setPlayerPosition(prev => {
-          const newX = Math.max(0, Math.min(GRID_SIZE - 1, prev.x + dx));
-          const newY = Math.max(0, Math.min(GRID_SIZE - 1, prev.y + dy));
-          return { x: newX, y: newY };
-        });
-      };
-    
-      const renderGrid = () => {
-        const grid = [];
-        for (let y = 0; y < GRID_SIZE; y++) {
-          const row = [];
-          for (let x = 0; x < GRID_SIZE; x++) {
-            const isHazard = isHazardZone(x, y);
-            const isPlayerHere = playerPosition.x === x && playerPosition.y === y;
-            row.push(
-              <div
-                key={`${x}-${y}`}
-                className={`w-12 h-12 border border-gray-400 flex items-center justify-center ${
-                  isHazard ? 'bg-red-500' : 'bg-gray-100'
-                } ${isPlayerHere ? 'relative' : ''}`}
-                onClick={() => console.log(`Clicked cell: ${x}, ${y}`)}
-              >
-                {isPlayerHere && (
-                  <div className="w-8 h-8 bg-blue-500 rounded-full absolute"></div>
-                )}
-                {/* {`(${x},${y})`} */}
-              </div>
-            );
-          }
-          grid.push(
-            <div key={y} className="flex">
-              {row}
-            </div>
-          );
-        }
-        return grid;
-      };
-    
-      return (
-        <div className="flex flex-col items-center p-4">
-          <h2 className="text-2xl font-bold mb-4">Tactical Map</h2>
-          <div className="grid border border-black mb-4">{renderGrid()}</div>
-          <div className="flex space-x-2">
-            <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => movePlayer(0, -1)}>Up</button>
-            <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => movePlayer(0, 1)}>Down</button>
-            <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => movePlayer(-1, 0)}>Left</button>
-            <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => movePlayer(1, 0)}>Right</button>
+
+const GRID_SIZE = 12;
+
+// Act II Hull Breach Coordinates
+const BREACH_ZONES = [
+  { x: 7, y: 4 }, { x: 7, y: 5 },
+  { x: 8, y: 4 }, { x: 8, y: 5 }
+];
+
+const isHazardZone = (x, y) => {
+  return BREACH_ZONES.some(zone => zone.x === x && zone.y === y);
+};
+
+const Map = () => {
+  const [playerPosition, setPlayerPosition] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    if (isHazardZone(playerPosition.x, playerPosition.y)) {
+      console.warn('CRITICAL: Atmospheric Pull detected at coordinate sync.');
+      alert("⚠️ The hull screams! The vacuum of space claws at your suit. Roll Athletics (DC 12).");
+    }
+  }, [playerPosition]);
+
+  const movePlayer = (dx, dy) => {
+    setPlayerPosition(prev => {
+      const newX = Math.max(0, Math.min(GRID_SIZE - 1, prev.x + dx));
+      const newY = Math.max(0, Math.min(GRID_SIZE - 1, prev.y + dy));
+      return { x: newX, y: newY };
+    });
+  };
+
+  const renderGrid = () => {
+    const grid = [];
+    for (let y = 0; y < GRID_SIZE; y++) {
+      const row = [];
+      for (let x = 0; x < GRID_SIZE; x++) {
+        const isHazard = isHazardZone(x, y);
+        const isPlayerHere = playerPosition.x === x && playerPosition.y === y;
+
+        row.push(
+          <div 
+            key={`${x}-${y}`} 
+            className={`w-12 h-12 border border-slate-700 flex items-center justify-center transition-all
+              ${isHazard ? 'bg-purple-900/40 border-orange-600 shadow-[inset_0_0_15px_rgba(255,69,0,0.5)] animate-pulse' : 'bg-slate-900 hover:bg-slate-800'} 
+              ${isPlayerHere ? 'relative' : ''}`}
+            onClick={() => console.log(`Clicked cell: ${x}, ${y}`)}
+          >
+            {isPlayerHere && (
+              <div className="w-8 h-8 bg-blue-500 rounded-full absolute shadow-lg shadow-blue-500/50"></div>
+            )}
+            <span className="text-[8px] text-slate-600 select-none">${x},${y}</span>
           </div>
-          <div className="mt-2">Player Position: ({playerPosition.x}, {playerPosition.y})</div>
+        );
+      }
+      grid.push(<div key={y} className="flex">{row}</div>);
+    }
+    return grid;
+  };
+
+  return (
+    <div className="flex flex-col items-center p-4 bg-black min-h-screen text-white">
+      <h2 className="text-2xl font-bold mb-4 text-orange-500 tracking-tighter">TACTICAL HUD: SECTOR 7-B</h2>
+      
+      <div className="border-2 border-slate-800 mb-4 shadow-2xl">
+        {renderGrid()}
+      </div>
+
+      <div className="flex space-x-4">
+        <div className="grid grid-cols-3 gap-2">
+          <div />
+          <button className="p-3 bg-slate-800 rounded hover:bg-slate-700 border border-slate-600" onClick={() => movePlayer(0, -1)}>▲</button>
+          <div />
+          <button className="p-3 bg-slate-800 rounded hover:bg-slate-700 border border-slate-600" onClick={() => movePlayer(-1, 0)}>◀</button>
+          <button className="p-3 bg-slate-800 rounded hover:bg-slate-700 border border-slate-600" onClick={() => movePlayer(0, 1)}>▼</button>
+          <button className="p-3 bg-slate-800 rounded hover:bg-slate-700 border border-slate-600" onClick={() => movePlayer(1, 0)}>▶</button>
         </div>
-      );
-    };
-    
-    export default Map;
-    
+      </div>
+
+      <div className="mt-4 font-mono text-sm text-green-500">
+        PLAYER_LOC: [{playerPosition.x}, {playerPosition.y}]
+      </div>
+    </div>
+  );
+};
+
+export default Map;
