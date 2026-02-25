@@ -73,8 +73,21 @@ export const BEASTIARY = [
         id: `m_archangel`, 
         name: "Archangel", 
         hp: 1500, maxHp: 1500, segments: 10,
-        description: "Corrupted divinity who now serve only their inner demons. Within their Thrones they are omnipotent, with the power to bend reality to their liking. Immortal, and will be reborn if killed." 
-      }
-    ]
-  }
+  description: "Corrupted divinity who now serve only their inner demons..."
+    }
+  ]
+},
+{
+  category: "Grunts",
+  threats: [
+    {
+      id: `m_void_husk`,
+      name: "Void-Husk",
+      hp: 22,
+      maxHp: 22,
+      segments: 2,
+      description: "Entities sculpted from cracked, yellowing porcelain, with thick black sludge (Void-Rot) leaking from their joints. Their eyes are twin pits of flickering blue Soul-Fire. They have a static initiative of 12 and utilize Void Drain to reduce a target's maximum HP."
+    }
+  ]
+}
 ];
