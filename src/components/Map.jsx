@@ -15,19 +15,15 @@ const isHazardZone = (x, y) => {
 const Map = () => {
   const [playerPosition, setPlayerPosition] = useState({ x: 0, y: 0 });
 useEffect(() => {
-    const checkHazard = () => {
-      if (isHazardZone(playerPosition.x, playerPosition.y)) {
-        setTimeout(() => {
-          console.warn('CRITICAL: Atmospheric Pull detected.');
-          alert("⚠️ The hull screams! The vacuum of space claws at your suit. Roll Athletics (DC 12).");
-          handleVacuumPull();
-        }, 100);
-      }
-    };
-    checkHazard();
-  }, [playerPosition.x, playerPosition.y]);
-    checkHazard();
-  }, [playerPosition.x, playerPosition.y]);
+const checkHazard = () => {
+if (isHazardZone(playerPosition.x, playerPosition.y)) {
+setTimeout(() => {
+console.warn('CRITICAL: Atmospheric Pull detected.');
+alert("⚠️ The hull screams! The vacuum of space claws at your suit. Roll Athletics (DC 12).");
+handleVacuumPull();
+}, 100);
+}
+};
     checkHazard();
     }
   }, [playerPosition]);
