@@ -347,8 +347,7 @@ const getGearStats = (itemString) => {
     await signOut(auth); 
     setActiveTab('ROSTER'); 
   };
-
-  const saveCharacter = async () => {
+const saveCharacter = async () => {
     if (!user) { 
         alert("ERROR: You must be logged in to save."); 
         return; 
@@ -358,14 +357,20 @@ const getGearStats = (itemString) => {
     // 1. Check if they left the name blank
     if (!character.name || character.name === "UNIT_UNNAMED" || character.name.trim() === "") {
         alert("COMMAND REJECTED: Unit designation (Name) required.");
-        setStep(1); // Boots them back to Step 1
+        setStep(1); 
         return;
     }
 
-    // 2. Check if they skipped their Origin/Form (Accounts for empty objects {})
-    if (!character.form || Object.keys(character.form).length === 0) { 
-        alert("COMMAND REJECTED: Origin/Form data missing. You must select an Origin before deployment."); 
-        setStep(2); // Boots them back to the Origin step
+    // 2. The Nuclear Origin Check (Catches null, blank strings, empty arrays, and empty objects)
+    const form = character.form;
+    if (
+        !form || 
+        form === "" || 
+        (Array.isArray(form) && form.length === 0) || 
+        (typeof form === 'object' && Object.keys(form).length === 0)
+    ) { 
+        alert("COMMAND REJECTED: Origin/Form data missing. You must roll/select an Origin before deployment."); 
+        setStep(2); 
         return; 
     }
     // ----------------------------------------------------
@@ -901,5 +906,4 @@ const getGearStats = (itemString) => {
     </div>
   );
 }
-
 export default App;
