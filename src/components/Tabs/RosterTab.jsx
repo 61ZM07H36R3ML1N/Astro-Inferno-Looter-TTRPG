@@ -40,7 +40,7 @@ export default function RosterTab({ roster, loadCharacter, deleteCharacter }) {
       <div className="mt-8 border border-white/10 bg-black/50 p-4 relative overflow-hidden">
           <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-3 border-b border-white/10 pb-1 text-center">Support Network Command</div>
           <div className="flex gap-2 relative z-10">
-              <a href="https://ko-fi.com/YOUR_LINK" target="_blank" rel="noreferrer" className="flex-1 bg-red-900/20 border border-red-900/50 hover:bg-red-600 hover:text-white text-red-500 p-3 text-center transition-colors group">
+              <a href="https://ko-fi.com/brianjamiel" target="_blank" rel="noreferrer" className="flex-1 bg-red-900/20 border border-red-900/50 hover:bg-red-600 hover:text-white text-red-500 p-3 text-center transition-colors group">
                   <div className="text-[8px] uppercase tracking-widest mb-1 text-gray-400 group-hover:text-red-200 transition-colors">Fuel the Architect</div>
                   <div className="text-xs font-bold uppercase">Send Brian a Coffee</div>
               </a>
