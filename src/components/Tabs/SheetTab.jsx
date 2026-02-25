@@ -43,8 +43,13 @@ export default function SheetTab({
                 </div>
                 <div className="flex justify-between items-center">
                     <div className="flex gap-1">
-                        <button onClick={() => addXp(1)} className="bg-white/5 border border-white/10 text-[9px] px-2 py-1 text-gray-400 hover:text-white">+1 XP</button>
-                        <button onClick={() => addXp(5)} className="bg-white/5 border border-white/10 text-[9px] px-2 py-1 text-gray-400 hover:text-white">+5 XP</button>
+                        {/* The Undo Buttons (Red Tint) */}
+                        <button onClick={() => addXp(-5)} className="bg-red-950/20 border border-red-900/40 text-[9px] px-2 py-1 text-red-500/70 hover:text-red-400 hover:bg-red-900/40 transition-colors">-5 XP</button>
+                        <button onClick={() => addXp(-1)} className="bg-red-950/20 border border-red-900/40 text-[9px] px-2 py-1 text-red-500/70 hover:text-red-400 hover:bg-red-900/40 transition-colors">-1 XP</button>
+                        
+                        {/* Your Original Add Buttons */}
+                        <button onClick={() => addXp(1)} className="bg-white/5 border border-white/10 text-[9px] px-2 py-1 text-gray-400 hover:text-white transition-colors">+1 XP</button>
+                        <button onClick={() => addXp(5)} className="bg-white/5 border border-white/10 text-[9px] px-2 py-1 text-gray-400 hover:text-white transition-colors">+5 XP</button>
                     </div>
                     {character.xp >= XP_THRESHOLD && (
                         <button onClick={() => setViewPromotion(true)} className="bg-yellow-500 text-black text-[9px] font-black px-3 py-1 uppercase animate-bounce">
