@@ -758,7 +758,7 @@ const saveCharacter = async () => {
 
   return (
     <div className="flex flex-col h-screen w-full bg-black text-white font-mono overflow-hidden relative">
-   <div className="h-1/2 shrink-0 border-b border-red-900/30 overflow-hidden">
+  <div className="h-1/2 shrink-0 border-b border-red-900/30 overflow-auto">
   <Map />
 </div>
       {/* HEADER */}
