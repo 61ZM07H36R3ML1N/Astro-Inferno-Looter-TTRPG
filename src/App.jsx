@@ -362,8 +362,8 @@ const getGearStats = (itemString) => {
         return;
     }
 
-    // 2. Check if they skipped their Origin/Form
-    if (!character.form) { 
+    // 2. Check if they skipped their Origin/Form (Accounts for empty objects {})
+    if (!character.form || Object.keys(character.form).length === 0) { 
         alert("COMMAND REJECTED: Origin/Form data missing. You must select an Origin before deployment."); 
         setStep(2); // Boots them back to the Origin step
         return; 
