@@ -17,11 +17,11 @@ const Map = () => {
 
   useEffect(() => {
     if (isHazardZone(playerPosition.x, playerPosition.y)) {
-      console.warn('CRITICAL: Atmospheric Pull detected at coordinate sync.');
+  console.warn('CRITICAL: Atmospheric Pull detected at coordinate sync.');
       alert("⚠️ The hull screams! The vacuum of space claws at your suit. Roll Athletics (DC 12).");
+     handleVacuumPull(); // <--- Insert this here
     }
   }, [playerPosition]);
-
   const movePlayer = (dx, dy) => {
     setPlayerPosition(prev => {
       const newX = Math.max(0, Math.min(GRID_SIZE - 1, prev.x + dx));
@@ -29,7 +29,20 @@ const Map = () => {
       return { x: newX, y: newY };
     });
   };
+const handleVacuumPull = () => {
+    const breachCenter = { x: 7.5, y: 4.5 };
+    
+    setPlayerPosition(prev => {
+      const dx = prev.x < breachCenter.x ? 1 : prev.x > breachCenter.x ? -1 : 0;
+      const dy = prev.y < breachCenter.y ? 1 : prev.y > breachCenter.y ? -1 : 0;
 
+      return {
+        x: Math.max(0, Math.min(GRID_SIZE - 1, prev.x + dx)),
+        y: Math.max(0, Math.min(GRID_SIZE - 1, prev.y + dy))
+      };
+    });
+    console.warn("MECHANICAL ALERT: Unit displaced by atmospheric decompression.");
+  };
   const renderGrid = () => {
     const grid = [];
     for (let y = 0; y < GRID_SIZE; y++) {
