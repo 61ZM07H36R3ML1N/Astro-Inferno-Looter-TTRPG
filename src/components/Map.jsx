@@ -19,7 +19,7 @@ useEffect(() => {
       if (isHazardZone(playerPosition.x, playerPosition.y)) {
         setTimeout(() => {
           console.warn('CRITICAL: Atmospheric Pull detected.');
-          alert("⚠️ The hull screams! The vacuum of space claws at your suit. Roll Athletics (DC 12).");
+          alert("⚠️ The hull screams! The vacuum of space claws at your suit.");
           handleVacuumPull();
         }, 100);
       }
