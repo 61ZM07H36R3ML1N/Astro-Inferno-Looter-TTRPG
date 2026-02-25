@@ -349,12 +349,31 @@ const getGearStats = (itemString) => {
   };
 
   const saveCharacter = async () => {
-    if (!user) { alert("ERROR: You must be logged in to save."); return; }
-    if (!character.form) { alert("ERROR: Form data missing. Please complete Phase 2."); return; }
+    if (!user) { 
+        alert("ERROR: You must be logged in to save."); 
+        return; 
+    }
+
+    // --- AARON'S HOTFIX: STRICT DEPLOYMENT VALIDATION ---
+    // 1. Check if they left the name blank
+    if (!character.name || character.name === "UNIT_UNNAMED" || character.name.trim() === "") {
+        alert("COMMAND REJECTED: Unit designation (Name) required.");
+        setStep(1); // Boots them back to Step 1
+        return;
+    }
+
+    // 2. Check if they skipped their Origin/Form
+    if (!character.form) { 
+        alert("COMMAND REJECTED: Origin/Form data missing. You must select an Origin before deployment."); 
+        setStep(2); // Boots them back to the Origin step
+        return; 
+    }
+    // ----------------------------------------------------
+
     try {
       const { id: _, ...cleanCharacter } = character; 
       const payload = { 
-          ...cleanCharacter, 
+          ...cleanCharacter,
           currentVitals: { 
               life: getMaxVital('life', character), 
               sanity: getMaxVital('sanity', character), 
@@ -363,12 +382,16 @@ const getGearStats = (itemString) => {
           uid: user.uid, 
           createdAt: new Date() 
       };
+      
       await addDoc(collection(db, "characters"), payload);
       alert(`UNIT ${character.name} DEPLOYED TO DATABASE`);
       setCharacter(initialCharacter); 
       setStep(1); 
       setActiveTab('ROSTER');
-    } catch (e) { console.error("Save Error:", e); alert(`SAVE FAILED: ${e.message}`); }
+    } catch (e) { 
+        console.error("Save Error:", e); 
+        alert(`SAVE FAILED: ${e.message}`); 
+    }
   };
 
   const deleteCharacter = async (charId, charName) => {
