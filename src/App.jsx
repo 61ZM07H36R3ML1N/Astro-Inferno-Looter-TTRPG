@@ -18,6 +18,7 @@ import SheetTab from './components/Tabs/SheetTab';
 import SquadTab from './components/Tabs/SquadTab';
 import OverseerTab from './components/Tabs/OverseerTab';
 import Modals from './components/UI/Modals';
+import Map from './components/Map' ;
 
 // --- GLOBAL UTILS ---
 const rollD20 = () => Math.floor(Math.random() * 20) + 1;
@@ -757,7 +758,7 @@ const saveCharacter = async () => {
 
   return (
     <div className="flex flex-col h-screen w-full bg-black text-white font-mono overflow-hidden relative">
-      
+      <Map />
       {/* HEADER */}
       <div className="h-14 border-b border-red-900/50 flex items-center px-4 justify-between bg-red-950/20 shrink-0 z-50">
         <div className="flex items-center gap-3">
