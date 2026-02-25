@@ -78,7 +78,7 @@ export const BEASTIARY = [
   ]
 },
 {
-  category: "The Soul-Forge Breach (Mission 01)",
+  category: "Grunts",
   threats: [
     {
       id: `m_void_husk`,
