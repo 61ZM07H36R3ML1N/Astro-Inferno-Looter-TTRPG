@@ -94,30 +94,27 @@ const Map = () => {
     return grid;
   };
 
-  return (
-    <div className="flex flex-col items-center p-4 bg-black text-white min-h-screen">
-      <h2 className="text-2xl font-bold mb-4 text-orange-500 tracking-tighter uppercase">Tactical HUD: Sector 7-B</h2>
-      
-      <div className="border-2 border-slate-800 mb-4 shadow-2xl bg-slate-900">
-        {renderGrid()}
+// Remove 'min-h-screen' and 'bg-black' to let the overlay control the container
+return (
+  <div className="flex flex-col items-center p-2 text-white">
+    <div className="border-2 border-slate-800 mb-4 shadow-2xl bg-slate-900 overflow-auto max-h-[60vh]">
+      {renderGrid()}
+    </div>
+    
+    <div className="flex flex-col items-center space-y-4 pb-4">
+      <div className="grid grid-cols-3 gap-2">
+        <div />
+        <button className="ui-btn-map" onClick={() => movePlayer(0, -1)}>▲</button>
+        <div />
+        <button className="ui-btn-map" onClick={() => movePlayer(-1, 0)}>◀</button>
+        <button className="ui-btn-map" onClick={() => movePlayer(0, 1)}>▼</button>
+        <button className="ui-btn-map" onClick={() => movePlayer(1, 0)}>▶</button>
       </div>
-
-      <div className="flex flex-col items-center space-y-4">
-        <div className="grid grid-cols-3 gap-2">
-          <div />
-          <button className="p-4 bg-slate-800 rounded hover:bg-slate-700 border border-slate-600 active:bg-blue-900" onClick={() => movePlayer(0, -1)}>▲</button>
-          <div />
-          <button className="p-4 bg-slate-800 rounded hover:bg-slate-700 border border-slate-600 active:bg-blue-900" onClick={() => movePlayer(-1, 0)}>◀</button>
-          <button className="p-4 bg-slate-800 rounded hover:bg-slate-700 border border-slate-600 active:bg-blue-900" onClick={() => movePlayer(0, 1)}>▼</button>
-          <button className="p-4 bg-slate-800 rounded hover:bg-slate-700 border border-slate-600 active:bg-blue-900" onClick={() => movePlayer(1, 0)}>▶</button>
-        </div>
-
-        <div className="mt-4 font-mono text-sm text-green-500 bg-slate-900/50 p-2 border border-green-900/30 rounded">
-          PLAYER_LOC: [{playerPosition.x}, {playerPosition.y}]
-        </div>
+      <div className="font-mono text-xs text-green-500 bg-slate-900/50 p-2 border border-green-900/30 rounded">
+        SYSTEM_LOC: [{playerPosition.x}, {playerPosition.y}]
       </div>
     </div>
-  );
-};
+  </div>
+);
 
 export default Map;
