@@ -110,11 +110,16 @@ return (
         <button className="ui-btn-map" onClick={() => movePlayer(0, 1)}>▼</button>
         <button className="ui-btn-map" onClick={() => movePlayer(1, 0)}>▶</button>
       </div>
-      <div className="font-mono text-xs text-green-500 bg-slate-900/50 p-2 border border-green-900/30 rounded">
-        SYSTEM_LOC: [{playerPosition.x}, {playerPosition.y}]
-     </div>
+ <div />
+          <button className="ui-btn-map" onClick={() => movePlayer(0, 1)}>▼</button>
+          <div />
+        </div>
+        <div className="font-mono text-xs text-green-500 bg-slate-900/50 p-2 border border-green-900/30 rounded">
+          SYSTEM_LOC: [{playerPosition.x}, {playerPosition.y}]
+        </div>
+      </div>
     </div>
   );
-}; 
+};
 
 export default Map;
