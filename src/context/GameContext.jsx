@@ -9,25 +9,37 @@ import React, { createContext, useState, useContext } from 'react';
       // were NOT found in /src/App.jsx as of the last review.
       // You may need to implement them here or locate them elsewhere if they exist.
     
-      const [gameState, setGameState] = useState({
-        // Initial game state placeholder
-      });
-    
-      // Placeholder for turn/action related functions
-      // const endTurn = () => { /* ... */ };
-      // const performAction = () => { /* ... */ };
-    
-      const value = {
-        gameState,
-        setGameState,
-        // endTurn,
-        // performAction,
+const [gameState, setGameState] = useState({
+    activeUnitId: null,
+    turnOrder: [],
+    currentTurnIndex: 0,
+    actionsRemaining: 2,
+    phase: 'PLAYER_TURN',
+  }); // <--- State must end here
+
+  const endTurn = () => {
+    setGameState(prev => {
+      if (!prev.turnOrder || prev.turnOrder.length === 0) return prev;
+      const nextIndex = (prev.currentTurnIndex + 1) % prev.turnOrder.length;
+      return {
+        ...prev,
+        currentTurnIndex: nextIndex,
+        activeUnitId: prev.turnOrder[nextIndex],
+        actionsRemaining: 2
       };
-    
-      return (
-        <GameContext.Provider value={value}>
-          {children}
-        </GameContext.Provider>
-      );
-    };
-    
+    });
+  };
+  const value = {
+    gameState,
+    setGameState,
+    endTurn
+  };
+
+  return (
+    <GameContext.Provider value={value}>
+      {children}
+    </GameContext.Provider>
+  );
+};
+
+export default GameContext;
