@@ -10,11 +10,13 @@ const NeuralMapOverlay = () => {
       {/* Minimized Neural Node */}
       {!isOpen && (
         <button
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-black border-2 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.6)] flex items-center justify-center text-cyan-500 hover:scale-110 transition-transform z-50"
-          title="Open Neural Map"
-        >
-          <MapIcon size={28} />
+          onClick={() => setIsOpen(!isOpen)}
+  className="fixed bottom-24 right-6 z-[9999] p-4 rounded-full 
+             bg-slate-900 border-2 border-cyan-500/50 
+             text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.3)]
+             hover:scale-110 active:scale-95 transition-all duration-200"
+>
+  <Activity size={24} />
         </button>
       )}
 
