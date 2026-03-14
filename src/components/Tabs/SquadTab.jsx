@@ -1,6 +1,6 @@
 // src/components/Tabs/SquadTab.jsx
 import React, { useState, useEffect, useRef } from 'react';
-
+import { useGame } from '../../context/GameContext';
 export default function SquadTab({
     claimGroundLoot,
     character,
@@ -16,7 +16,9 @@ export default function SquadTab({
     claimLoot,
     playerStrikeBoss 
 }) {
-  const [shouldShake, setShouldShake] = useState(false);
+  const { gameState } = useGame();
+const { activeUnitId } = gameState;
+    const [shouldShake, setShouldShake] = useState(false);
   const prevLootCount = useRef(partyLoot?.length || 0);
 
   useEffect(() => {
@@ -152,7 +154,7 @@ export default function SquadTab({
               {/* SQUAD ROSTER */}
               <div className="space-y-3">
                   {squadRoster.map(mate => (
-                      <div key={mate.id} className={`border p-3 flex flex-col gap-3 relative overflow-hidden ${mate.id === character.id ? 'border-cyan-500/50 bg-cyan-950/10' : 'border-white/10 bg-black/60'}`}>
+<div key={mate.id} className={`border p-3 flex flex-col gap-3 relative overflow-hidden transition-all duration-500 ${mate.id === activeUnitId ? 'border-cyan-400 bg-cyan-950/40 shadow-[0_0_20px_rgba(6,182,212,0.5)] ring-1 ring-cyan-500 animate-pulse z-20 scale-[1.02]' : mate.id === character.id ? 'border-cyan-500/50 bg-cyan-950/10 opacity-90' : 'border-white/10 bg-black/60 opacity-60'}`}>
                           <div className="flex justify-between items-start relative z-10">
                               <div className="flex items-center gap-3">
                                   <div className="h-10 w-10 bg-gray-900 border border-white/20">
