@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import Map from './Map';
-import { X, Map as MapIcon } from 'lucide-react';
-
+import { X, Activity } from 'lucide-react';
 const NeuralMapOverlay = () => {
   const [isOpen, setIsOpen] = useState(false);
 
