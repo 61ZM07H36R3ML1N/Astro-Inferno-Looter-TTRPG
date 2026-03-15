@@ -114,27 +114,45 @@ const { gameState, endTurn, initializeCombat } = useGame();
         {renderGrid()}
       </div>
       
-      <div className="flex flex-col items-center space-y-4 pb-4">
-        <div className="grid grid-cols-3 gap-2">
-          <div />
-          <button className="ui-btn-map" onClick={() => movePlayer(0, -1)}>▲</button>
-          <div />
-          <button className="ui-btn-map" onClick={() => movePlayer(-1, 0)}>◀</button>
-          <button className="ui-btn-map" onClick={() => movePlayer(0, 1)}>▼</button>
-          <button className="ui-btn-map" onClick={() => movePlayer(1, 0)}>▶</button>
-        </div>
-        <div className="font-mono text-xs text-green-500 bg-slate-900/50 p-2 border border-green-900/30 rounded">
-          SYSTEM_LOC: [{playerPosition.x}, {playerPosition.y}]
-        </div>
+
+{/* --- HUD: MOVEMENT CONTROLS --- */}
+    <div className="fixed bottom-8 left-8 z-[10001] flex flex-col items-center space-y-4 bg-black/40 p-4 rounded-xl backdrop-blur-md border border-white/10 shadow-2xl">
+      <div className="grid grid-cols-3 gap-2">
+        <div />
+        <button className="ui-btn-map" onClick={() => movePlayer(0, -1)}>▲</button>
+        <div />
+        <button className="ui-btn-map" onClick={() => movePlayer(-1, 0)}>◀</button>
+        <button className="ui-btn-map" onClick={() => movePlayer(0, 1)}>▼</button>
+        <button className="ui-btn-map" onClick={() => movePlayer(1, 0)}>▶</button>
       </div>
-      {/* --- HUD: TACTICAL CONTROLS --- */}
+      <div className="font-mono text-[10px] tracking-widest text-cyan-400 bg-cyan-950/30 px-3 py-1 border border-cyan-500/30 rounded-full uppercase">
+        Pos: [{playerPosition.x}, {playerPosition.y}]
+      </div>
+    </div>
+    {/* --- HUD: INITIATIVE TRACKER --- */}
+      <div className="fixed top-24 left-1/2 -translate-x-1/2 flex gap-3 z-[10001] bg-black/40 p-2 rounded-lg backdrop-blur-md border border-white/10">
+        {gameState.turnOrder.map((id, index) => (
+          <div 
+            key={id}
+            className={`w-12 h-12 border-2 flex flex-col items-center justify-center transition-all duration-500 ${
+              index === gameState.currentTurnIndex 
+              ? 'border-cyan-400 bg-cyan-950 shadow-[0_0_15px_rgba(34,211,238,0.4)] scale-110 z-10' 
+              : 'border-white/10 bg-black/80 opacity-50 scale-90'
+            }`}
+          >
+            <span className="text-[10px] text-white/40 uppercase font-black tracking-tighter">Unit</span>
+            <span className={`text-sm font-bold ${index === gameState.currentTurnIndex ? 'text-cyan-400' : 'text-white'}`}>
+              {index + 1}
+            </span>
+          </div>
+        ))}
+      </div>
       <button 
         onClick={endTurn}
         className="fixed bottom-8 right-8 z-[10001] bg-red-600 hover:bg-red-500 text-white font-black py-3 px-6 rounded border-b-4 border-red-800 active:border-b-0 uppercase text-xs tracking-[0.2em] transition-all shadow-[0_0_20px_rgba(220,38,38,0.4)] active:transform active:translate-y-[2px]"
       >
         End Turn ({gameState.actionsRemaining})
       </button>
-    </div>
   );
 };
 
