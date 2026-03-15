@@ -151,9 +151,10 @@ const { gameState, endTurn, initializeCombat } = useGame();
         onClick={endTurn}
         className="fixed bottom-8 right-8 z-[10001] bg-red-600 hover:bg-red-500 text-white font-black py-3 px-6 rounded border-b-4 border-red-800 active:border-b-0 uppercase text-xs tracking-[0.2em] transition-all shadow-[0_0_20px_rgba(220,38,38,0.4)] active:transform active:translate-y-[2px]"
       >
-        End Turn ({gameState.actionsRemaining})
-</button>
-    ); 
+   End Turn ({gameState.actionsRemaining})
+      </button>
+    </div>
+  );
 };
 
 export default Map;
