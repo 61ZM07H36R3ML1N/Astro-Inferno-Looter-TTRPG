@@ -13,12 +13,23 @@ const isHazardZone = (x, y) => {
 };
 
 const Map = () => {
-const { gameState, endTurn } = useGame();
+const { gameState, endTurn, initializeCombat } = useGame();
   const [playerPosition, setPlayerPosition] = useState({ x: 0, y: 0 });
   
   // THE FIX: useRef stops the infinite loop instantly
   const isProcessingHazard = useRef(false);
-
+// --- EFFECT: INITIALIZE TACTICAL SESSION ---
+  useEffect(() => {
+    // In a real scenario, this would come from your Squad state
+    // For now, we initialize with a test squad to start the engine
+    const initialSquad = [
+      { id: 'unit-1', name: 'Jäger', speed: 15 },
+      { id: 'unit-2', name: 'Undying', speed: 10 },
+      { id: 'unit-3', name: 'Architect', speed: 12 }
+    ];
+    
+    initializeCombat(initialSquad);
+  }, []); // Runs once on mount
   // --- LOGIC: VACUUM PULL ---
   const handleVacuumPull = () => {
     const breachCenter = { x: 7.5, y: 4.5 };
