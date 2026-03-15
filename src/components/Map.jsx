@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useGame } from '../../context/GameContext';
+import { useGame } from '../context/GameContext';
 const GRID_SIZE = 12;
 
 // Act II Hull Breach Coordinates
