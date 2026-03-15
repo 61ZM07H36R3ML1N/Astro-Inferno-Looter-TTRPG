@@ -5,9 +5,19 @@ import React, { createContext, useState, useContext } from 'react';
     export const useGame = () => useContext(GameContext);
     
     export const GameProvider = ({ children }) => {
-      // State and functions related to turns and actions (like activePlayerId, actionsUsed, endTurn)
-      // were NOT found in /src/App.jsx as of the last review.
-      // You may need to implement them here or locate them elsewhere if they exist.
+const initializeCombat = (units) => {
+    setGameState(prev => {
+      const sortedUnits = [...units].sort((a, b) => (b.speed || 10) - (a.speed || 10));
+      const order = sortedUnits.map(u => u.id);
+      return {
+        ...prev,
+        turnOrder: order,
+        currentTurnIndex: 0,
+        activeUnitId: order[0] || null,
+        actionsRemaining: 2
+      };
+    });
+  };
     
 const [gameState, setGameState] = useState({
     activeUnitId: null,
@@ -33,10 +43,11 @@ const [gameState, setGameState] = useState({
       };
     });
   };
-  const value = {
-    gameState,
-    setGameState,
-    endTurn
+const value = { 
+    gameState, 
+    setGameState, 
+    endTurn, 
+    initializeCombat // <--- Add this
   };
 
   return (
