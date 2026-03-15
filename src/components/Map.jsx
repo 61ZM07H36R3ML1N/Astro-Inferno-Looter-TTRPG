@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-
+import { useGame } from '../../context/GameContext';
 const GRID_SIZE = 12;
 
 // Act II Hull Breach Coordinates
@@ -13,6 +13,7 @@ const isHazardZone = (x, y) => {
 };
 
 const Map = () => {
+const { gameState, endTurn } = useGame();
   const [playerPosition, setPlayerPosition] = useState({ x: 0, y: 0 });
   
   // THE FIX: useRef stops the infinite loop instantly
@@ -115,6 +116,13 @@ const Map = () => {
           SYSTEM_LOC: [{playerPosition.x}, {playerPosition.y}]
         </div>
       </div>
+      {/* --- HUD: TACTICAL CONTROLS --- */}
+      <button 
+        onClick={endTurn}
+        className="fixed bottom-8 right-8 z-[10001] bg-red-600 hover:bg-red-500 text-white font-black py-3 px-6 rounded border-b-4 border-red-800 active:border-b-0 uppercase text-xs tracking-[0.2em] transition-all shadow-[0_0_20px_rgba(220,38,38,0.4)] active:transform active:translate-y-[2px]"
+      >
+        End Turn ({gameState.actionsRemaining})
+      </button>
     </div>
   );
 };
