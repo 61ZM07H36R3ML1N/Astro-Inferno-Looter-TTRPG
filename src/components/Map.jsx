@@ -140,7 +140,7 @@ const { gameState, endTurn, initializeCombat } = useGame();
               : 'border-white/10 bg-black/80 opacity-50 scale-90'
             }`}
           >
-            <span className="text-[10px] text-white/40 uppercase font-black tracking-tighter">Unit</span>
+            <span className="text-[10px] text-white/40 uppercase font-black tracking-tighter">Turn</span>
             <span className={`text-sm font-bold ${index === gameState.currentTurnIndex ? 'text-cyan-400' : 'text-white'}`}>
               {index + 1}
             </span>
