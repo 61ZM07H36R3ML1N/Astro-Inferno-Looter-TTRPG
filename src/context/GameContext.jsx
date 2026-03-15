@@ -19,13 +19,17 @@ const [gameState, setGameState] = useState({
 
   const endTurn = () => {
     setGameState(prev => {
-      if (!prev.turnOrder || prev.turnOrder.length === 0) return prev;
-      const nextIndex = (prev.currentTurnIndex + 1) % prev.turnOrder.length;
+      // If no turn order exists, we still want to reset actions for the current player
+      const hasTurnOrder = prev.turnOrder && prev.turnOrder.length > 0;
+      const nextIndex = hasTurnOrder 
+        ? (prev.currentTurnIndex + 1) % prev.turnOrder.length 
+        : 0;
+      
       return {
         ...prev,
         currentTurnIndex: nextIndex,
-        activeUnitId: prev.turnOrder[nextIndex],
-        actionsRemaining: 2
+        activeUnitId: hasTurnOrder ? prev.turnOrder[nextIndex] : prev.activeUnitId,
+        actionsRemaining: 2 // This forces the "2" to refresh
       };
     });
   };
