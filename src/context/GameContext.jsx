@@ -25,24 +25,50 @@ const [gameState, setGameState] = useState({
     currentTurnIndex: 0,
     actionsRemaining: 2,
     phase: 'PLAYER_TURN',
-  }); // <--- State must end here
+   const endTurn = () => {
+   setGameState(prev => {
+    const hasTurnOrder = prev.turnOrder && prev.turnOrder.length > 0;
+    const nextIndex = hasTurnOrder ? (prev.currentTurnIndex + 1) % prev.turnOrder.length : 0;
+    let newPhase = prev.phase;
+    let newActionsRemaining = prev.actionsRemaining; // Default to current
 
-  const endTurn = () => {
-    setGameState(prev => {
-      // If no turn order exists, we still want to reset actions for the current player
-      const hasTurnOrder = prev.turnOrder && prev.turnOrder.length > 0;
-      const nextIndex = hasTurnOrder 
-        ? (prev.currentTurnIndex + 1) % prev.turnOrder.length 
-        : 0;
+    if (hasTurnOrder) {
+      const nextUnit = prev.turnOrder[nextIndex].u; // Assuming unit data is in 'u'
+      
+      if (nextUnit.isEnemy && prev.phase === 'PLAYER_TURN') {
+        newPhase = 'ENEMY_TURN';
+        newActionsRemaining = 1; // Or however many actions enemies get
+      } else if (!nextUnit.isEnemy && prev.phase === 'ENEMY_TURN') {
+        newPhase = 'PLAYER_TURN';
+        newActionsRemaining = 2; // Player actions
+      } else if (nextIndex === 0 && prev.phase === 'ENEMY_TURN' && !nextUnit.isEnemy) { // Cycled back to player after enemy turn
+        newPhase = 'PLAYER_TURN';
+        newActionsRemaining = 2;
+      } else {
+         // If phase doesn't change, reset actions based on current/new phase
+         newActionsRemaining = newPhase === 'PLAYER_TURN' ? 2 : 1;
+      }
       
       return {
         ...prev,
         currentTurnIndex: nextIndex,
-        activeUnitId: hasTurnOrder ? prev.turnOrder[nextIndex] : prev.activeUnitId,
-        actionsRemaining: 2 // This forces the "2" to refresh
+        activeUnitId: prev.turnOrder[nextIndex].u.id,
+        actionsRemaining: newActionsRemaining,
+        phase: newPhase
       };
-    });
-  };
+
+    } else {
+      // No turn order, maybe reset to defaults
+      return {
+        ...prev,
+        currentTurnIndex: 0,
+        activeUnitId: null,
+        actionsRemaining: 2,
+        phase: 'PLAYER_TURN'
+      };
+    }
+  });};
+
 const value = { 
     gameState, 
     setGameState, 
