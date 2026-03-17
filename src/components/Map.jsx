@@ -20,16 +20,15 @@ const { gameState, endTurn, initializeCombat } = useGame();
   const isProcessingHazard = useRef(false);
 // --- EFFECT: INITIALIZE TACTICAL SESSION ---
   useEffect(() => {
-    // In a real scenario, this would come from your Squad state
-    // For now, we initialize with a test squad to start the engine
     const initialSquad = [
-      { id: 'unit-1', name: 'Jäger', speed: 15 },
-      { id: 'unit-2', name: 'Undying', speed: 10 },
-      { id: 'unit-3', name: 'Architect', speed: 12 }
+      { id: 'unit-1', name: 'Jäger', speed: 15, isEnemy: false },
+      { id: 'unit-2', name: 'Undying', speed: 10, isEnemy: false },
+      { id: 'unit-3', name: 'Architect', speed: 12, isEnemy: false },
+      { id: 'hazard-1', name: 'VOID REAPER', speed: 5, isEnemy: true }
     ];
     
     initializeCombat(initialSquad);
-  }, []); // Runs once on mount
+  }, [initializeCombat]); // Adding initializeCombat to deps for React best practices
   // --- LOGIC: VACUUM PULL ---
   const handleVacuumPull = () => {
     const breachCenter = { x: 7.5, y: 4.5 };
