@@ -70,8 +70,8 @@ const [gameState, setGameState] = useState({
 // ... end of state logic
       }
     }); 
-  };
-
+  }
+    };
   const value = {
     gameState,
     setGameState,
