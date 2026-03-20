@@ -67,14 +67,15 @@ const [gameState, setGameState] = useState({
         activeUnitId: null,
         actionsRemaining: 2,
         phase: 'PLAYER_TURN'
-      };
-    }
-  }); 
-  
-const value = { 
-    gameState, 
-    setGameState, 
-    endTurn, 
+// ... end of state logic
+      }
+    }); 
+  };
+
+  const value = {
+    gameState,
+    setGameState,
+    endTurn,
     initializeCombat
   };
 
@@ -83,6 +84,6 @@ const value = {
       {children}
     </GameContext.Provider>
   );
-};
+}; // This closes GameProvider
 
 export default GameContext;
