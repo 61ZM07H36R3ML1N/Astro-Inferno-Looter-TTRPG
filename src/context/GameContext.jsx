@@ -24,7 +24,8 @@ const [gameState, setGameState] = useState({
     turnOrder: [],
     currentTurnIndex: 0,
     actionsRemaining: 2,
-    phase: 'PLAYER_TURN', });
+   phase: 'PLAYER_TURN',
+  }); });
    const endTurn = () => {
    setGameState(prev => {
     const hasTurnOrder = prev.turnOrder && prev.turnOrder.length > 0;
@@ -33,7 +34,7 @@ const [gameState, setGameState] = useState({
     let newActionsRemaining = prev.actionsRemaining; // Default to current
 
     if (hasTurnOrder) {
-      const nextUnit = prev.turnOrder[nextIndex].u; 
+      const nextUnit = prev.turnOrder[nextIndex]; 
       
       if (nextUnit.isEnemy && prev.phase === 'PLAYER_TURN') {
         newPhase = 'ENEMY_TURN';
@@ -52,7 +53,7 @@ const [gameState, setGameState] = useState({
       return {
         ...prev,
         currentTurnIndex: nextIndex,
-        activeUnitId: prev.turnOrder[nextIndex].u.id,
+        activeUnitId: prev.turnOrder[nextIndex].id,
         actionsRemaining: newActionsRemaining,
         phase: newPhase
       };
@@ -67,14 +68,14 @@ const [gameState, setGameState] = useState({
         phase: 'PLAYER_TURN'
       };
     }
+  }); 
   };
-   };
 
 const value = { 
     gameState, 
     setGameState, 
     endTurn, 
-    initializeCombat // <--- Add this
+    initializeCombat
   };
 
   return (
