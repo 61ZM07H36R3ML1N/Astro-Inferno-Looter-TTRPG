@@ -8,7 +8,7 @@ import React, { createContext, useState, useContext } from 'react';
 const initializeCombat = (units) => {
     setGameState(prev => {
       const sortedUnits = [...units].sort((a, b) => (b.speed || 10) - (a.speed || 10));
-      const order = sortedUnits.map(u => u.id);
+    const order = sortedUnits;
       return {
         ...prev,
         turnOrder: order,
@@ -24,7 +24,7 @@ const [gameState, setGameState] = useState({
     turnOrder: [],
     currentTurnIndex: 0,
     actionsRemaining: 2,
-    phase: 'PLAYER_TURN',
+    phase: 'PLAYER_TURN', });
    const endTurn = () => {
    setGameState(prev => {
     const hasTurnOrder = prev.turnOrder && prev.turnOrder.length > 0;
@@ -33,7 +33,7 @@ const [gameState, setGameState] = useState({
     let newActionsRemaining = prev.actionsRemaining; // Default to current
 
     if (hasTurnOrder) {
-      const nextUnit = prev.turnOrder[nextIndex].u; // Assuming unit data is in 'u'
+      const nextUnit = prev.turnOrder[nextIndex].u; 
       
       if (nextUnit.isEnemy && prev.phase === 'PLAYER_TURN') {
         newPhase = 'ENEMY_TURN';
@@ -67,7 +67,8 @@ const [gameState, setGameState] = useState({
         phase: 'PLAYER_TURN'
       };
     }
-  });};
+  };
+   };
 
 const value = { 
     gameState, 
