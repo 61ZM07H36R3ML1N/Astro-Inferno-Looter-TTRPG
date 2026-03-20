@@ -24,9 +24,10 @@ const [gameState, setGameState] = useState({
     turnOrder: [],
     currentTurnIndex: 0,
     actionsRemaining: 2,
-   phase: 'PLAYER_TURN',
-  }); });
-   const endTurn = () => {
+    phase: 'PLAYER_TURN',
+  });
+
+  const endTurn = () => {
    setGameState(prev => {
     const hasTurnOrder = prev.turnOrder && prev.turnOrder.length > 0;
     const nextIndex = hasTurnOrder ? (prev.currentTurnIndex + 1) % prev.turnOrder.length : 0;
@@ -69,8 +70,7 @@ const [gameState, setGameState] = useState({
       };
     }
   }); 
-  };
-
+  
 const value = { 
     gameState, 
     setGameState, 
