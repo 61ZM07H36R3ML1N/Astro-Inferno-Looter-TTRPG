@@ -50,8 +50,7 @@ const endTurn = () => {
       } else {
         newActionsRemaining = newPhase === 'PLAYER_TURN' ? 2 : 1;
       }
-
-      return {
+return {
         ...prev,
         currentTurnIndex: nextIndex,
         activeUnitId: nextUnit.id || nextUnit._id || nextUnit.name,
@@ -59,4 +58,20 @@ const endTurn = () => {
         phase: newPhase
       };
     });
+  }; // This closes endTurn
+
+  const value = {
+    gameState,
+    setGameState,
+    endTurn,
+    initializeCombat
   };
+
+  return (
+    <GameContext.Provider value={value}>
+      {children}
+    </GameContext.Provider>
+  );
+}; // This closes GameProvider
+
+export default GameContext;
