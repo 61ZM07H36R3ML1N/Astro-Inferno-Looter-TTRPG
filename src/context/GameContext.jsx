@@ -62,18 +62,11 @@ const [gameState, setGameState] = useState({
     } else {
       // No turn order, maybe reset to defaults
       return {
-        ...prev,
-        currentTurnIndex: 0,
-        activeUnitId: null,
-        actionsRemaining: 2,
-        phase: 'PLAYER_TURN'
-// ... end of state logic
-// ... after the 'else' block inside endTurn
-      return { ...prev, currentTurnIndex: nextIndex, activeUnitId: prev.turnOrder[nextIndex].id, actionsRemaining: newActionsRemaining, phase: newPhase };
+return { ...prev, currentTurnIndex: nextIndex, activeUnitId: prev.turnOrder[nextIndex].id, actionsRemaining: newActionsRemaining, phase: newPhase };
     } else {
       return { ...prev, currentTurnIndex: 0, activeUnitId: null, actionsRemaining: 2, phase: 'PLAYER_TURN' };
     }
-  }); 
+  });
 };
 
 const value = {
@@ -82,10 +75,12 @@ const value = {
   endTurn,
   initializeCombat
 };
-  return (
-    <GameContext.Provider value={value}>
-      {children}
-    </GameContext.Provider>
-  );
+
+return (
+  <GameContext.Provider value={value}>
+    {children}
+  </GameContext.Provider>
+);
 };
+
 export default GameContext;
