@@ -68,10 +68,9 @@ const [gameState, setGameState] = useState({
         actionsRemaining: 2,
         phase: 'PLAYER_TURN'
 // ... end of state logic
-      }
-    }); 
-  }
-    };
+});
+}
+};
   const value = {
     gameState,
     setGameState,
@@ -84,6 +83,5 @@ const [gameState, setGameState] = useState({
       {children}
     </GameContext.Provider>
   );
-}; // This closes GameProvider
-
+};
 export default GameContext;
