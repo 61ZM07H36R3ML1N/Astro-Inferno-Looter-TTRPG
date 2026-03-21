@@ -1,25 +1,11 @@
-import React, { createContext, useState, useContext } from 'react';
-    
-    const GameContext = createContext();
-    
-    export const useGame = () => useContext(GameContext);
-    
-    export const GameProvider = ({ children }) => {
-const initializeCombat = (units) => {
-    setGameState(prev => {
-      const sortedUnits = [...units].sort((a, b) => (b.speed || 10) - (a.speed || 10));
-    const order = sortedUnits;
-      return {
-        ...prev,
-        turnOrder: order,
-        currentTurnIndex: 0,
-        activeUnitId: order[0] || null,
-        actionsRemaining: 2
-      };
-    });
-  };
-    
-const [gameState, setGameState] = useState({
+ import React, { createContext, useState, useContext } from 'react';
+
+const GameContext = createContext();
+
+export const useGame = () => useContext(GameContext);
+
+export const GameProvider = ({ children }) => {
+  const [gameState, setGameState] = useState({
     activeUnitId: null,
     turnOrder: [],
     currentTurnIndex: 0,
@@ -27,54 +13,64 @@ const [gameState, setGameState] = useState({
     phase: 'PLAYER_TURN',
   });
 
-  const endTurn = () => {
-   setGameState(prev => {
-    const hasTurnOrder = prev.turnOrder && prev.turnOrder.length > 0;
-    const nextIndex = hasTurnOrder ? (prev.currentTurnIndex + 1) % prev.turnOrder.length : 0;
-    let newPhase = prev.phase;
-    let newActionsRemaining = prev.actionsRemaining; // Default to current
+  const initializeCombat = (units) => {
+    setGameState(prev => {
+      const sortedUnits = [...units].sort((a, b) => (b.speed || 10) - (a.speed || 10));
+      return {
+        ...prev,
+        turnOrder: sortedUnits,
+        currentTurnIndex: 0,
+        activeUnitId: sortedUnits[0]?.id || null,
+        actionsRemaining: 2
+      };
+    });
+  };
 
-    if (hasTurnOrder) {
-      const nextUnit = prev.turnOrder[nextIndex]; 
+  const endTurn = () => {
+    setGameState(prev => {
+      const hasTurnOrder = prev.turnOrder && prev.turnOrder.length > 0;
+      if (!hasTurnOrder) {
+        return { ...prev, currentTurnIndex: 0, activeUnitId: null, actionsRemaining: 2, phase: 'PLAYER_TURN' };
+      }
+
+      const nextIndex = (prev.currentTurnIndex + 1) % prev.turnOrder.length;
+      const nextUnit = prev.turnOrder[nextIndex];
       
+      let newPhase = prev.phase;
+      let newActionsRemaining = prev.actionsRemaining;
+
       if (nextUnit.isEnemy && prev.phase === 'PLAYER_TURN') {
         newPhase = 'ENEMY_TURN';
-        newActionsRemaining = 1; // Or however many actions enemies get
+        newActionsRemaining = 1;
       } else if (!nextUnit.isEnemy && prev.phase === 'ENEMY_TURN') {
-        newPhase = 'PLAYER_TURN';
-        newActionsRemaining = 2; // Player actions
-      } else if (nextIndex === 0 && prev.phase === 'ENEMY_TURN' && !nextUnit.isEnemy) { // Cycled back to player after enemy turn
         newPhase = 'PLAYER_TURN';
         newActionsRemaining = 2;
       } else {
-         // If phase doesn't change, reset actions based on current/new phase
-         newActionsRemaining = newPhase === 'PLAYER_TURN' ? 2 : 1;
+        newActionsRemaining = newPhase === 'PLAYER_TURN' ? 2 : 1;
       }
-      
+
       return {
         ...prev,
         currentTurnIndex: nextIndex,
-        activeUnitId: prev.turnOrder[nextIndex].id,
+        activeUnitId: nextUnit.id,
         actionsRemaining: newActionsRemaining,
         phase: newPhase
- // No turn order, maybe reset to defaults
-    return { ...prev, currentTurnIndex: 0, activeUnitId: null, actionsRemaining: 2, phase: 'PLAYER_TURN' };
-    }
-  });
-};
+      };
+    });
+  };
 
-const value = {
-  gameState,
-  setGameState,
-  endTurn,
-  initializeCombat
-};
+  const value = {
+    gameState,
+    setGameState,
+    endTurn,
+    initializeCombat
+  };
 
-return (
-  <GameContext.Provider value={value}>
-    {children}
-  </GameContext.Provider>
-);
+  return (
+    <GameContext.Provider value={value}>
+      {children}
+    </GameContext.Provider>
+  );
 };
 
 export default GameContext;
