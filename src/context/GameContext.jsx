@@ -68,16 +68,20 @@ const [gameState, setGameState] = useState({
         actionsRemaining: 2,
         phase: 'PLAYER_TURN'
 // ... end of state logic
-});
-}
+// ... after the 'else' block inside endTurn
+      return { ...prev, currentTurnIndex: nextIndex, activeUnitId: prev.turnOrder[nextIndex].id, actionsRemaining: newActionsRemaining, phase: newPhase };
+    } else {
+      return { ...prev, currentTurnIndex: 0, activeUnitId: null, actionsRemaining: 2, phase: 'PLAYER_TURN' };
+    }
+  }); 
 };
-  const value = {
-    gameState,
-    setGameState,
-    endTurn,
-    initializeCombat
-  };
 
+const value = {
+  gameState,
+  setGameState,
+  endTurn,
+  initializeCombat
+};
   return (
     <GameContext.Provider value={value}>
       {children}
