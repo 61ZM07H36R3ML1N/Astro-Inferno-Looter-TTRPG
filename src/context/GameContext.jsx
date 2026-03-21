@@ -20,7 +20,7 @@ export const GameProvider = ({ children }) => {
         ...prev,
         turnOrder: sortedUnits,
         currentTurnIndex: 0,
-        activeUnitId: sortedUnits[0]?.id || null,
+      activeUnitId: sortedUnits[0]?.id || sortedUnits[0]?.name || null,
         actionsRemaining: 2
       };
     });
@@ -52,7 +52,7 @@ export const GameProvider = ({ children }) => {
       return {
         ...prev,
         currentTurnIndex: nextIndex,
-        activeUnitId: nextUnit.id,
+  activeUnitId: nextUnit.id || nextUnit._id || nextUnit.name,
         actionsRemaining: newActionsRemaining,
         phase: newPhase
       };
