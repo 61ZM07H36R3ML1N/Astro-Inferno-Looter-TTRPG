@@ -57,14 +57,8 @@ const [gameState, setGameState] = useState({
         activeUnitId: prev.turnOrder[nextIndex].id,
         actionsRemaining: newActionsRemaining,
         phase: newPhase
-      };
-
-    } else {
-      // No turn order, maybe reset to defaults
-      return {
-return { ...prev, currentTurnIndex: nextIndex, activeUnitId: prev.turnOrder[nextIndex].id, actionsRemaining: newActionsRemaining, phase: newPhase };
-    } else {
-      return { ...prev, currentTurnIndex: 0, activeUnitId: null, actionsRemaining: 2, phase: 'PLAYER_TURN' };
+ // No turn order, maybe reset to defaults
+    return { ...prev, currentTurnIndex: 0, activeUnitId: null, actionsRemaining: 2, phase: 'PLAYER_TURN' };
     }
   });
 };
