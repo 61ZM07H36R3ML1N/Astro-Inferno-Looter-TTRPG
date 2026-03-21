@@ -26,10 +26,12 @@ export const GameProvider = ({ children }) => {
     });
   };
 
-  const endTurn = () => {
-    setGameState(prev => {
-      const hasTurnOrder = prev.turnOrder && prev.turnOrder.length > 0;
-      if (!hasTurnOrder) {
+ // Line 29
+const endTurn = () => {
+  console.log("DEBUG: End Turn button clicked!"); // <--- New Line
+  setGameState(prev => {
+    console.log("DEBUG: Previous State:", prev); // <--- New Line
+    const hasTurnOrder = prev.turnOrder && prev.turnOrder.length > 0;
         return { ...prev, currentTurnIndex: 0, activeUnitId: null, actionsRemaining: 2, phase: 'PLAYER_TURN' };
       }
 
