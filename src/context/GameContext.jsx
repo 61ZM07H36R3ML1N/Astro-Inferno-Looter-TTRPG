@@ -26,14 +26,13 @@ export const GameProvider = ({ children }) => {
     });
   };
 
- // Line 29
 const endTurn = () => {
-  console.log("DEBUG: End Turn button clicked!"); // <--- New Line
-  setGameState(prev => {
-    console.log("DEBUG: Previous State:", prev); // <--- New Line
-    const hasTurnOrder = prev.turnOrder && prev.turnOrder.length > 0;
-        return { ...prev, currentTurnIndex: 0, activeUnitId: null, actionsRemaining: 2, phase: 'PLAYER_TURN' };
-      }
+    console.log("DEBUG: End Turn button clicked!");
+    setGameState(prev => {
+      console.log("DEBUG: Previous State:", prev);
+      
+      const hasTurnOrder = prev.turnOrder && prev.turnOrder.length > 0;
+      if (!hasTurnOrder) return prev;
 
       const nextIndex = (prev.currentTurnIndex + 1) % prev.turnOrder.length;
       const nextUnit = prev.turnOrder[nextIndex];
@@ -41,6 +40,7 @@ const endTurn = () => {
       let newPhase = prev.phase;
       let newActionsRemaining = prev.actionsRemaining;
 
+      // Phase Transition Logic
       if (nextUnit.isEnemy && prev.phase === 'PLAYER_TURN') {
         newPhase = 'ENEMY_TURN';
         newActionsRemaining = 1;
@@ -54,25 +54,9 @@ const endTurn = () => {
       return {
         ...prev,
         currentTurnIndex: nextIndex,
-  activeUnitId: nextUnit.id || nextUnit._id || nextUnit.name,
+        activeUnitId: nextUnit.id || nextUnit._id || nextUnit.name,
         actionsRemaining: newActionsRemaining,
         phase: newPhase
       };
     });
   };
-
-  const value = {
-    gameState,
-    setGameState,
-    endTurn,
-    initializeCombat
-  };
-
-  return (
-    <GameContext.Provider value={value}>
-      {children}
-    </GameContext.Provider>
-  );
-};
-
-export default GameContext;
